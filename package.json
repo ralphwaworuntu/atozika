@@ -1,0 +1,16 @@
+{
+  "name": "atozika",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ATOZIKA — Akademi Taktis Optimasi Zona Integritas, Kepemimpinan & Aparatur",
+  "scripts": {
+    "dev": "docker compose -f docker-compose.dev.yml up -d && npm run dev:api & npm run dev:web",
+    "dev:api": "npm run dev --prefix backend",
+    "dev:web": "npm run dev --prefix frontend",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d",
+    "db:down": "docker compose -f docker-compose.dev.yml down",
+    "db:migrate": "npm run prisma:deploy --prefix backend",
+    "db:seed": "npm run seed --prefix backend",
+    "prisma:generate": "npm run prisma:generate --prefix backend"
+  }
+}

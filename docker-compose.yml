@@ -1,0 +1,84 @@
+name: atozika
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: atozika
+      POSTGRES_PASSWORD: atozika_secret
+      POSTGRES_DB: atozika
+    volumes:
+      - atozika_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atozika -d atozika"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  migrate:
+    build:
+      context: ./backend
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://atozika:atozika_secret@postgres:5432/atozika?schema=public
+    command: npx prisma migrate deploy
+
+  api:
+    build:
+      context: ./api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://atozika:atozika_secret@postgres:5432/atozika?schema=public
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - atozika_uploads:/app/uploads
+    expose:
+      - "5000"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_APP_NAME: ATOZIKA
+        VITE_API_URL: /api/v1
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - atozika_uploads:/uploads:ro
+
+volumes:
+  atozika_pg:
+  atozika_uploads:

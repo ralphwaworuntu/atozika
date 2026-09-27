@@ -1,0 +1,403 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Courses Dashboard</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <!-- Tailwind CSS v3 with Forms and Container Queries -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                orange: '#FF7A45',
+                'orange-hover': '#FF6529',
+                dark: '#141820',
+                sidebar: '#181C24',
+                purple: '#986CE6',
+                'purple-dark': '#8857DE',
+                border: '#E8EDF2',
+                bg: '#F8FAFC',
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <style data-purpose="custom-scrollbars">
+      /* Custom refined scrollbars */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #D1D5DB;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #9CA3AF;
+      }
+    </style>
+  <style data-purpose="banner-illustrations">
+      /* CSS decorative clouds & accents for the purple banner */
+      .cloud-pill {
+        background: rgba(255, 255, 255, 0.22);
+        backdrop-filter: blur(4px);
+      }
+    </style>
+  </head>
+  <body class="bg-[#F6EEF0] min-h-screen text-[#1E2530] font-sans antialiased p-3 sm:p-6 lg:p-8 flex items-center justify-center">
+  <!-- BEGIN: MainDashboardContainer -->
+  <!-- Outer shell mimicking the clean floating dashboard mockup -->
+  <div class="w-full max-w-[1440px] bg-white rounded-[28px] shadow-2xl shadow-rose-900/10 border border-[#EDDFE4] overflow-hidden flex flex-col lg:flex-row min-h-[920px]">
+  <!-- BEGIN: Sidebar -->
+  
+  <!-- END: Sidebar -->
+  <!-- BEGIN: MainContent -->
+  <main class="flex-1 flex flex-col min-w-0 bg-[#FBFBFC]">
+  <!-- Top Header Navigation Bar -->
+  
+  <!-- Dashboard Content Body -->
+  <div class="p-8 lg:p-9 space-y-6 flex-1 overflow-y-auto">
+  <!-- Courses Header & Action Button -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"><h1 class="text-3xl font-extrabold text-[#111827] tracking-tight">Tryout</h1>
+  <div class="flex flex-wrap items-center gap-3">
+    <!-- Search bar -->
+    <div class="relative w-72">
+      <input class="w-full bg-[#F1F4F9]/80 border-0 rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#2A3442] placeholder-[#8E9CAE] focus:ring-1 focus:ring-[#FF7A45] focus:bg-white transition-all" placeholder="Search courses by name or instructors" type="text">
+      <svg class="w-3.5 h-3.5 text-[#8E9CAE] absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </div>
+    <!-- Grid/List layout toggle buttons -->
+    <div class="flex items-center gap-1 bg-[#EEF2F6] p-0.5 rounded-lg">
+      <button class="p-1.5 rounded-md bg-[#1B3A4B] text-white shadow-sm" title="Grid View">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"></path>
+        </svg>
+      </button>
+      <button class="p-1.5 rounded-md text-[#6D7D93] hover:text-[#111827]" title="List View">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+    </div>
+    <!-- Riwayat Tryout Button -->
+    <button class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF7A45] hover:bg-[#FF6529] text-white font-semibold text-xs rounded-full shadow-sm transition-all transform active:scale-95">
+      <span class="">Riwayat Tryout</span>
+    </button>
+  </div></div>
+  <!-- Filter, Search, and View Controls Row -->
+  
+  <!-- BEGIN: UpgradeHeroBanner -->
+  <div class="relative w-full rounded-2xl bg-gradient-to-r from-[#A574EC] via-[#9B67E7] to-[#A36AE9] text-white p-6 sm:p-7 overflow-hidden shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6" data-purpose="upgrade-callout-banner">
+  <!-- Text Information -->
+  <div class="relative z-10 max-w-xl">
+  <h2 class="text-xl sm:text-2xl font-bold tracking-tight mb-2">Knowledge is power. Share it!</h2>
+  <p class="text-xs sm:text-sm text-purple-100 font-normal leading-relaxed">
+                You've reached the course limit on your current plan. Find the plan that has the right number of courses for you
+              </p>
+  </div>
+  <!-- Banner Action & Visual 3D Characters Mockup -->
+  <div class="relative z-10 flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+  <!-- Whimsical rocket illustration container -->
+  <div class="hidden sm:flex items-center -mr-2 relative">
+  <!-- Clouds & Floating Elements -->
+  <div class="absolute -left-6 bottom-0 w-12 h-6 bg-white/30 rounded-full blur-[1px]"></div>
+  <div class="absolute -top-3 left-4 w-7 h-4 bg-white/20 rounded-full"></div>
+  <!-- Rocket and Character Graphic Representation -->
+  <div class="relative flex items-center justify-center w-28 h-20">
+  <!-- Rocket body -->
+  <div class="w-16 h-8 bg-gradient-to-r from-rose-400 via-orange-400 to-amber-300 rounded-full transform -rotate-12 shadow-lg border border-white/30 flex items-center justify-end pr-2">
+  <div class="w-2.5 h-2.5 rounded-full bg-white/80"></div>
+  </div>
+  <!-- Wing -->
+  <div class="absolute w-4 h-6 bg-purple-900 rounded-sm transform rotate-45 -bottom-1 left-7 opacity-80"></div>
+  <!-- Character head -->
+  <div class="absolute -top-2 left-10 w-6 h-6 bg-[#FED7AA] rounded-full border border-amber-600/30"></div>
+  <!-- Exhaust cloud -->
+  <div class="absolute -left-2 bottom-1 w-6 h-6 bg-white/70 rounded-full blur-[1px]"></div>
+  </div>
+  </div>
+  <!-- Upgrade button -->
+  <button class="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-slate-50 text-[#1E2530] text-xs font-bold rounded-lg shadow-sm transition-all transform active:scale-95">
+  <svg class="w-3.5 h-3.5 text-slate-800" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+  <path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>
+  <span class="">Upgrade now</span>
+  </button>
+  </div>
+  <!-- Decorative Background Ambient Blobs -->
+  <div class="absolute -right-8 -top-12 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+  <div class="absolute left-1/3 -bottom-10 w-48 h-48 rounded-full bg-purple-400/20 blur-xl pointer-events-none"></div>
+  </div>
+  <!-- END: UpgradeHeroBanner -->
+  <!-- BEGIN: CoursesGrid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
+  <!-- Card 1 -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <!-- Artwork Area: Peach / Wireframe UI mockup -->
+  <div class="h-32 bg-[#FDEAE2] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="w-24 h-24 bg-white/80 rounded-xl p-2 shadow-sm border border-rose-100 flex flex-col gap-1.5 transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-6 h-6 rounded-full bg-[#FCA5A5] mx-auto mb-1"></div>
+  <div class="h-1.5 bg-slate-200 rounded-full w-full"></div>
+  <div class="h-1.5 bg-slate-200 rounded-full w-2/3"></div>
+  <div class="h-3 bg-[#FF7A45]/30 rounded-md w-full mt-auto"></div>
+  </div>
+  <div class="absolute top-2 right-4 w-2 h-4 bg-indigo-300 rounded-full transform rotate-45 opacity-60"></div>
+  <div class="absolute bottom-2 left-5 w-3 h-3 bg-amber-400 rounded-full opacity-60"></div>
+  </div>
+  <!-- Card Content -->
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Foundations of User Experience (UX) Design
+                  </h3>
+  </div>
+  </div>
+  <!-- Card Footer -->
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B] border-t border-transparent">
+  <div class="flex items-center gap-1.5">
+  <span class="">3 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-emerald-600 font-medium">Published</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5" title="More options">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+  <circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle>
+  </svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 2 -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <!-- Artwork Area: Mint / Hand Stylus illustration -->
+  <div class="h-32 bg-[#E1F7F3] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="relative flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-14 h-16 bg-[#FDBA74] rounded-2xl transform rotate-12 flex items-center justify-center shadow-sm">
+  <div class="w-3 h-14 bg-teal-600 rounded-full -mt-4 transform -rotate-12 border border-white/40"></div>
+  </div>
+  </div>
+  <div class="absolute bottom-3 right-4 w-3.5 h-3.5 rounded-full border-2 border-rose-400 opacity-70"></div>
+  <div class="absolute top-4 left-6 text-amber-500 font-bold text-xs opacity-60">~</div>
+  </div>
+  <!-- Card Content -->
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Build Wireframes and Low-Fidelity Prototypes
+                  </h3>
+  </div>
+  </div>
+  <!-- Card Footer -->
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">12 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-amber-600 font-medium">Draft</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5" title="More options">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+  <circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle>
+  </svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 3 -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <!-- Artwork Area: Lavender / Retro Computer illustration -->
+  <div class="h-32 bg-[#F0EAFB] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="relative flex items-end gap-2 transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-12 h-14 bg-white/80 rounded-lg p-1.5 border border-purple-200 shadow-sm flex flex-col justify-between">
+  <div class="w-full h-7 bg-purple-100 rounded"></div>
+  <div class="w-4 h-1 bg-purple-300 rounded-full mx-auto"></div>
+  </div>
+  <div class="w-10 h-11 bg-rose-400 rounded-md border-2 border-amber-300 shadow-sm"></div>
+  </div>
+  <div class="absolute top-2 left-5 w-2.5 h-2.5 rounded-full bg-indigo-400 opacity-60"></div>
+  <div class="absolute bottom-2 right-6 w-3 h-3 bg-amber-400 rounded-full opacity-60"></div>
+  </div>
+  <!-- Card Content -->
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Foundations of User Experience (UX) Design
+                  </h3>
+  </div>
+  </div>
+  <!-- Card Footer -->
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">7Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-emerald-600 font-medium">Published</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5" title="More options">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+  <circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle>
+  </svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 4 -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <!-- Artwork Area: Soft Cream-Yellow / Mobile App Wireframe -->
+  <div class="h-32 bg-[#FCF5E3] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="relative transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-16 h-20 bg-white/90 rounded-xl shadow-sm border border-amber-200 p-1.5 flex flex-col items-center gap-1">
+  <div class="w-8 h-8 rounded-lg bg-rose-400 flex items-center justify-center text-white text-[10px] font-bold">▶</div>
+  <div class="w-full h-1 bg-slate-200 rounded"></div>
+  <div class="w-4/5 h-1 bg-slate-200 rounded"></div>
+  </div>
+  </div>
+  <div class="absolute top-3 left-4 text-rose-400 text-xs font-bold">●</div>
+  <div class="absolute bottom-2 right-4 w-4 h-4 rounded-full border border-amber-400"></div>
+  </div>
+  <!-- Card Content -->
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Design a User Experience for Social Good &amp; Prepare for Jobs
+                  </h3>
+  </div>
+  </div>
+  <!-- Card Footer -->
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">9 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-emerald-600 font-medium">Published</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5" title="More options">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+  <circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle>
+  </svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 5 (Row 2 Preview) -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <div class="h-32 bg-[#F1F9F0] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="flex items-center gap-2 transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-9 h-11 bg-rose-400 rounded-lg shadow-sm"></div>
+  <div class="w-9 h-11 bg-indigo-500 rounded-lg shadow-sm -ml-2"></div>
+  </div>
+  </div>
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Collaborative UX Strategy &amp; Teamwork
+                  </h3>
+  </div>
+  </div>
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">4 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-emerald-600 font-medium">Published</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16"><circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle></svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 6 (Row 2 Preview) -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <div class="h-32 bg-[#FDF0EE] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="flex items-center gap-3 transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-12 h-14 bg-slate-700 rounded-lg shadow"></div>
+  <div class="w-10 h-10 bg-amber-200 rounded-full border-2 border-indigo-900 shadow"></div>
+  </div>
+  </div>
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Advanced Prototyping &amp; User Testing
+                  </h3>
+  </div>
+  </div>
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">6 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-amber-600 font-medium">Draft</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16"><circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle></svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 7 (Row 2 Preview) -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <div class="h-32 bg-[#FFF8E6] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="relative w-16 h-16 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-3 h-14 bg-emerald-500 rounded-full transform rotate-45"></div>
+  <div class="absolute w-12 h-12 border-2 border-dashed border-rose-400 rounded-full"></div>
+  </div>
+  </div>
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Vector Graphics &amp; Iconography Systems
+                  </h3>
+  </div>
+  </div>
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">8 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-emerald-600 font-medium">Published</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16"><circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle></svg>
+  </button>
+  </div>
+  </div>
+  <!-- Card 8 (Row 2 Preview) -->
+  <div class="bg-white rounded-xl border border-[#E9EEF4] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+  <div>
+  <div class="h-32 bg-[#EDF3FC] relative flex items-center justify-center p-3 overflow-hidden">
+  <div class="grid grid-cols-2 gap-2 transform group-hover:scale-105 transition-transform duration-300">
+  <div class="w-6 h-6 rounded bg-sky-400 shadow-sm"></div>
+  <div class="w-6 h-6 rounded bg-indigo-500 shadow-sm"></div>
+  <div class="w-6 h-6 rounded bg-amber-400 shadow-sm"></div>
+  <div class="w-6 h-6 rounded bg-rose-400 shadow-sm"></div>
+  </div>
+  </div>
+  <div class="p-4">
+  <h3 class="text-xs font-bold text-[#141C28] leading-snug line-clamp-2">
+                    Design Systems at Scale &amp; Component UI
+                  </h3>
+  </div>
+  </div>
+  <div class="px-4 pb-3.5 pt-0 flex items-center justify-between text-[11px] text-[#78889B]">
+  <div class="flex items-center gap-1.5">
+  <span class="">5 Courses</span>
+  <span class="text-slate-300">•</span>
+  <span class="text-emerald-600 font-medium">Published</span>
+  </div>
+  <button class="text-slate-400 hover:text-slate-600 p-0.5">
+  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16"><circle cx="2" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="14" cy="8" r="1.5"></circle></svg>
+  </button>
+  </div>
+  </div>
+  </div>
+  <!-- END: CoursesGrid -->
+  </div>
+  </main>
+  <!-- END: MainContent -->
+  </div>
+  <!-- END: MainDashboardContainer -->
+  
+  
+  </body></html>

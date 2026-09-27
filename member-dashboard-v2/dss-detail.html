@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Detail Penilaian DSS</title>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#16a34a',
+              600: '#15803d',
+              700: '#166534',
+            },
+            navy: {
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Stylesheet for fine-tuning layout & scrollbars -->
+<style data-purpose="custom-scroll-and-layout">
+    body {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f8fafc;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen py-6 px-3 sm:px-6 flex items-center justify-center">
+<!-- BEGIN: MainModalContainer -->
+<div class="w-full max-w-[1240px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col" data-purpose="modal-window">
+<!-- BEGIN: ModalHeader -->
+<header class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white sticky top-0 z-20">
+<div class="flex items-center gap-3">
+<!-- Shield Icon with Checkmark -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 flex-shrink-0">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h1 class="text-xl font-bold text-slate-800 leading-tight">Detail Penilaian DSS</h1>
+<p class="text-xs text-slate-500 font-medium mt-0.5">
+            ID Siswa: <span class="text-slate-700 font-semibold">ATZ-250512-087</span> • Update: 12 Mei 2025 10:30 WIB
+          </p>
+</div>
+</div>
+<!-- Close Button -->
+<button aria-label="Tutup Modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</header>
+<!-- END: ModalHeader -->
+<!-- BEGIN: ModalContentBody -->
+<main class="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar">
+<!-- BEGIN: TopScoreSummaryCards -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-4" data-purpose="top-summary-cards">
+<!-- Card 1: Nilai Akhir DSS -->
+<div class="border border-slate-200 rounded-xl p-4 bg-slate-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<div class="text-[11px] font-bold text-slate-500 tracking-wider uppercase mb-1">NILAI AKHIR DSS</div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-3xl sm:text-4xl font-extrabold text-emerald-600 tracking-tight">78.25</span>
+<span class="text-sm font-semibold text-slate-400">/100</span>
+</div>
+</div>
+<div class="text-xs sm:text-right space-y-1.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+<div class="text-slate-600 font-medium">
+              Status: <span class="font-bold text-emerald-600">SKENARIO HIJAU (MATCH)</span>
+</div>
+<div class="flex items-center sm:justify-end gap-1.5 text-slate-600 font-medium">
+<span>Hard Constraints:</span>
+<span class="font-bold text-emerald-600 flex items-center gap-1">
+                PASS
+                <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" fill-rule="evenodd"></path>
+</svg>
+</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Rekomendasi Sistem -->
+<div class="border border-slate-200 rounded-xl p-4 bg-slate-50/40 flex items-center justify-between gap-4">
+<div class="space-y-1.5">
+<div class="text-[11px] font-bold text-slate-500 tracking-wider uppercase">REKOMENDASI SISTEM</div>
+<div class="text-xs font-bold text-slate-800 leading-snug">
+              Disetujui di Jalur Target Utama.
+            </div>
+<div class="text-xs text-slate-600">
+              Masuk Fast Track / Reguler / VVIP.
+            </div>
+</div>
+<!-- Medal Ribbon Badge Graphic -->
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<circle cx="12" cy="8" r="6" stroke-linecap="round" stroke-linejoin="round"></circle>
+<path d="M8.21 13.89L7 22l5-3 5 3-1.21-8.11" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M12 6v4m-2-2h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+</svg>
+</div>
+</div>
+</section>
+<!-- END: TopScoreSummaryCards -->
+<!-- BEGIN: PeluangLolosSection -->
+<section data-purpose="peluang-lolos">
+<div class="flex items-center gap-1.5 mb-3">
+<h2 class="text-xs sm:text-sm font-bold text-slate-800">Peluang Lolos di Berbagai Jalur</h2>
+<svg class="w-3.5 h-3.5 text-slate-400 cursor-pointer" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M12 16v-4m0-4h.01" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+<!-- Card: TNI -->
+<div class="border border-slate-200 rounded-xl p-3.5 bg-white shadow-sm flex flex-col justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+<!-- Soldier helmet / figure icon -->
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2a6 6 0 00-6 6v1h12V8a6 6 0 00-6-6zM4 11a1 1 0 00-1 1v1a7 7 0 0014 0v-1a1 1 0 00-1-1H4zm-1 9a3 3 0 013-3h12a3 3 0 013 3v1H3v-1z"></path>
+</svg>
+</div>
+<div>
+<div class="text-[11px] font-bold text-slate-700 tracking-wide">TNI</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="text-xl font-extrabold text-slate-800">72%</span>
+<span class="text-[11px] text-slate-500 font-medium">Peluang Lolos</span>
+</div>
+</div>
+</div>
+<div class="mt-3">
+<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+<div class="bg-emerald-600 h-1.5 rounded-full" style="width: 72%;"></div>
+</div>
+<p class="text-[10px] text-slate-500 font-medium mt-1.5">Kategori: Cukup Tinggi</p>
+</div>
+</div>
+<!-- Card: POLRI -->
+<div class="border border-slate-200 rounded-xl p-3.5 bg-white shadow-sm flex flex-col justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+<!-- Police cap icon -->
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 3L2 7l2 4c1.5 0 2.5.5 3 1.5.5.8 1.5 1.5 5 1.5s4.5-.7 5-1.5c.5-1 1.5-1.5 3-1.5l2-4-10-4zM5 15a7 7 0 0014 0H5zm-2 5a2 2 0 012-2h14a2 2 0 012 2v1H3v-1z"></path>
+</svg>
+</div>
+<div>
+<div class="text-[11px] font-bold text-slate-700 tracking-wide">POLRI</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="text-xl font-extrabold text-blue-600">78%</span>
+<span class="text-[11px] text-slate-500 font-medium">Peluang Lolos</span>
+</div>
+</div>
+</div>
+<div class="mt-3">
+<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+<div class="bg-blue-600 h-1.5 rounded-full" style="width: 78%;"></div>
+</div>
+<p class="text-[10px] text-slate-500 font-medium mt-1.5">Kategori: Tinggi</p>
+</div>
+</div>
+<!-- Card: KEDINASAN -->
+<div class="border border-slate-200 rounded-xl p-3.5 bg-white shadow-sm flex flex-col justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
+<!-- Building / Government Pillar Icon -->
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L2 7v2h20V7L12 2zM4 11v7h3v-7H4zm6 0v7h4v-7h-4zm7 0v7h3v-7h-3zM2 20v2h20v-2H2z"></path>
+</svg>
+</div>
+<div>
+<div class="text-[11px] font-bold text-purple-700 tracking-wide">KEDINASAN</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="text-xl font-extrabold text-purple-700">71%</span>
+<span class="text-[11px] text-slate-500 font-medium">Peluang Lolos</span>
+</div>
+</div>
+</div>
+<div class="mt-3">
+<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+<div class="bg-purple-600 h-1.5 rounded-full" style="width: 71%;"></div>
+</div>
+<p class="text-[10px] text-slate-500 font-medium mt-1.5">Kategori: Cukup Tinggi</p>
+</div>
+</div>
+<!-- Card: BUMN -->
+<div class="border border-slate-200 rounded-xl p-3.5 bg-white shadow-sm flex flex-col justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 flex-shrink-0">
+<!-- Briefcase icon -->
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M10 2a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-4V4a2 2 0 00-2-2h-4zm0 2h4v2h-4V4zm-6 4h16v3.2a19.78 19.78 0 01-8 1.8 19.78 19.78 0 01-8-1.8V8zm0 5.4a21.73 21.73 0 008 1.6 21.73 21.73 0 008-1.6V18H4v-4.6z"></path>
+</svg>
+</div>
+<div>
+<div class="text-[11px] font-bold text-orange-700 tracking-wide">BUMN</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="text-xl font-extrabold text-orange-600">69%</span>
+<span class="text-[11px] text-slate-500 font-medium">Peluang Lolos</span>
+</div>
+</div>
+</div>
+<div class="mt-3">
+<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+<div class="bg-orange-500 h-1.5 rounded-full" style="width: 69%;"></div>
+</div>
+<p class="text-[10px] text-slate-500 font-medium mt-1.5">Kategori: Cukup</p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: PeluangLolosSection -->
+<!-- BEGIN: Komposit4PilarSection -->
+<section data-purpose="komposit-4-pilar">
+<div class="flex items-center gap-1.5 mb-2.5">
+<h2 class="text-xs sm:text-sm font-bold text-slate-800">1. PEMBOBOTAN KOMPOSIT 4 PILAR</h2>
+<svg class="w-3.5 h-3.5 text-slate-400 cursor-pointer" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M12 16v-4m0-4h.01" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+<table class="w-full text-left text-xs border-collapse">
+<thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+<tr>
+<th class="py-2.5 px-4 font-semibold">Pilar</th>
+<th class="py-2.5 px-4 font-semibold">Bobot (W)</th>
+<th class="py-2.5 px-4 font-semibold">Skor Anda</th>
+<th class="py-2.5 px-4 font-semibold">Kontribusi (W × Skor)</th>
+<th class="py-2.5 px-4 font-semibold">Metode Asesmen</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 text-slate-700">
+<!-- Row 1: Akademik -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-2.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                      📖
+                    </span>
+<span class="font-bold text-slate-800">Akademik (A)</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-medium text-slate-600">35% (0.35)</td>
+<td class="py-2.5 px-4 font-bold text-emerald-600">82.50</td>
+<td class="py-2.5 px-4 font-semibold text-slate-700">28.88</td>
+<td class="py-2.5 px-4 text-[11px] text-slate-500 leading-relaxed">
+                  TKA, Pengetahuan Umum, TWK, B.Inggris, Math CAT Engine IndexedDB
+                </td>
+</tr>
+<!-- Row 2: Psikotes -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-2.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center text-xs">
+                      🎨
+                    </span>
+<span class="font-bold text-slate-800">Psikotes (P)</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-medium text-slate-600">25% (0.25)</td>
+<td class="py-2.5 px-4 font-bold text-purple-600">76.00</td>
+<td class="py-2.5 px-4 font-semibold text-slate-700">19.00</td>
+<td class="py-2.5 px-4 text-[11px] text-slate-500 leading-relaxed">
+                  Kestabilan Emosi, Profile Match, Kecermatan 60s Engine 10 Kolom Auto-Switch
+                </td>
+</tr>
+<!-- Row 3: Jasmani -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-2.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                      🏋️
+                    </span>
+<span class="font-bold text-slate-800">Jasmani (J)</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-medium text-slate-600">25% (0.25)</td>
+<td class="py-2.5 px-4 font-bold text-blue-600">72.40</td>
+<td class="py-2.5 px-4 font-semibold text-slate-700">18.10</td>
+<td class="py-2.5 px-4 text-[11px] text-slate-500 leading-relaxed">
+                  Lari 12m, Push-up, Sit-up, Pull-up, Renang, Postur Tes Baku Stadion Oepoi Kupang
+                </td>
+</tr>
+<!-- Row 4: Medis / MCU -->
+<tr class="hover:bg-slate-50/70 transition-colors">
+<td class="py-2.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-md bg-red-100 text-red-600 flex items-center justify-center text-xs">
+                      ❤️
+                    </span>
+<span class="font-bold text-slate-800">Medis / MCU (M)</span>
+</div>
+</td>
+<td class="py-2.5 px-4 font-medium text-slate-600">15% (0.15)</td>
+<td class="py-2.5 px-4 font-bold text-red-500">80.00</td>
+<td class="py-2.5 px-4 font-semibold text-slate-700">12.00</td>
+<td class="py-2.5 px-4 text-[11px] text-slate-500 leading-relaxed">
+                  Tensi, Visus, Gigi, THT, Lab Darah/Urine, EKG/USG – Diagnostik Klinik Mitra Atozika
+                </td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Formula Banner -->
+<div class="mt-2.5 p-2 bg-emerald-50/70 border border-emerald-200/80 rounded-lg text-center">
+<span class="text-xs font-semibold text-emerald-800">
+            RUMUS: N_DSS = (0.35 × A) + (0.25 × P) + (0.25 × J) + (0.15 × M) = <span class="font-bold text-emerald-900 underline decoration-emerald-500">78.25</span>
+</span>
+</div>
+</section>
+<!-- END: Komposit4PilarSection -->
+<!-- BEGIN: DualColumnRulesSection -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-5" data-purpose="elimination-and-scenarios">
+<!-- Left Sub-Section: Aturan Eliminasi Mutlak (7 Cols) -->
+<div class="lg:col-span-7 space-y-2.5">
+<h2 class="text-xs sm:text-sm font-bold text-slate-800">2. ATURAN ELIMINASI MUTLAK (HARD CONSTRAINTS)</h2>
+<div class="border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+<table class="w-full text-left text-xs border-collapse">
+<thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+<tr>
+<th class="py-2 px-3 font-semibold">Parameter</th>
+<th class="py-2 px-3 font-semibold">Bintara POLRI</th>
+<th class="py-2 px-3 font-semibold">Taruna AKPOL</th>
+<th class="py-2 px-3 font-semibold text-center">Hasil</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 text-slate-700">
+<tr class="hover:bg-slate-50/50">
+<td class="py-2.5 px-3 font-medium text-slate-800">Usia</td>
+<td class="py-2.5 px-3 text-[11px] text-slate-600">17 Thn 7 Bln s.d. 21 Thn 0 Bln</td>
+<td class="py-2.5 px-3 text-[11px] text-slate-600">Maksimal 21 Thn 0 Bln</td>
+<td class="py-2.5 px-3 text-center">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700">
+                      PASS ✓
+                    </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50">
+<td class="py-2.5 px-3 font-medium text-slate-800">Tinggi Badan (TB)</td>
+<td class="py-2.5 px-3 text-[11px] text-slate-600">Pria ≥ 165 cm | Wanita ≥ 160 cm</td>
+<td class="py-2.5 px-3 text-[11px] text-slate-600">Pria ≥ 165 cm | Wanita ≥ 160 cm</td>
+<td class="py-2.5 px-3 text-center">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700">
+                      PASS ✓
+                    </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50">
+<td class="py-2.5 px-3 font-medium text-slate-800">Indeks Massa Tubuh (BMI)</td>
+<td class="py-2.5 px-3 text-[11px] text-slate-600">19.0 ≤ BMI ≤ 26.0 (Ideal)</td>
+<td class="py-2.5 px-3 text-[11px] text-slate-600">19.0 ≤ BMI ≤ 26.0 (Ideal)</td>
+<td class="py-2.5 px-3 text-center">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700">
+                      PASS ✓
+                    </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50">
+<td class="py-2.5 px-3 font-medium text-slate-800 leading-tight">
+                    Visus / Kesehatan Mata
+                  </td>
+<td class="py-2.5 px-3 text-[10px] text-slate-600 leading-tight">
+                    Maksimal -1.50 s.d. -2.00<br/>
+<span class="text-slate-500">Buta Warna =</span> <strong class="text-slate-700">Auto TMS</strong>
+</td>
+<td class="py-2.5 px-3 text-[10px] text-slate-600 leading-tight">
+                    Visus 0 (Mata Normal Mutlak)<br/>
+<span class="text-slate-500">Buta Warna =</span> <strong class="text-slate-700">Auto TMS</strong>
+</td>
+<td class="py-2.5 px-3 text-center align-middle">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700">
+                      PASS ✓
+                    </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Sub-Section: Ambang Batas & Penetapan Skenario (5 Cols) -->
+<div class="lg:col-span-5 space-y-2.5">
+<h2 class="text-xs sm:text-sm font-bold text-slate-800">3. AMBANG BATAS &amp; PENETAPAN SKENARIO</h2>
+<div class="space-y-2 text-xs">
+<!-- Scenario Card 1: Hijau -->
+<div class="border border-emerald-200 bg-emerald-50/40 rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-2.5">
+<div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="space-y-0.5">
+<div class="font-bold text-emerald-800 leading-tight">
+                    SKENARIO HIJAU (MATCH)
+                  </div>
+<div class="text-[11px] text-slate-600 font-medium">
+                    N_DSS ≥ 75.00 &amp; Hard Pass
+                  </div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-right">
+<span class="text-slate-300 font-light">&gt;</span>
+<div class="text-[11px] text-slate-700 leading-tight">
+<span class="font-semibold text-slate-800">Disetujui di Jalur Target Utama.</span><br/>
+<span class="text-[10px] text-slate-500">Masuk Fast Track / Reguler / VVIP.</span>
+</div>
+</div>
+</div>
+<!-- Scenario Card 2: Kuning -->
+<div class="border border-amber-200 bg-amber-50/30 rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-2.5">
+<div class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs">
+                  !
+                </div>
+<div class="space-y-0.5">
+<div class="font-bold text-amber-800 leading-tight">
+                    SKENARIO KUNING (WARNING)
+                  </div>
+<div class="text-[11px] text-slate-600 font-medium">
+                    60.00 ≤ N_DSS &lt; 75.00 &amp; Hard Pass
+                  </div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-right">
+<span class="text-slate-300 font-light">&gt;</span>
+<div class="text-[11px] text-slate-700 leading-tight max-w-[190px]">
+                  Diterima dengan Surat Perjanjian Intervensi Khusus (Diet/Drill Intensif).
+                </div>
+</div>
+</div>
+<!-- Scenario Card 3: Merah -->
+<div class="border border-rose-200 bg-rose-50/30 rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-2.5">
+<div class="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs">
+                  ✕
+                </div>
+<div class="space-y-0.5">
+<div class="font-bold text-rose-800 leading-tight">
+                    SKENARIO MERAH (AUTO-PIVOT)
+                  </div>
+<div class="text-[11px] text-slate-600 font-medium">
+                    N_DSS &lt; 60.00 ATAU Hard Fail
+                  </div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-right">
+<span class="text-slate-300 font-light">&gt;</span>
+<div class="text-[11px] text-slate-700 leading-tight max-w-[190px]">
+                  Auto-Pivot: Rekomendasi Pengalihan ke Kedinasan Sipil (IPDN/STAN/BUMN).
+                </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: DualColumnRulesSection -->
+<!-- BEGIN: CatatanIntegrasiSection -->
+<section data-purpose="catatan-integrasi-dss">
+<h2 class="text-xs sm:text-sm font-bold text-slate-800 mb-2.5">4. CATATAN INTEGRASI DSS</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+<!-- Card 1 -->
+<div class="border border-slate-200 rounded-xl p-3 bg-white hover:border-slate-300 transition-colors shadow-xs">
+<div class="flex items-center gap-1.5 mb-1.5 text-slate-700 font-bold text-xs">
+<span class="text-blue-500">👤</span>
+<span>Psikologis Siswa</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+              Mitigasi demoralisasi &amp; mentoring, leaderboard anonim, growth-mindset tracking.
+            </p>
+</div>
+<!-- Card 2 -->
+<div class="border border-slate-200 rounded-xl p-3 bg-white hover:border-slate-300 transition-colors shadow-xs">
+<div class="flex items-center gap-1.5 mb-1.5 text-slate-700 font-bold text-xs">
+<span class="text-amber-500">📋</span>
+<span>Legalitas &amp; Orang Tua</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+              Transparansi via Parent Magic Link, disclaimer keputusan final panitia resmi, informed consent.
+            </p>
+</div>
+<!-- Card 3 -->
+<div class="border border-slate-200 rounded-xl p-3 bg-white hover:border-slate-300 transition-colors shadow-xs">
+<div class="flex items-center gap-1.5 mb-1.5 text-slate-700 font-bold text-xs">
+<span class="text-indigo-500">💻</span>
+<span>Infrastruktur IT NTT</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+              Offline-first (PWA + IndexedDB), hemat bandwidth, UI ringan untuk perangkat low-end.
+            </p>
+</div>
+<!-- Card 4 -->
+<div class="border border-slate-200 rounded-xl p-3 bg-white hover:border-slate-300 transition-colors shadow-xs">
+<div class="flex items-center gap-1.5 mb-1.5 text-slate-700 font-bold text-xs">
+<span class="text-rose-500">🎓</span>
+<span>Operasional &amp; Tentor</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+              Auto-reminder, rotasi jadwal, bank soal &amp; rubrik penilaian otomatis, kurangi repetisi pekerjaan.
+            </p>
+</div>
+<!-- Card 5 -->
+<div class="border border-slate-200 rounded-xl p-3 bg-white hover:border-slate-300 transition-colors shadow-xs">
+<div class="flex items-center gap-1.5 mb-1.5 text-slate-700 font-bold text-xs">
+<span class="text-teal-500">🏙️</span>
+<span>Inklusivitas Luar Kota</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+              Akses materi offline, jadwal fleksibel, opsi asrama/antar-jemput, biaya transparan.
+            </p>
+</div>
+</div>
+</section>
+<!-- END: CatatanIntegrasiSection -->
+</main>
+<!-- END: ModalContentBody -->
+<!-- BEGIN: ModalFooter -->
+<footer class="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between sticky bottom-0 z-20">
+<!-- Unduh Laporan PDF Button -->
+<button class="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 transition-colors shadow-xs" type="button">
+<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Unduh Laporan PDF</span>
+</button>
+<!-- Tutup Button -->
+<button class="px-6 py-2 border border-slate-300 text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 transition-colors shadow-xs" type="button">
+        Tutup
+      </button>
+</footer>
+<!-- END: ModalFooter -->
+</div>
+<!-- END: MainModalContainer -->
+</body></html>

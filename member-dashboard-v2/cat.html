@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CAT Exam Simulation - TWK Wawasan Kebangsaan</title>
+<!-- Load Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration for Game/Duolingo-style Palette -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            app: {
+              bg: '#1e293b',
+              panel: '#15212e',
+              border: '#2a3b4f'
+            },
+            game: {
+              green: '#22c55e',
+              greenDark: '#16a34a',
+              greenShadow: '#15803d',
+              blue: '#2563eb',
+              blueDark: '#1d4ed8',
+              blueShadow: '#1e40af',
+              navyBtn: '#245ca6',
+              navyShadow: '#163866',
+              yellow: '#f59e0b',
+              yellowDark: '#d97706',
+              yellowShadow: '#b45309',
+            }
+          },
+          fontFamily: {
+            sans: ['Nunito', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Google Fonts: Nunito for rounded friendly gamified UI typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Custom Styles for 3D Tactile Buttons & Elements -->
+<style data-purpose="tactile-ui-depth">
+    /* 3D push-down tactile button effects */
+    .btn-3d {
+      transition: all 0.1s ease-in-out;
+      position: relative;
+    }
+    .btn-3d:active {
+      transform: translateY(3px);
+    }
+
+    /* Primary Option Buttons (Chunky Navy Blue) */
+    .btn-option {
+      background: linear-gradient(180deg, #2b6cb0 0%, #1e528d 100%);
+      border: 2px solid #3c82ce;
+      box-shadow: 0 5px 0 #12345e, 0 8px 12px rgba(0, 0, 0, 0.35);
+    }
+    .btn-option:hover {
+      background: linear-gradient(180deg, #3178c6 0%, #225c9e 100%);
+    }
+    .btn-option:active {
+      box-shadow: 0 2px 0 #12345e, 0 3px 6px rgba(0, 0, 0, 0.35);
+      transform: translateY(3px);
+    }
+
+    /* Option Selected State */
+    .btn-option.selected {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      border-color: #34d399;
+      box-shadow: 0 5px 0 #065f46, 0 8px 12px rgba(6, 95, 70, 0.4);
+    }
+
+    /* Navigation Action Buttons */
+    .btn-action-blue {
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      border: 2px solid #60a5fa;
+      box-shadow: 0 5px 0 #1e3a8a, 0 7px 10px rgba(0, 0, 0, 0.3);
+    }
+    .btn-action-blue:active {
+      box-shadow: 0 2px 0 #1e3a8a;
+      transform: translateY(3px);
+    }
+
+    .btn-action-yellow {
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+      border: 2px solid #fbbf24;
+      box-shadow: 0 5px 0 #92400e, 0 7px 10px rgba(0, 0, 0, 0.3);
+    }
+    .btn-action-yellow:active {
+      box-shadow: 0 2px 0 #92400e;
+      transform: translateY(3px);
+    }
+
+    .btn-action-green {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      border: 2px solid #34d399;
+      box-shadow: 0 5px 0 #065f46, 0 7px 10px rgba(0, 0, 0, 0.3);
+    }
+    .btn-action-green:active {
+      box-shadow: 0 2px 0 #065f46;
+      transform: translateY(3px);
+    }
+
+    /* Palette Grid Pills */
+    .tile-done {
+      background: #10b981;
+      box-shadow: 0 3px 0 #047857;
+    }
+    .tile-flag {
+      background: #f59e0b;
+      box-shadow: 0 3px 0 #b45309;
+    }
+    .tile-unanswered {
+      background: #64748b;
+      box-shadow: 0 3px 0 #334155;
+    }
+    .tile-active {
+      background: #334155;
+      box-shadow: 0 0 0 3px #fbbf24, 0 4px 10px rgba(251, 191, 36, 0.45);
+      border: 2px dashed #fbbf24;
+    }
+  </style>
+<style data-purpose="custom-background">
+    /* Subtle background grid pattern replicating the game screen texture */
+    .game-viewport-bg {
+      background-color: #1a2536;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(34, 197, 94, 0.08) 0%, transparent 28%),
+        radial-gradient(circle at 90% 85%, rgba(59, 130, 246, 0.09) 0%, transparent 32%),
+        radial-gradient(rgba(255, 255, 255, 0.04) 1.5px, transparent 1.5px);
+      background-size: 100% 100%, 100% 100%, 28px 28px;
+    }
+  </style>
+</head>
+<body class="game-viewport-bg text-white font-sans min-h-screen flex flex-col justify-between select-none antialiased p-4 md:p-6 lg:p-8">
+<!-- BEGIN: Application Container -->
+<div class="max-w-6xl w-full mx-auto flex flex-col gap-6" data-purpose="exam-viewport-wrapper">
+<!-- BEGIN: TopBar Header -->
+<header class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center" data-purpose="top-status-header">
+<!-- Timer Pill (Left) -->
+<div class="flex items-center justify-center md:justify-start" data-purpose="timer-badge">
+<div class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-emerald-950/80 border-[3px] border-emerald-400 shadow-[0_4px_12px_rgba(16,185,129,0.3)]">
+<!-- Alarm clock icon -->
+<span class="text-xl leading-none flex items-center justify-center animate-pulse">⏰</span>
+<span class="font-black text-xl tracking-wider text-white drop-shadow-sm" id="timer-display">01:29:45</span>
+</div>
+</div>
+<!-- Center Progress Pill Container -->
+<div class="flex items-center justify-center" data-purpose="progress-badge">
+<div class="w-full max-w-xs bg-[#152338] border-[3px] border-[#2c476c] rounded-full px-3 py-2 flex items-center gap-3 shadow-inner">
+<!-- Mini Progress Bar -->
+<div class="w-24 h-4 bg-[#0a1320] rounded-full overflow-hidden p-0.5 border border-[#1f3757]">
+<div class="h-full bg-emerald-400 rounded-full w-1/4 shadow-[0_0_8px_#34d399]"></div>
+</div>
+<!-- Question Count with Golden Star -->
+<div class="flex items-center gap-1.5 text-sm font-extrabold tracking-wide text-white whitespace-nowrap">
+<span class="text-amber-400 text-base">⭐</span>
+<span>Soal 25 / 100</span>
+</div>
+</div>
+</div>
+<!-- Right Category Pill -->
+<div class="flex items-center justify-center md:justify-end" data-purpose="category-badge">
+<div class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#112d3b] border-[3px] border-[#1f736c] shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+<span class="text-lg leading-none">🏳️</span>
+<span class="font-black text-sm tracking-wide text-emerald-300">TWK - Wawasan Kebangsaan</span>
+</div>
+</div>
+</header>
+<!-- END: TopBar Header -->
+<!-- BEGIN: MainContent Area -->
+<main class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" data-purpose="main-exam-layout">
+<!-- LEFT COLUMN: Question & Answers & Bottom Nav (8 Cols) -->
+<section class="lg:col-span-8 flex flex-col gap-5" data-purpose="question-section">
+<!-- Large White Question Card -->
+<article class="bg-white text-slate-800 rounded-[28px] p-6 sm:p-8 md:p-9 shadow-[0_12px_32px_rgba(0,0,0,0.35)] border-4 border-slate-200/90 flex flex-col min-h-[460px] justify-between" data-purpose="question-card">
+<!-- Question Content -->
+<div class="space-y-4">
+<h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Pertanyaan 25:
+            </h2>
+<div class="text-base sm:text-lg md:text-xl font-bold text-slate-700 leading-relaxed space-y-2">
+<p>
+                💰 Menurut UUD 1945, kedaulatan berada di tangan rakyat dan dilaksanakan menurut Undang-Undang Dasar. 🏛️ Hal ini tercantum dalam pasal berapa?
+              </p>
+</div>
+</div>
+<!-- Answer Options Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-4" data-purpose="multiple-choice-options">
+<!-- Option A -->
+<button class="btn-option btn-3d rounded-2xl p-3 px-4 flex items-center gap-3.5 text-left group" onclick="selectOption(this)" type="button">
+<span class="w-10 h-10 rounded-full bg-amber-400 text-slate-900 font-black flex items-center justify-center text-lg shadow-md shrink-0 border-2 border-amber-300">
+                A
+              </span>
+<span class="text-white font-bold text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">
+                Pasal 1 ayat (1)
+              </span>
+</button>
+<!-- Option B -->
+<button class="btn-option btn-3d rounded-2xl p-3 px-4 flex items-center gap-3.5 text-left group" onclick="selectOption(this)" type="button">
+<span class="w-10 h-10 rounded-full bg-orange-500 text-white font-black flex items-center justify-center text-lg shadow-md shrink-0 border-2 border-orange-300">
+                B
+              </span>
+<span class="text-white font-bold text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">
+                Pasal 1 ayat (2)
+              </span>
+</button>
+<!-- Option C -->
+<button class="btn-option btn-3d rounded-2xl p-3 px-4 flex items-center gap-3.5 text-left group" onclick="selectOption(this)" type="button">
+<span class="w-10 h-10 rounded-full bg-emerald-500 text-white font-black flex items-center justify-center text-lg shadow-md shrink-0 border-2 border-emerald-300">
+                C
+              </span>
+<span class="text-white font-bold text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">
+                Pasal 1 ayat (3)
+              </span>
+</button>
+<!-- Option D -->
+<button class="btn-option btn-3d rounded-2xl p-3 px-4 flex items-center gap-3.5 text-left group" onclick="selectOption(this)" type="button">
+<span class="w-10 h-10 rounded-full bg-purple-500 text-white font-black flex items-center justify-center text-lg shadow-md shrink-0 border-2 border-purple-300">
+                D
+              </span>
+<span class="text-white font-bold text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">
+                Pasal 2 ayat (1)
+              </span>
+</button>
+<!-- Option E (Spans full width on small or follows grid) -->
+<button class="btn-option btn-3d rounded-2xl p-3 px-4 flex items-center gap-3.5 text-left group sm:col-span-1" onclick="selectOption(this)" type="button">
+<span class="w-10 h-10 rounded-full bg-pink-500 text-white font-black flex items-center justify-center text-lg shadow-md shrink-0 border-2 border-pink-300">
+                E
+              </span>
+<span class="text-white font-bold text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">
+                Pasal 2 ayat (2)
+              </span>
+</button>
+</div>
+</article>
+<!-- Bottom Action Bar -->
+<nav aria-label="Exam Question Controls" class="flex flex-wrap items-center justify-between gap-3 pt-2" data-purpose="exam-action-buttons">
+<!-- Previous Button -->
+<button class="btn-action-blue btn-3d px-6 py-3.5 rounded-2xl font-black text-white text-base flex items-center gap-2" onclick="handleNavigation('prev')" type="button">
+<span class="text-lg leading-none">❮</span>
+<span>Sebelumnya</span>
+</button>
+<!-- Doubtful / Flag Button -->
+<button class="btn-action-yellow btn-3d px-6 py-3.5 rounded-2xl font-black text-white text-base flex items-center gap-2" onclick="toggleRaguRagu()" type="button">
+<span class="text-lg leading-none">🚩</span>
+<span>Ragu-Ragu</span>
+</button>
+<!-- Next Button -->
+<button class="btn-action-green btn-3d px-7 py-3.5 rounded-2xl font-black text-white text-base flex items-center gap-2" onclick="handleNavigation('next')" type="button">
+<span>Selanjutnya</span>
+<span class="text-lg leading-none">❯</span>
+</button>
+</nav>
+</section>
+<!-- RIGHT COLUMN: Question Navigation Grid Palette (4 Cols) -->
+<aside class="lg:col-span-4" data-purpose="question-number-palette">
+<div class="bg-[#192638] border-[3px] border-[#293d59] rounded-[28px] p-5 shadow-[0_10px_25px_rgba(0,0,0,0.3)] flex flex-col gap-4">
+<!-- Palette Grid Header / Title (Subtle Indicator) -->
+<div class="flex items-center justify-between px-1 pb-1 border-b border-slate-700/50">
+<span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Nomor Soal</span>
+<div class="flex items-center gap-3 text-xs font-bold text-slate-300">
+<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 24</span>
+<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 3</span>
+<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span> 73</span>
+</div>
+</div>
+<!-- 5-Column Question Grid -->
+<div class="grid grid-cols-5 gap-2.5 sm:gap-3" data-purpose="palette-pill-list" id="number-palette-grid">
+<!-- Row 1 (1 to 5) -->
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">✓</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">2</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">3</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">4</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">✓</button>
+<!-- Row 2 (6 to 10 equivalent) -->
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">✓</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">8</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">9</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">10</button>
+<button class="tile-flag h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">12</button>
+<!-- Row 3 (13 to 17) -->
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">13</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">14</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">15</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">16</button>
+<button class="tile-flag h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">🚩</button>
+<!-- Row 4 (19 to 24) -->
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">19</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">20</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">21</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">22</button>
+<button class="tile-done h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">24</button>
+<!-- Row 5 (Active 25 and upcoming) -->
+<button class="tile-active h-10 rounded-xl font-black text-amber-300 text-sm flex items-center justify-center animate-pulse">25</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">26</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">27</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">28</button>
+<button class="tile-flag h-10 rounded-xl font-black text-white text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">🚩</button>
+<!-- Row 6 (30s range) -->
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">31</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">32</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">33</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">54</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">60</button>
+<!-- Row 7 (60s range) -->
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">61</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">62</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">63</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">64</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">70</button>
+<!-- Row 8 (70s & 80s range) -->
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">71</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">76</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">87</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">88</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">90</button>
+<!-- Row 9 (90s to 100) -->
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">95</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">96</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">97</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">98</button>
+<button class="tile-unanswered h-10 rounded-xl font-black text-white/90 text-sm flex items-center justify-center hover:brightness-110 active:translate-y-0.5">100</button>
+</div>
+</div>
+</aside>
+<!-- END: Question Navigation Grid Palette -->
+</main>
+<!-- END: MainContent Area -->
+</div>
+<!-- END: Application Container -->
+<!-- BEGIN: Interactive Handler Scripts -->
+<script data-purpose="exam-interactions">
+    // Interactive selection of answer options
+    function selectOption(selectedElement) {
+      const allOptions = document.querySelectorAll('.btn-option');
+      allOptions.forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      selectedElement.classList.add('selected');
+    }
+
+    // Toggle doubtful/ragu-ragu button state
+    function toggleRaguRagu() {
+      const activeTile = document.querySelector('.tile-active');
+      if (activeTile) {
+        if (activeTile.classList.contains('tile-flag')) {
+          activeTile.classList.remove('tile-flag');
+        } else {
+          activeTile.classList.add('tile-flag');
+        }
+      }
+    }
+
+    // Mock navigation handler
+    function handleNavigation(direction) {
+      console.log('Navigate to:', direction);
+    }
+
+    // Countdown Timer logic
+    let totalSeconds = 1 * 3600 + 29 * 60 + 45;
+    const timerElem = document.getElementById('timer-display');
+
+    setInterval(() => {
+      if (totalSeconds > 0) {
+        totalSeconds--;
+        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        if (timerElem) {
+          timerElem.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+      }
+    }, 1000);
+  </script>
+<!-- END: Interactive Handler Scripts -->
+</body></html>

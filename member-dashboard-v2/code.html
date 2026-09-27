@@ -1,0 +1,1060 @@
+<!DOCTYPE html><html lang="en" style=""><head></head><body class="bg-[#F4F7FC] font-sans text-slate-800 antialiased min-h-screen"><svg aria-hidden="true" class="inline-defs-container" style="position:absolute;width:0;height:0;overflow:hidden"></svg>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Lingora - Language Learning Dashboard</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans for Apple-like clean UI typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#F0F7FF',
+              100: '#E0EFFF',
+              200: '#B8DCFE',
+              400: '#38BDF8',
+              500: '#0284C7',
+              600: '#1D72FE',
+              700: '#155EEF',
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(148, 163, 184, 0.12)',
+            'card': '0 2px 12px rgba(100, 116, 139, 0.06)',
+            'float': '0 10px 25px -5px rgba(29, 114, 254, 0.3)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Style custom properties and fine-tuning -->
+<style data-purpose="custom-scrollbars">
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 0; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+    .animate-pulse-ring {
+      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+<!-- BEGIN: TabletBezelDevice -->
+<!-- Outer shell simulating the sleek iPad / Tablet enclosure from the reference -->
+<div class="w-full min-h-screen bg-[#F4F7FC] flex flex-col" data-purpose="tablet-device-frame">
+<!-- Top Tablet Camera & Sensor Dot -->
+<!-- Inner Screen Display Frame -->
+<div class="bg-[#F4F7FC] flex flex-col flex-1 min-h-screen w-full">
+<!-- Status Bar Area (Apple iPadOS Style) -->
+<!-- Main Three-Column Application Grid -->
+<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+<!-- BEGIN: LeftSidebar -->
+<aside class="lg:col-span-2 bg-[#F4F7FC] border-r border-slate-200/70 p-5 flex flex-col justify-between" data-purpose="primary-sidebar">
+<div class="space-y-6">
+<!-- Logo Branding -->
+<div class="flex items-center space-x-3 px-2 pt-1" data-purpose="app-branding">
+<!-- Bird Mascot Logo Icon -->
+<div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-400 to-blue-600 flex items-center justify-center shadow-md shadow-blue-500/25 relative flex-shrink-0">
+<svg class="w-8 h-8 drop-shadow-sm" viewBox="0 0 64 64">
+<circle cx="32" cy="32" fill="#38BDF8" r="28"></circle>
+<!-- Bird Eyes -->
+<circle cx="26" cy="28" fill="#FFFFFF" r="5"></circle>
+<circle cx="27.5" cy="28" fill="#0F172A" r="2.5"></circle>
+<circle cx="38" cy="28" fill="#FFFFFF" r="5"></circle>
+<circle cx="36.5" cy="28" fill="#0F172A" r="2.5"></circle>
+<!-- Yellow Beak -->
+<polygon fill="#F59E0B" points="29,33 35,33 32,39"></polygon>
+<!-- Aviator Scarf -->
+<path d="M20,44 C26,48 38,48 44,44 C42,50 22,50 20,44 Z" fill="#FBBF24"></path>
+</svg>
+</div>
+<div>
+<h1 class="font-extrabold text-xl tracking-tight text-slate-800 leading-none">ATOZIKA</h1>
+<p class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase mt-1">Member AREA</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="space-y-1.5 pt-2" data-purpose="sidebar-nav">
+<!-- Home (Active Item) -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl bg-blue-100/70 text-blue-600 font-bold transition" href="#">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Home</span>
+</a>
+<!-- Learn -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold transition group" href="#">
+<svg class="w-5 h-5 stroke-[2] text-slate-500 group-hover:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Learn</span>
+</a>
+<!-- Practice -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold transition group" href="#">
+<svg class="w-5 h-5 stroke-[2] text-slate-500 group-hover:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Practice</span>
+</a>
+<!-- Challenges -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold transition group" href="#">
+<svg class="w-5 h-5 stroke-[2] text-slate-500 group-hover:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Challenges</span>
+</a>
+<!-- Progress -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold transition group" href="#">
+<svg class="w-5 h-5 stroke-[2] text-slate-500 group-hover:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Progress</span>
+</a>
+<!-- Friends -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold transition group" href="#">
+<svg class="w-5 h-5 stroke-[2] text-slate-500 group-hover:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Friends</span>
+</a>
+<!-- Library -->
+<a class="flex items-center space-x-3.5 px-4 py-2.5 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold transition group" href="#">
+<svg class="w-5 h-5 stroke-[2] text-slate-500 group-hover:text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm">Library</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Section: Upgrade Card & User Bar -->
+<div class="space-y-4 pt-6" data-purpose="sidebar-bottom">
+<!-- Lingora Plus Card -->
+<div class="bg-gradient-to-b from-[#E7F2FF] to-[#D9EAFF] p-4 rounded-3xl border border-blue-200/60 shadow-sm relative overflow-hidden" data-purpose="premium-card">
+<div class="flex items-center space-x-2 mb-2">
+<div class="w-7 h-7 bg-amber-400/20 text-amber-500 rounded-xl flex items-center justify-center font-black">
+                  👑
+                </div>
+<span class="text-sm font-bold text-blue-950">ATOZIKA PRO</span>
+</div>
+<p class="text-[11px] text-slate-600 font-medium leading-relaxed mb-3">
+                Unlock all languages, stories and offline learning
+              </p>
+<button class="w-full bg-[#1D72FE] hover:bg-blue-600 active:scale-[0.98] text-white py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition duration-150">
+                Upgrade
+              </button>
+</div>
+<!-- User Mini Profile -->
+<div class="flex items-center justify-between pt-2 px-1 border-t border-slate-200/80">
+<div class="flex items-center space-x-2.5">
+<div class="relative w-9 h-9 rounded-full ring-2 ring-blue-500/30 overflow-hidden bg-amber-100 flex items-center justify-center">
+<!-- Alex Avatar SVG -->
+<svg class="w-full h-full" viewBox="0 0 36 36">
+<rect fill="#FDE68A" height="36" width="36"></rect>
+<circle cx="18" cy="14" fill="#78350F" r="7"></circle>
+<circle cx="18" cy="15" fill="#FCD34D" r="5.5"></circle>
+<path d="M18 20 C11 20 8 28 8 36 L28 36 C28 28 25 20 18 20 Z" fill="#3B82F6"></path>
+<circle cx="16" cy="15" fill="#1E293B" r="0.75"></circle>
+<circle cx="20" cy="15" fill="#1E293B" r="0.75"></circle>
+<path d="M17 18 Q18 19 19 18" fill="none" stroke="#1E293B" stroke-width="0.7"></path>
+</svg>
+</div>
+<div>
+<h4 class="text-xs font-bold text-slate-900 leading-tight">Alex</h4>
+<p class="text-[10px] text-slate-400 font-medium">Level 12</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-700 transition p-1.5 rounded-lg hover:bg-slate-200/50">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: MainContent -->
+<main class="lg:col-span-7 p-6 overflow-y-auto space-y-6 no-scrollbar" data-purpose="primary-feed">
+<!-- Search Bar -->
+<div class="relative w-full max-w-xl" data-purpose="search-header">
+<svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<input class="w-full pl-11 pr-4 py-2.5 bg-white/90 focus:bg-white text-xs sm:text-sm font-medium rounded-2xl border-none ring-1 ring-slate-200/80 focus:ring-2 focus:ring-blue-500 shadow-sm transition placeholder-slate-400 text-slate-700" placeholder="Cari materi..." type="text">
+</div>
+<!-- Hero Welcome Banner -->
+<section class="relative bg-gradient-to-r from-[#D7EEFF] via-[#E4F3FF] to-[#D5EDFF] rounded-[28px] p-7 overflow-hidden border border-blue-100 shadow-sm" data-purpose="welcome-hero-banner"><div class="absolute inset-0 pointer-events-none overflow-hidden select-none z-0"><svg class="w-full h-full" preserveAspectRatio="xMidYMid slice" viewBox="0 0 800 240" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="heroGradBook1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60A5FA" stop-opacity="0.4"></stop><stop offset="100%" stop-color="#2563EB" stop-opacity="0.55"></stop></linearGradient><linearGradient id="heroGradBook2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FDE68A" stop-opacity="0.6"></stop><stop offset="100%" stop-color="#F59E0B" stop-opacity="0.7"></stop></linearGradient><linearGradient id="heroGradBook3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#93C5FD" stop-opacity="0.5"></stop><stop offset="100%" stop-color="#3B82F6" stop-opacity="0.6"></stop></linearGradient><linearGradient id="heroGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"></stop><stop offset="100%" stop-color="#D7EEFF" stop-opacity="0"></stop></linearGradient></defs><circle cx="420" cy="120" r="140" fill="url(#heroGlow)"></circle><circle cx="620" cy="90" r="160" fill="#FFFFFF" fill-opacity="0.3"></circle><g opacity="0.45" transform="translate(350, 140) rotate(-6)"><rect x="0" y="45" width="130" height="22" rx="5" fill="url(#heroGradBook1)"></rect><rect x="4" y="50" width="12" height="12" rx="2" fill="#FFFFFF" fill-opacity="0.6"></rect><rect x="22" y="54" width="55" height="4" rx="2" fill="#FFFFFF" fill-opacity="0.5"></rect><rect x="10" y="24" width="118" height="20" rx="4" fill="url(#heroGradBook2)"></rect><path d="M112 24 L112 40 L118 34 L124 40 L124 24 Z" fill="#DC2626" fill-opacity="0.75"></path><rect x="18" y="32" width="45" height="4" rx="2" fill="#FFFFFF" fill-opacity="0.6"></rect><rect x="18" y="5" width="102" height="18" rx="4" fill="url(#heroGradBook3)"></rect><rect x="26" y="11" width="48" height="4" rx="2" fill="#FFFFFF" fill-opacity="0.7"></rect><g transform="translate(25, -28) rotate(12)"><path d="M0 16 C18 6 36 6 52 14 C68 6 86 6 104 16 L102 26 C85 18 68 18 52 24 C36 18 19 18 2 26 Z" fill="#FFFFFF" fill-opacity="0.85"></path><path d="M52 14 L52 24" stroke="#93C5FD" stroke-width="2" stroke-linecap="round"></path><path d="M52 14 Q56 26 59 34 L63 31 L67 36 Q61 24 52 14 Z" fill="#F59E0B" fill-opacity="0.85"></path><path d="M10 18 C22 13 36 13 46 18" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3" opacity="0.65"></path><path d="M58 18 C68 13 82 13 94 18" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3" opacity="0.65"></path></g></g><g opacity="0.35" transform="translate(260, 25) rotate(14)"><rect x="0" y="0" width="38" height="48" rx="5" fill="#FFFFFF" fill-opacity="0.75" stroke="#93C5FD" stroke-width="1.5"></rect><rect x="6" y="8" width="26" height="3" rx="1.5" fill="#3B82F6" fill-opacity="0.5"></rect><rect x="6" y="15" width="20" height="2.5" rx="1" fill="#94A3B8" fill-opacity="0.5"></rect><rect x="6" y="21" width="22" height="2.5" rx="1" fill="#94A3B8" fill-opacity="0.5"></rect><rect x="6" y="27" width="16" height="2.5" rx="1" fill="#94A3B8" fill-opacity="0.5"></rect><circle cx="27" cy="37" r="4" fill="#F59E0B" fill-opacity="0.7"></circle></g><g opacity="0.4" transform="translate(490, 30) rotate(-10)"><rect x="0" y="0" width="46" height="32" rx="4" fill="#FFFFFF" fill-opacity="0.6" stroke="#BFDBFE" stroke-width="1.5"></rect><path d="M23 4 L23 28" stroke="#93C5FD" stroke-width="1.5"></path><path d="M6 10 H18 M6 16 H16 M6 22 H18 M28 10 H40 M28 16 H38 M28 22 H36" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.4"></path></g><g opacity="0.6"><path d="M280 95 Q283 83 286 95 Q298 98 286 101 Q283 113 280 101 Q268 98 280 95 Z" fill="#FFFFFF"></path><path d="M485 70 Q487 62 489 70 Q497 72 489 74 Q487 82 485 74 Q477 72 485 70 Z" fill="#F59E0B"></path><path d="M330 38 Q331.5 32 333 38 Q339 39.5 333 41 Q331.5 47 330 41 Q324 39.5 330 38 Z" fill="#3B82F6" fill-opacity="0.7"></path><path d="M510 135 Q512 127 514 135 Q522 137 514 139 Q512 147 510 139 Q502 137 510 135 Z" fill="#FFFFFF" fill-opacity="0.8"></path><circle cx="245" cy="65" r="2" fill="#60A5FA" fill-opacity="0.6"></circle><circle cx="465" cy="110" r="2.5" fill="#FBBF24" fill-opacity="0.7"></circle><circle cx="365" cy="95" r="1.5" fill="#3B82F6" fill-opacity="0.5"></circle><circle cx="525" cy="55" r="2" fill="#FFFFFF" fill-opacity="0.7"></circle></g></svg></div>
+<!-- Learning Language Chip Floating Top-Right -->
+<div class="absolute top-5 right-6 z-20">
+<button class="flex items-center space-x-1.5 bg-white/90 hover:bg-white backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-sm text-xs font-bold text-slate-700 transition">
+<span class="text-sm">🇪🇸</span>
+<span class="">Learning Spanish</span>
+<svg class="w-3.5 h-3.5 text-slate-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+</div>
+<!-- Content Area Left -->
+<div class="relative z-10 max-w-sm space-y-3">
+<h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">Selamat Pagi,<br>
+<span class="text-[#1D72FE]">Alex!</span> <span class="inline-block transform origin-bottom hover:rotate-12 transition">👋</span>
+</h2>
+<p class="text-xs sm:text-sm text-slate-600 font-medium">
+                One lesson closer to<br>your next adventure!
+              </p>
+<div class="pt-2">
+<button class="bg-[#1D72FE] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full inline-flex items-center space-x-2 shadow-float hover:shadow-lg transition transform active:scale-95">
+<span class="">Continue Learning</span>
+<svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Hero Mascot & Landmark Illustration (Composite Vector SVG) -->
+<div class="absolute right-2 bottom-0 w-60 sm:w-72 h-full pointer-events-none flex items-end justify-end overflow-hidden z-10"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBx5CGiKnBGSgFMxblSE4qJvbE_0eA1n4QEME9jbf9UXDv-JTuTrPfrZSNCMu8-sq3iw0U71qRf0_XMO2TmdvvGgCeFXYJvpaVsbz45A9pq9zrwyQRmayMLrWWsvtfWoW0FeMRFqaRap5eZ8ela6Jh4FBYMcbO4EG6OHzJDDEXoR-xuUIeWRJQzLXWXuP4N5VddvAG_S0iNuY5X05iJC25Q40vI0uuAXptmPiB4VKDkZfRKdgI1nb5KsN-sD0cACFJtI5I" alt="ATOZIKA Owl Mascot" class="h-full w-auto max-h-[190px] sm:max-h-[220px] object-contain drop-shadow-md select-none transform hover:scale-105 transition duration-300"></div>
+</section><section class="bg-white rounded-3xl p-5 sm:p-6 shadow-soft border border-slate-100 space-y-4" data-purpose="study-streak-calendar">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="space-y-1">
+<div class="flex items-center space-x-2.5">
+<h3 class="font-extrabold text-base text-slate-800 tracking-tight">Kalender Belajar &amp; Streak</h3>
+<span class="inline-flex items-center space-x-1 bg-amber-50 border border-amber-200/60 text-amber-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
+<span class="">🔥</span>
+<span class="">4 Hari Berturut-turut</span>
+</span>
+</div>
+<p class="text-xs text-slate-400 font-semibold">Oktober 2024 • Minggu ke-3</p>
+</div>
+<div class="flex items-center space-x-2">
+<button class="px-3 py-1.5 rounded-xl bg-blue-50/90 text-[#1D72FE] text-xs font-bold hover:bg-blue-100 transition">Hari Ini</button>
+<div class="flex items-center space-x-1 bg-slate-100/80 p-1 rounded-xl">
+<button class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-white transition">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+<button class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-white transition">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-7 gap-2 pt-1">
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-blue-50/60 border border-blue-100 text-center transition hover:scale-105 cursor-pointer">
+<span class="text-[11px] font-bold text-slate-400">Sen</span>
+<span class="text-sm font-extrabold text-slate-700 mt-1">14</span>
+<div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black mt-2">✓</div>
+</div>
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-blue-50/60 border border-blue-100 text-center transition hover:scale-105 cursor-pointer">
+<span class="text-[11px] font-bold text-slate-400">Sel</span>
+<span class="text-sm font-extrabold text-slate-700 mt-1">15</span>
+<div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black mt-2">✓</div>
+</div>
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-blue-50/60 border border-blue-100 text-center transition hover:scale-105 cursor-pointer">
+<span class="text-[11px] font-bold text-slate-400">Rab</span>
+<span class="text-sm font-extrabold text-slate-700 mt-1">16</span>
+<div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black mt-2">✓</div>
+</div>
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-[#1D72FE] text-white shadow-md shadow-blue-500/25 text-center transition hover:scale-105 cursor-pointer relative">
+<span class="text-[11px] font-bold text-blue-100">Kam</span>
+<span class="text-sm font-extrabold mt-1">17</span>
+<div class="w-5 h-5 rounded-full bg-white text-[#1D72FE] flex items-center justify-center text-[10px] font-black mt-2">🔥</div>
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full ring-2 ring-white"></span>
+</div>
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 text-center transition hover:bg-white cursor-pointer">
+<span class="text-[11px] font-bold text-slate-400">Jum</span>
+<span class="text-sm font-bold text-slate-600 mt-1">18</span>
+<div class="w-5 h-5 rounded-full border-2 border-dashed border-slate-300 mt-2"></div>
+</div>
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 text-center transition hover:bg-white cursor-pointer">
+<span class="text-[11px] font-bold text-slate-400">Sab</span>
+<span class="text-sm font-bold text-slate-600 mt-1">19</span>
+<div class="w-5 h-5 rounded-full border-2 border-dashed border-slate-300 mt-2"></div>
+</div>
+<div class="flex flex-col items-center p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 text-center transition hover:bg-white cursor-pointer">
+<span class="text-[11px] font-bold text-slate-400">Min</span>
+<span class="text-sm font-bold text-slate-600 mt-1">20</span>
+<div class="w-5 h-5 rounded-full border-2 border-dashed border-slate-300 mt-2"></div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
+<div class="flex items-center space-x-2 text-xs font-semibold text-slate-600">
+<span class="text-sm">🎯</span>
+<span class="">Target harian: <strong class="text-slate-800 font-bold">15 / 20 menit</strong> tercapai hari ini</span>
+</div>
+<div class="flex items-center space-x-2 w-full sm:w-48">
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-[#1D72FE] rounded-full" style="width: 75%"></div>
+</div>
+<span class="text-[11px] font-bold text-[#1D72FE]">75%</span>
+</div>
+</div>
+</section>
+<!-- Continue Learning Section -->
+<section class="space-y-3" data-purpose="continue-learning-section">
+<div class="flex items-center justify-between">
+<h3 class="font-extrabold text-base text-slate-800 tracking-tight">Lanjut Belajar</h3>
+<a class="text-xs font-bold text-blue-600 hover:text-blue-700" href="#">See All</a>
+</div>
+<!-- Main Course Progress Card -->
+<div class="bg-white rounded-3xl p-4 sm:p-5 shadow-soft border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 transition hover:shadow-md">
+<div class="flex items-center space-x-4 w-full sm:w-auto">
+<!-- Lesson Thumbnail Image -->
+<div class="relative w-24 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-amber-50 shadow-inner">
+<!-- Vector Illustration of Spain Historic Palace Landmark -->
+<svg class="w-full h-full object-cover" viewBox="0 0 100 80">
+<rect fill="#E0F2FE" height="80" width="100"></rect>
+<circle cx="50" cy="70" fill="#FED7AA" r="45"></circle>
+<!-- Palace Arches & Spires -->
+<rect fill="#F97316" height="45" width="70" x="15" y="35"></rect>
+<polygon fill="#C2410C" points="15,35 22,20 28,35"></polygon>
+<polygon fill="#EA580C" points="45,30 50,15 55,30"></polygon>
+<polygon fill="#C2410C" points="72,35 78,20 85,35"></polygon>
+<!-- Moorish Arches -->
+<path d="M22,55 Q26,45 30,55 L30,70 L22,70 Z" fill="#7C2D12"></path>
+<path d="M46,50 Q50,40 54,50 L54,70 L46,70 Z" fill="#7C2D12"></path>
+<path d="M70,55 Q74,45 78,55 L78,70 L70,70 Z" fill="#7C2D12"></path>
+</svg>
+</div>
+<!-- Lesson Title & Progress Bar -->
+<div class="flex-1">
+<h4 class="font-bold text-sm sm:text-base text-slate-800">Travel Basics</h4>
+<p class="text-xs text-slate-400 font-semibold mb-3">Unit 2 • Lesson 3</p>
+<!-- Bar Progress -->
+<div class="flex items-center space-x-3 w-full sm:w-60">
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-[#1D72FE] rounded-full" style="width: 60%"></div>
+</div>
+<span class="text-xs font-bold text-slate-500">60%</span>
+</div>
+</div>
+</div>
+<!-- Start Button -->
+<button class="w-full sm:w-auto bg-[#1D72FE] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full inline-flex items-center justify-center space-x-2 shadow-sm transition active:scale-95 flex-shrink-0">
+<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+<path d="M8 5v14l11-7z"></path>
+</svg>
+<span class="">Start</span>
+</button>
+</div>
+</section>
+<!-- Build Your Skills 4 Cards Grid -->
+<section class="space-y-3" data-purpose="skills-grid-section">
+<h3 class="font-extrabold text-base text-slate-800 tracking-tight">Build Your Skills</h3>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+<!-- Listening Card -->
+<div class="bg-white p-3.5 rounded-2xl border border-slate-100/80 shadow-soft hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h4 class="font-bold text-xs sm:text-sm text-slate-800">Listening</h4>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-semibold mt-0.5">
+<span class="">12 lessons</span>
+<span class="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-500 transition">→</span>
+</div>
+</div>
+</div>
+<!-- Speaking Card -->
+<div class="bg-white p-3.5 rounded-2xl border border-slate-100/80 shadow-soft hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-500 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h4 class="font-bold text-xs sm:text-sm text-slate-800">Speaking</h4>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-semibold mt-0.5">
+<span class="">10 lessons</span>
+<span class="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-500 transition">→</span>
+</div>
+</div>
+</div>
+<!-- Vocabulary Card -->
+<div class="bg-white p-3.5 rounded-2xl border border-slate-100/80 shadow-soft hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-500 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h4 class="font-bold text-xs sm:text-sm text-slate-800">Vocabulary</h4>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-semibold mt-0.5">
+<span class="">24 lessons</span>
+<span class="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-500 transition">→</span>
+</div>
+</div>
+</div>
+<!-- Grammar Card -->
+<div class="bg-white p-3.5 rounded-2xl border border-slate-100/80 shadow-soft hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+<div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-105 transition">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h4 class="font-bold text-xs sm:text-sm text-slate-800">Grammar</h4>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-semibold mt-0.5">
+<span class="">18 lessons</span>
+<span class="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-500 transition">→</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Popular Languages Horizontal Carousel Section -->
+<section class="space-y-3" data-purpose="popular-languages-section">
+<div class="flex items-center justify-between">
+<h3 class="font-extrabold text-base text-slate-800 tracking-tight">Materi Populer</h3>
+<a class="text-xs font-bold text-blue-600 hover:text-blue-700" href="#">See All</a>
+</div>
+<div class="flex items-center space-x-3 overflow-x-auto pb-1 no-scrollbar">
+<!-- Spanish -->
+<div class="flex items-center space-x-2.5 bg-white px-3.5 py-2 rounded-2xl shadow-soft border border-slate-100 flex-shrink-0 cursor-pointer hover:border-blue-200 transition">
+<span class="text-lg">🇪🇸</span>
+<div>
+<p class="text-xs font-bold text-slate-800 leading-none">Spanish</p>
+<p class="text-[10px] font-semibold text-slate-400 mt-0.5">4.8 <span class="text-amber-400">★</span></p>
+</div>
+</div>
+<!-- French -->
+<div class="flex items-center space-x-2.5 bg-white px-3.5 py-2 rounded-2xl shadow-soft border border-slate-100 flex-shrink-0 cursor-pointer hover:border-blue-200 transition">
+<span class="text-lg">🇫🇷</span>
+<div>
+<p class="text-xs font-bold text-slate-800 leading-none">French</p>
+<p class="text-[10px] font-semibold text-slate-400 mt-0.5">4.9 <span class="text-amber-400">★</span></p>
+</div>
+</div>
+<!-- Japanese -->
+<div class="flex items-center space-x-2.5 bg-white px-3.5 py-2 rounded-2xl shadow-soft border border-slate-100 flex-shrink-0 cursor-pointer hover:border-blue-200 transition">
+<span class="text-lg">🇯🇵</span>
+<div>
+<p class="text-xs font-bold text-slate-800 leading-none">Japanese</p>
+<p class="text-[10px] font-semibold text-slate-400 mt-0.5">4.9 <span class="text-amber-400">★</span></p>
+</div>
+</div>
+<!-- German -->
+<div class="flex items-center space-x-2.5 bg-white px-3.5 py-2 rounded-2xl shadow-soft border border-slate-100 flex-shrink-0 cursor-pointer hover:border-blue-200 transition">
+<span class="text-lg">🇩🇪</span>
+<div>
+<p class="text-xs font-bold text-slate-800 leading-none">German</p>
+<p class="text-[10px] font-semibold text-slate-400 mt-0.5">4.8 <span class="text-amber-400">★</span></p>
+</div>
+</div>
+<!-- Italian -->
+<div class="flex items-center space-x-2.5 bg-white px-3.5 py-2 rounded-2xl shadow-soft border border-slate-100 flex-shrink-0 cursor-pointer hover:border-blue-200 transition">
+<span class="text-lg">🇮🇹</span>
+<div>
+<p class="text-xs font-bold text-slate-800 leading-none">Italian</p>
+<p class="text-[10px] font-semibold text-slate-400 mt-0.5">4.8 <span class="text-amber-400">★</span></p>
+</div>
+</div>
+<!-- Right Carousel Button -->
+<button class="w-8 h-8 rounded-full bg-white shadow-soft border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 flex-shrink-0 transition">
+<svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</section>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: RightSidebar -->
+<aside class="lg:col-span-3 bg-[#F4F7FC] border-l border-slate-200/70 p-6 flex flex-col justify-between space-y-6" data-purpose="secondary-sidebar">
+<!-- Top Stats Bar: Streak, Gems, Notifications -->
+<div class="flex items-center justify-end space-x-4 pt-1" data-purpose="user-quick-stats">
+<!-- Streak Flame -->
+<div class="flex items-center space-x-1.5 font-bold text-slate-700 text-xs">
+<span class="text-base">🔥</span>
+<span class="">12</span>
+</div>
+<!-- Gems Diamond -->
+<div class="flex items-center space-x-1.5 font-bold text-slate-700 text-xs">
+<span class="text-base text-sky-400">💎</span>
+<span class="">750</span>
+</div>
+<!-- Notification Bell Icon -->
+<button class="relative text-slate-600 hover:text-slate-900 transition p-1 rounded-full hover:bg-slate-200/50">
+<svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<!-- Alert dot -->
+<span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+</button>
+</div>
+<!-- Daily Goal Card Widget -->
+<div class="bg-white rounded-3xl p-5 shadow-soft border border-slate-100 space-y-4" data-purpose="daily-goal-widget">
+<div class="flex items-center justify-between">
+<h4 class="font-extrabold text-sm text-slate-800">Your Daily Goal</h4>
+<button class="text-xs font-bold text-blue-600 hover:text-blue-700 inline-flex items-center space-x-0.5">
+<span class="">Edit</span>
+<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+</div>
+<!-- Gauge + Message Row -->
+<div class="flex items-center space-x-4">
+<!-- Radial Progress Ring Gauge -->
+<div class="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
+<svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+<!-- Background circle track -->
+<path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<!-- Colored progress arc (75% filled) -->
+<path class="text-[#1D72FE]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="75, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<!-- Gauge Inner Data -->
+<div class="absolute flex flex-col items-center justify-center text-center">
+<span class="text-xs leading-none">🔥</span>
+<div class="text-[11px] font-black text-slate-800 leading-tight mt-0.5">15 <span class="text-slate-400 font-semibold text-[9px]">/ 20 min</span></div>
+<span class="text-[9px] text-slate-400 font-semibold leading-none">Today</span>
+</div>
+</div>
+<!-- Streak Motivational Text -->
+<div>
+<p class="text-xs font-bold text-slate-800">Great job!</p>
+<p class="text-[11px] text-slate-500 font-medium leading-snug mt-0.5">
+                  You're on a 4 day streak 🔥
+                </p>
+</div>
+</div>
+<!-- Weekly Tracker Badges -->
+<div class="flex items-center justify-between pt-1 border-t border-slate-50">
+<!-- Monday (Done) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full bg-[#1D72FE] text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                  ✓
+                </div>
+<span class="text-[10px] font-semibold text-slate-500">Mon</span>
+</div>
+<!-- Tuesday (Done) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full bg-[#1D72FE] text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                  ✓
+                </div>
+<span class="text-[10px] font-semibold text-slate-500">Tue</span>
+</div>
+<!-- Wednesday (Done) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full bg-[#1D72FE] text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                  ✓
+                </div>
+<span class="text-[10px] font-semibold text-slate-500">Wed</span>
+</div>
+<!-- Thursday (Done) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full bg-[#1D72FE] text-white flex items-center justify-center text-[10px] font-black shadow-xs">
+                  ✓
+                </div>
+<span class="text-[10px] font-semibold text-slate-500">Thu</span>
+</div>
+<!-- Friday (Upcoming) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center"></div>
+<span class="text-[10px] font-semibold text-slate-400">Fri</span>
+</div>
+<!-- Saturday (Upcoming) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center"></div>
+<span class="text-[10px] font-semibold text-slate-400">Sat</span>
+</div>
+<!-- Sunday (Upcoming) -->
+<div class="flex flex-col items-center space-y-1">
+<div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center"></div>
+<span class="text-[10px] font-semibold text-slate-400">Sun</span>
+</div>
+</div>
+</div>
+<!-- BEGIN: 3D Avatar & Body Stats Card -->
+<div class="bg-white rounded-3xl p-4 sm:p-5 shadow-soft border border-slate-100 space-y-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group" data-purpose="character-body-stats-card" id="avatarCardTrigger">
+<!-- Card Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-1.5">
+<span class="text-sm">✨</span>
+<h4 class="font-extrabold text-sm text-slate-800">Karakter &amp; Statistik Tubuh</h4>
+</div>
+<span class="inline-flex items-center text-[11px] font-bold text-[#1D72FE] bg-blue-50 px-2 py-0.5 rounded-full group-hover:bg-blue-100 transition">
+      Detail ↗
+    </span>
+</div>
+<!-- Character Visual Container -->
+<div class="relative bg-gradient-to-b from-sky-50 via-blue-50/60 to-indigo-50/40 rounded-2xl p-3 flex flex-col items-center justify-center overflow-hidden border border-blue-100/60">
+<!-- Ambient Radial Glow -->
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-200/40 via-transparent to-transparent pointer-events-none"></div>
+<!-- Level Badge Floating Top Left -->
+<div class="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-blue-100/80 shadow-xs flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+<span class="text-[10px] font-bold text-slate-700">89% Synergy</span>
+</div>
+<!-- 3D Character Illustration -->
+<div class="relative h-36 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+<img alt="Modern 3D character illustration of student Alex" class="h-36 w-auto object-contain drop-shadow-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCy2nN73ZunmhvSPsRVnQcXyIly3BqrSCAUghcK18k5JQ86nnM-KZkwOr2NZALlXzSIMMBKgfiioTePy44PR-XO0PslcefnWiD3sO6t0vtRJynWVnguxeWDElqpcrTVxFyyWIICLg0AMvGMOK8eNtWqlnub6Hjso0PND74V0pWX2bb9Mx1hVTZE9etA-6zH8qAGG5GHfBid9o7rxa1HqeNk87a-wVuknZ3TCWVqsSAa_lScml1-HO_IJA">
+</div>
+<div class="w-full text-center mt-1">
+<p class="text-xs font-bold text-slate-800">Alex • Learner Avatar</p>
+</div>
+</div>
+<!-- Quick Summary Stats Pills -->
+<div class="grid grid-cols-3 gap-1.5 pt-0.5">
+<div class="bg-slate-50 rounded-xl p-1.5 text-center border border-slate-100">
+<p class="text-[9px] font-bold text-slate-400 leading-none">🧠 Head</p>
+<p class="text-[11px] font-extrabold text-blue-600 mt-1">98%</p>
+<p class="text-[8px] font-semibold text-slate-500 truncate">Vocab Recall</p>
+</div>
+<div class="bg-slate-50 rounded-xl p-1.5 text-center border border-slate-100">
+<p class="text-[9px] font-bold text-slate-400 leading-none">✍️ Hands</p>
+<p class="text-[11px] font-extrabold text-purple-600 mt-1">1,420</p>
+<p class="text-[8px] font-semibold text-slate-500 truncate">Drills Selesai</p>
+</div>
+<div class="bg-slate-50 rounded-xl p-1.5 text-center border border-slate-100">
+<p class="text-[9px] font-bold text-slate-400 leading-none">👟 Feet</p>
+<p class="text-[11px] font-extrabold text-amber-500 mt-1">12-Day</p>
+<p class="text-[8px] font-semibold text-slate-500 truncate">Streak Pace</p>
+</div>
+</div>
+<!-- Modal Trigger Button -->
+<button class="w-full py-2 px-3 rounded-xl bg-blue-50 text-[#1D72FE] hover:bg-blue-600 hover:text-white text-xs font-bold flex items-center justify-center space-x-1.5 transition duration-150" type="button">
+<span class="">Buka Analisis Tubuh Belajar</span>
+<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M13 7l5 5m0 0l-5 5m5-5H6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- END: 3D Avatar & Body Stats Card -->
+<!-- Leaderboard Widget -->
+<div class="bg-white rounded-3xl p-5 shadow-soft border border-slate-100 flex-1 flex flex-col justify-between" data-purpose="leaderboard-widget">
+<div>
+<div class="flex items-center justify-between mb-3">
+<h4 class="font-extrabold text-sm text-slate-800">Leaderboard</h4>
+<button class="text-xs font-semibold text-slate-500 flex items-center space-x-1 hover:text-slate-800">
+<span class="">This Week</span>
+<svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Ranks List -->
+<div class="space-y-1.5">
+<!-- Rank 1: Sophie -->
+<div class="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition">
+<div class="flex items-center space-x-2.5">
+<span class="w-5 h-5 rounded-full bg-amber-400/20 text-amber-600 text-[11px] font-black flex items-center justify-center">1</span>
+<div class="w-7 h-7 rounded-full bg-orange-100 overflow-hidden flex items-center justify-center text-xs">
+                      👩🏼
+                    </div>
+<span class="text-xs font-bold text-slate-800 flex items-center space-x-1">
+<span class="">Sophie</span>
+<span class="text-[11px]">👑</span>
+</span>
+</div>
+<span class="text-xs font-bold text-slate-500">3,420 XP</span>
+</div>
+<!-- Rank 2: You (Highlighted Card) -->
+<div class="flex items-center justify-between p-2 rounded-2xl bg-blue-50/90 border border-blue-200/50 shadow-xs">
+<div class="flex items-center space-x-2.5">
+<span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-[11px] font-black flex items-center justify-center">2</span>
+<div class="w-7 h-7 rounded-full bg-blue-200 overflow-hidden flex items-center justify-center text-xs">
+                      👦🏻
+                    </div>
+<span class="text-xs font-extrabold text-blue-700">You</span>
+</div>
+<span class="text-xs font-extrabold text-blue-700">3,150 XP</span>
+</div>
+<!-- Rank 3: Daniel -->
+<div class="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition">
+<div class="flex items-center space-x-2.5">
+<span class="w-5 h-5 rounded-full bg-amber-700/10 text-amber-800 text-[11px] font-black flex items-center justify-center">3</span>
+<div class="w-7 h-7 rounded-full bg-amber-100 overflow-hidden flex items-center justify-center text-xs">
+                      👦🏽
+                    </div>
+<span class="text-xs font-semibold text-slate-700">Daniel</span>
+</div>
+<span class="text-xs font-bold text-slate-400">2,980 XP</span>
+</div>
+<!-- Rank 4: Maya -->
+<div class="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition">
+<div class="flex items-center space-x-2.5">
+<span class="w-5 text-center text-slate-400 text-xs font-bold">4</span>
+<div class="w-7 h-7 rounded-full bg-rose-100 overflow-hidden flex items-center justify-center text-xs">
+                      👩🏾
+                    </div>
+<span class="text-xs font-semibold text-slate-700">Maya</span>
+</div>
+<span class="text-xs font-bold text-slate-400">2,760 XP</span>
+</div>
+<!-- Rank 5: Liam -->
+<div class="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition">
+<div class="flex items-center space-x-2.5">
+<span class="w-5 text-center text-slate-400 text-xs font-bold">5</span>
+<div class="w-7 h-7 rounded-full bg-emerald-100 overflow-hidden flex items-center justify-center text-xs">
+                      👱🏻‍♂️
+                    </div>
+<span class="text-xs font-semibold text-slate-700">Liam</span>
+</div>
+<span class="text-xs font-bold text-slate-400">2,540 XP</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Milestone Gamification Reward Card -->
+<div class="bg-gradient-to-r from-[#D7EEFF] to-[#E3F2FD] rounded-3xl p-4 border border-blue-200/70 shadow-soft relative overflow-hidden" data-purpose="reward-milestone-card">
+<div class="flex items-center space-x-3">
+<!-- 3D Gift Box Vector Illustration -->
+<div class="w-14 h-14 flex-shrink-0 relative">
+<svg class="w-full h-full drop-shadow-md" viewBox="0 0 80 80">
+<defs>
+<linearGradient id="giftBox" x1="0" x2="1" y1="0" y2="1">
+<stop offset="0%" stop-color="#8B5CF6"></stop>
+<stop offset="100%" stop-color="#6D28D9"></stop>
+</linearGradient>
+<linearGradient id="ribbon" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#FDE047"></stop>
+<stop offset="100%" stop-color="#EAB308"></stop>
+</linearGradient>
+</defs>
+<!-- Magic Sparks -->
+<polygon fill="#38BDF8" points="12,18 15,22 19,25 15,28 12,32 9,28 5,25 9,22"></polygon>
+<polygon fill="#F59E0B" points="70,25 72,28 75,30 72,32 70,35 68,32 65,30 68,28"></polygon>
+<!-- Box Body -->
+<path d="M18,34 L40,46 L40,72 L18,58 Z" fill="#7C3AED"></path>
+<path d="M40,46 L62,34 L62,58 L40,72 Z" fill="#6D28D9"></path>
+<path d="M18,34 L40,22 L62,34 L40,46 Z" fill="#8B5CF6"></path>
+<!-- Gold Ribbons -->
+<path d="M38,45 L42,47 L42,71 L38,69 Z" fill="url(#ribbon)"></path>
+<path d="M18,34 L40,46 L40,40 L21,30 Z" fill="url(#ribbon)" opacity="0.8"></path>
+<path d="M40,46 L62,34 L59,30 L40,40 Z" fill="url(#ribbon)" opacity="0.8"></path>
+<!-- Ribbon Bow -->
+<circle cx="40" cy="23" fill="#EAB308" r="5"></circle>
+<path d="M34,16 Q40,23 37,25 Q32,23 34,16 Z" fill="url(#ribbon)"></path>
+<path d="M46,16 Q40,23 43,25 Q48,23 46,16 Z" fill="url(#ribbon)"></path>
+</svg>
+</div>
+<!-- Message -->
+<div class="flex-1 pr-1">
+<p class="text-[11px] font-bold text-slate-700 leading-snug">
+                  Complete 5 more lessons to unlock
+                </p>
+<h5 class="text-xs font-black text-slate-900 tracking-tight">Travel Story!</h5>
+</div>
+</div>
+<!-- Milestone Progress Indicator -->
+<div class="flex items-center justify-between mt-3 pt-2">
+<div class="flex items-center space-x-2 flex-1 mr-3">
+<div class="h-2 w-full bg-white/80 rounded-full overflow-hidden">
+<div class="h-full bg-[#1D72FE] rounded-full" style="width: 60%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500 whitespace-nowrap">3 / 5</span>
+</div>
+<button class="w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition">
+<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: RightSidebar -->
+</div>
+</div>
+</div>
+<!-- END: TabletBezelDevice -->
+<!-- BEGIN: Interactive Head-to-Toe Body Stats Modal -->
+<div aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none" id="statsModal" role="dialog">
+<!-- Modal Card -->
+<div class="bg-white rounded-[32px] shadow-2xl border border-slate-100 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden transform transition-transform duration-300 scale-95" id="modalBox">
+<!-- Modal Header -->
+<div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-[#F8FAFF] via-white to-[#F0F7FF] flex-shrink-0">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25">
+<span class="text-lg">🧬</span>
+</div>
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Statistik Belajar: Head-to-Toe Analysis</h3>
+<span class="bg-blue-100 text-blue-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">89% Synergy</span>
+</div>
+<p class="text-xs text-slate-500 font-medium">Siswa: <span class="font-bold text-slate-800">Alex (Level 12)</span> • Diagnostik Kapasitas Kognitif &amp; Kebiasaan</p>
+</div>
+</div>
+<button aria-label="Tutup modal" class="w-9 h-9 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition" id="closeModalBtn">
+<svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Modal Scrollable Body -->
+<div class="p-6 overflow-y-auto space-y-6 no-scrollbar">
+<!-- Main 2-Column Grid: Character Diagram on Left, Zone Metric Details on Right -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+<!-- Left: Interactive Character Diagram with Hotspots -->
+<div class="md:col-span-5 bg-gradient-to-b from-blue-50/80 via-sky-50/40 to-slate-50 rounded-3xl p-5 border border-blue-100 relative flex flex-col items-center justify-center overflow-hidden">
+<div class="w-full flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+<span class="flex items-center space-x-1">
+<span class="w-2 h-2 rounded-full bg-blue-600"></span>
+<span class="">5 Zona Aktif</span>
+</span>
+<span class="text-[11px] text-blue-600 bg-white/90 px-2 py-0.5 rounded-full shadow-xs">Full Diagnostic</span>
+</div>
+<!-- Character Display with Hotspot Overlays -->
+<div class="relative w-full max-w-[260px] aspect-[3/4] flex items-center justify-center">
+<img alt="Alex 3D Model with Hotspots" class="w-full h-full object-contain drop-shadow-lg select-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCy2nN73ZunmhvSPsRVnQcXyIly3BqrSCAUghcK18k5JQ86nnM-KZkwOr2NZALlXzSIMMBKgfiioTePy44PR-XO0PslcefnWiD3sO6t0vtRJynWVnguxeWDElqpcrTVxFyyWIICLg0AMvGMOK8eNtWqlnub6Hjso0PND74V0pWX2bb9Mx1hVTZE9etA-6zH8qAGG5GHfBid9o7rxa1HqeNk87a-wVuknZ3TCWVqsSAa_lScml1-HO_IJA">
+<!-- Hotspot 1: Head / Otak (around top head, y: 15%, x: 50%) -->
+<div class="absolute top-[12%] left-[48%] -translate-x-1/2 group cursor-pointer">
+<span class="absolute -inset-2 bg-sky-400 rounded-full animate-pulse-ring pointer-events-none"></span>
+<div class="w-6 h-6 rounded-full bg-[#1D72FE] text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white shadow-md">
+                1
+              </div>
+<div class="absolute left-7 top-0 hidden group-hover:flex whitespace-nowrap bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg z-30">
+                Otak &amp; Memori: 96%
+              </div>
+</div>
+<!-- Hotspot 2: Headphones / Telinga (around y: 22%, x: 74%) -->
+<div class="absolute top-[20%] right-[16%] group cursor-pointer">
+<span class="absolute -inset-2 bg-emerald-400 rounded-full animate-pulse-ring pointer-events-none"></span>
+<div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white shadow-md">
+                2
+              </div>
+<div class="absolute right-7 top-0 hidden group-hover:flex whitespace-nowrap bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg z-30">
+                Audio Pitch: 94%
+              </div>
+</div>
+<!-- Hotspot 3: Torso / Chest (around y: 44%, x: 50%) -->
+<div class="absolute top-[42%] left-[50%] -translate-x-1/2 group cursor-pointer">
+<span class="absolute -inset-2 bg-indigo-400 rounded-full animate-pulse-ring pointer-events-none"></span>
+<div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white shadow-md">
+                3
+              </div>
+<div class="absolute left-7 top-0 hidden group-hover:flex whitespace-nowrap bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg z-30">
+                Stamina: 24 min/hari
+              </div>
+</div>
+<!-- Hotspot 4: Hands (around y: 52%, x: 24%) -->
+<div class="absolute top-[50%] left-[20%] group cursor-pointer">
+<span class="absolute -inset-2 bg-purple-400 rounded-full animate-pulse-ring pointer-events-none"></span>
+<div class="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white shadow-md">
+                4
+              </div>
+<div class="absolute left-7 top-0 hidden group-hover:flex whitespace-nowrap bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg z-30">
+                Grammar: 340 Drills
+              </div>
+</div>
+<!-- Hotspot 5: Feet (around y: 88%, x: 50%) -->
+<div class="absolute bottom-[8%] left-[50%] -translate-x-1/2 group cursor-pointer">
+<span class="absolute -inset-2 bg-amber-400 rounded-full animate-pulse-ring pointer-events-none"></span>
+<div class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white shadow-md">
+                5
+              </div>
+<div class="absolute left-7 top-0 hidden group-hover:flex whitespace-nowrap bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg z-30">
+                Streak: 12 Hari
+              </div>
+</div>
+</div>
+<!-- Interactive Tip Bar -->
+<div class="mt-2 text-center text-[11px] font-medium text-slate-500 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-blue-100">
+            💡 Sorot atau klik penanda bernomor untuk eksplorasi metrik tubuh
+          </div>
+</div>
+<!-- Right: 5 Zone Detailed Breakdown Cards -->
+<div class="md:col-span-7 space-y-3">
+<!-- Zone 1: Kepala / Head -->
+<div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-blue-200 transition">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center space-x-2">
+<span class="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 text-xs font-extrabold flex items-center justify-center">1</span>
+<span class="text-sm font-extrabold text-slate-800">Kepala • Brain Memory &amp; Retention</span>
+</div>
+<span class="text-xs font-black text-blue-600">96% Retention</span>
+</div>
+<p class="text-xs text-slate-500 leading-relaxed">
+<strong class="text-slate-700">842 Kosakata Aktif</strong> tersimpan dengan metode Spaced Repetition. Daya ingat jangka panjang mencapai tingkat prima (18 jam akumulasi listening).
+            </p>
+<div class="mt-2 flex items-center space-x-2">
+<div class="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-[#1D72FE] rounded-full" style="width: 96%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">Target: 1.000 kata</span>
+</div>
+</div>
+<!-- Zone 2: Telinga / Headphones -->
+<div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-emerald-200 transition">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center space-x-2">
+<span class="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-extrabold flex items-center justify-center">2</span>
+<span class="text-sm font-extrabold text-slate-800">Telinga • Auditory Pronunciation</span>
+</div>
+<span class="text-xs font-black text-emerald-600">94% Akurasi Pitch</span>
+</div>
+<p class="text-xs text-slate-500 leading-relaxed">
+              Telah menyelesaikan <strong class="text-slate-700">32 Sesi Listening Blitz</strong> dengan rekognisi aksen penutur asli Spanyol sangat tajam dan presisi intonasi tinggi.
+            </p>
+<div class="mt-2 flex items-center space-x-2">
+<div class="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 rounded-full" style="width: 94%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">Level: Natural Tone</span>
+</div>
+</div>
+<!-- Zone 3: Dada / Torso -->
+<div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-indigo-200 transition">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center space-x-2">
+<span class="w-5 h-5 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-extrabold flex items-center justify-center">3</span>
+<span class="text-sm font-extrabold text-slate-800">Dada • Learning Stamina &amp; Capacity</span>
+</div>
+<span class="text-xs font-black text-indigo-600">Konsistensi 92%</span>
+</div>
+<p class="text-xs text-slate-500 leading-relaxed">
+              Daya tahan belajar rata-rata <strong class="text-slate-700">24 menit/hari</strong> (melampaui target 20 menit). Menghasilkan <strong class="text-slate-700">450 XP</strong> hari ini tanpa penurunan fokus.
+            </p>
+<div class="mt-2 flex items-center space-x-2">
+<div class="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-indigo-500 rounded-full" style="width: 92%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">24 / 20 min</span>
+</div>
+</div>
+<!-- Zone 4: Tangan / Hands -->
+<div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-purple-200 transition">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center space-x-2">
+<span class="w-5 h-5 rounded-lg bg-purple-100 text-purple-700 text-xs font-extrabold flex items-center justify-center">4</span>
+<span class="text-sm font-extrabold text-slate-800">Tangan • Writing &amp; Grammar Dexterity</span>
+</div>
+<span class="text-xs font-black text-purple-600">3.2 dtk / Soal</span>
+</div>
+<p class="text-xs text-slate-500 leading-relaxed">
+              Kecepatan eksekusi ketik dan konjugasi kata kerja tinggi. Total <strong class="text-slate-700">340 Latihan Tata Bahasa Selesai</strong> dengan tingkat eror di bawah 4%.
+            </p>
+<div class="mt-2 flex items-center space-x-2">
+<div class="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-purple-500 rounded-full" style="width: 88%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">Speed: Fast</span>
+</div>
+</div>
+<!-- Zone 5: Kaki / Feet -->
+<div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-amber-200 transition">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center space-x-2">
+<span class="w-5 h-5 rounded-lg bg-amber-100 text-amber-700 text-xs font-extrabold flex items-center justify-center">5</span>
+<span class="text-sm font-extrabold text-slate-800">Kaki • Pace &amp; Consistency Track</span>
+</div>
+<span class="text-xs font-black text-amber-600">12-Day Streak</span>
+</div>
+<p class="text-xs text-slate-500 leading-relaxed">
+              Langkah belajar tanpa putus selama <strong class="text-slate-700">12 Hari Berturut-turut</strong>. Telah membuka <strong class="text-slate-700">4 Zona Wilayah Wisata Spanyol</strong> pada peta perjalanan.
+            </p>
+<div class="mt-2 flex items-center space-x-2">
+<div class="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-amber-500 rounded-full" style="width: 80%"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400">Milestone: 14 Hari</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Training Recommendation Banner -->
+<div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-base shadow-sm">
+            🎯
+          </div>
+<div>
+<h5 class="text-xs font-black text-slate-900 tracking-tight">Rekomendasi Latihan Personalisasi</h5>
+<p class="text-xs text-slate-600 mt-0.5">
+              Fokus berikutnya: <strong class="text-blue-700 font-bold">Tingkatkan akurasi pengucapan di modul Speaking</strong> untuk menyempurnakan sinergi tubuh ke 95%.
+            </p>
+</div>
+</div>
+<button class="bg-[#1D72FE] hover:bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition active:scale-95 whitespace-nowrap self-start sm:self-auto" id="modalActionBtn">
+          Mulai Latihan Speaking
+        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- END: Interactive Head-to-Toe Body Stats Modal -->
+<!-- Vanilla JavaScript for Modal Interaction -->
+<script>
+  (function() {
+    const trigger = document.getElementById('avatarCardTrigger');
+    const modal = document.getElementById('statsModal');
+    const modalBox = document.getElementById('modalBox');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const actionBtn = document.getElementById('modalActionBtn');
+
+    function openModal() {
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-95');
+      modalBox.classList.add('scale-100');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeModal() {
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modalBox.classList.add('scale-95');
+      modalBox.classList.remove('scale-100');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    if (trigger) trigger.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (actionBtn) actionBtn.addEventListener('click', closeModal);
+
+    // Close when clicking outside modal box
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    }
+
+    // Close on Escape key
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modal && !modal.classList.contains('pointer-events-none')) {
+        closeModal();
+      }
+    });
+  })();
+</script>
+
+
+
+
+
+
+</body></html>

@@ -1,0 +1,21 @@
+{
+  "name": "ATOZIKA",
+  "short_name": "ATOZIKA",
+  "start_url": "/",
+  "display": "standalone",
+  "description": "Akademi Taktis Optimasi Zona Integritas, Kepemimpinan & Aparatur. Menempa Intelektual, Mengunci Kelulusan.",
+  "background_color": "#070b12",
+  "theme_color": "#070b12",
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
