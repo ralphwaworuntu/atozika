@@ -120,20 +120,10 @@ func (h *Handler) TryoutDetail(c *fiber.Ctx) error {
 		return err
 	}
 	qs := shuffle(t.Questions)
-	for i := range qs {
-		opts := make([]fiber.Map, 0, len(qs[i].Options))
-		for _, o := range shuffle(qs[i].Options) {
-			opts = append(opts, fiber.Map{"id": o.ID, "label": o.Label, "imageUrl": o.ImageURL})
-		}
-		qs[i].Options = nil
-		// rebuild as anonymous via map later
-		_ = opts
-	}
 	qOut := []fiber.Map{}
 	for _, q := range qs {
 		opts := []fiber.Map{}
-		shuffled := shuffle(q.Options)
-		for _, o := range shuffled {
+		for _, o := range shuffle(q.Options) {
 			opts = append(opts, fiber.Map{"id": o.ID, "label": o.Label, "imageUrl": o.ImageURL})
 		}
 		qOut = append(qOut, fiber.Map{

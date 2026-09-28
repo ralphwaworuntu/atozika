@@ -31,9 +31,10 @@ export function ExamQuestionOptions({
   onSelectSingle,
   onToggleMulti,
 }: ExamQuestionOptionsProps) {
+  const choices = options ?? [];
   return (
     <>
-      {options.map((option, index) => {
+      {choices.map((option, index) => {
         const letter = String.fromCharCode(65 + index);
         const active = selectedIds.includes(option.id);
         return (
