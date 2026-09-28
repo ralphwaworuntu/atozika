@@ -19,6 +19,7 @@ import { AnnouncementsPage } from '@/pages/dashboard/AnnouncementsPage';
 import { MemberProfilePage } from '@/pages/dashboard/MemberProfilePage';
 import { NewsPage } from '@/pages/dashboard/NewsPage';
 import { CalculatorPage } from '@/pages/dashboard/CalculatorPage';
+import { TryoutPage } from '@/pages/dashboard/TryoutPage';
 import { TryoutCategoriesPage } from '@/pages/dashboard/TryoutCategoriesPage';
 import { TryoutSubCategoriesPage } from '@/pages/dashboard/TryoutSubCategoriesPage';
 import { TryoutListPage } from '@/pages/dashboard/TryoutListPage';
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="latihan/tryout" element={<TryoutCategoriesPage />} />
           <Route path="latihan/tryout/kategori/:categoryId" element={<TryoutSubCategoriesPage />} />
           <Route path="latihan/tryout/kategori/:categoryId/sub/:subCategoryId" element={<TryoutListPage />} />
+          <Route path="latihan/tryout/mulai" element={<TryoutPage />} />
           <Route path="latihan/tryout/detail/:slug" element={<TryoutDetailPage />} />
           <Route path="latihan/tryout/riwayat" element={<TryoutHistoryPage />} />
           <Route path="latihan/tryout/review/:resultId" element={<TryoutReviewPage />} />

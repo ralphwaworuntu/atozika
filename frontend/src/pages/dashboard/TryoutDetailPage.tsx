@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
 import { getAssetUrl } from '@/lib/media';
 import type { Tryout } from '@/types/exam';
+import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { getPsikoSequenceBySubCategory, isPolriPsikoTryout } from '@/utils/tryoutPackage';
@@ -103,6 +104,20 @@ export function TryoutDetailPage() {
     ...(isPsikoPackage ? [{ label: 'Waktu Akses Berakhir Paket', value: formatDateTime(packageHeadTryout?.closeAt) }] : []),
   ];
 
+  const handleStart = () => {
+    if (!packageHeadTryout || !status.canStart) return;
+    if (!hasActiveMembership && !packageIsFree) {
+      toast.error('Aktifkan paket untuk mulai tryout.');
+      return;
+    }
+    navigate('/app/latihan/tryout/mulai', {
+      state: {
+        startTryoutSlug: packageHeadTryout.slug,
+        returnTo: `/app/latihan/tryout/kategori/${data.subCategory.category.id}/sub/${data.subCategory.id}`,
+      },
+    });
+  };
+
   const cover = getAssetUrl(data.coverImageUrl);
 
   return (
@@ -123,6 +138,14 @@ export function TryoutDetailPage() {
             className="inline-flex items-center rounded-full bg-slate-100 px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 active:scale-95 dark:bg-white/10 dark:text-ink-50"
           >
             Kembali
+          </button>
+          <button
+            type="button"
+            onClick={handleStart}
+            disabled={!status.canStart}
+            className="inline-flex items-center rounded-full bg-member-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-member-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status.canStart ? (isPsikoPackage ? 'Mulai Paket Soal' : 'Mulai Tryout') : status.label}
           </button>
         </div>
       </div>
