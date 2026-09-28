@@ -260,26 +260,33 @@ export function TryoutPage() {
 
   if (tryoutBlock && !session) {
     return (
-      <section className="member-card space-y-4 p-6">
-        <p className="text-sm font-extrabold text-rose-600">Akses tryout diblokir.</p>
-        <p className="text-sm text-slate-600">
-          Kamu meninggalkan layar penuh atau berpindah jendela. Masukkan kode buka blokir dari admin untuk mengerjakan lagi.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Input
-            placeholder="Kode 6 digit"
-            value={unlockCode}
-            onChange={(event) => setUnlockCode(event.target.value)}
-            className="max-w-xs"
-          />
-          <Button onClick={() => unlockMutation.mutate(unlockCode)} disabled={unlockMutation.isPending || unlockCode.trim().length < 4}>
-            Buka blokir
-          </Button>
-          <Button variant="outline" onClick={goBack}>
-            Kembali
-          </Button>
-        </div>
-      </section>
+      <div className="grid items-stretch gap-4 md:grid-cols-2">
+        <section className="member-card space-y-4 p-6">
+          <p className="text-sm font-extrabold text-rose-600">Akses tryout diblokir.</p>
+          <p className="text-sm text-slate-600">
+            Kamu meninggalkan layar penuh atau berpindah jendela. Masukkan kode buka blokir dari admin untuk mengerjakan lagi.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Input
+              placeholder="Kode 6 digit"
+              value={unlockCode}
+              onChange={(event) => setUnlockCode(event.target.value)}
+              className="max-w-xs"
+            />
+            <Button onClick={() => unlockMutation.mutate(unlockCode)} disabled={unlockMutation.isPending || unlockCode.trim().length < 4}>
+              Buka blokir
+            </Button>
+            <Button variant="outline" onClick={goBack}>
+              Kembali
+            </Button>
+          </div>
+        </section>
+        <aside className="member-card flex flex-col justify-center p-6">
+          <p className="text-[10px] font-bold uppercase text-slate-400">Kode buka blokir</p>
+          <p className="mt-1 text-[11px] font-semibold text-slate-400">Ditampilkan hanya untuk masa testing.</p>
+          <p className="mt-3 text-3xl font-extrabold tracking-widest text-member-600">{tryoutBlock.code || '—'}</p>
+        </aside>
+      </div>
     );
   }
 

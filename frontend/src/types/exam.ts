@@ -294,6 +294,7 @@ export type ExamBlock = {
   id: string;
   type: 'TRYOUT' | 'PRACTICE' | 'CERMAT';
   reason?: string | null;
+  code?: string;
   blockedAt: string;
   violationCount: number;
 };
