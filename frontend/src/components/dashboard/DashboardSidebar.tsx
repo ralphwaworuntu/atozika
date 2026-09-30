@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
@@ -23,7 +23,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
-import { dashboardMenu } from '@/constants/navigation';
+import { dashboardMenu, isDashboardPathActive } from '@/constants/navigation';
 import { SidebarToggleButton } from '@/components/dashboard/SidebarToggleButton';
 import { AtozikaMascot } from '@/components/dashboard/member/AtozikaMascot';
 import { AccountSettingsModal } from '@/components/dashboard/AccountSettingsModal';
@@ -65,25 +65,25 @@ type SidebarNavLinkProps = {
 };
 
 function SidebarNavLink({ to, label, end, onNavigate }: SidebarNavLinkProps) {
+  const { pathname } = useLocation();
+  const active = isDashboardPathActive(pathname, to, end);
   const Icon = menuIcons[to] ?? LayoutDashboard;
 
   return (
-    <NavLink
+    <Link
       to={to}
-      end={end}
+      aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
-      className={({ isActive }) =>
-        cn(
-          'group flex items-center gap-3.5 rounded-2xl px-4 py-2.5 text-sm transition',
-          isActive
-            ? 'bg-blue-100/70 font-bold text-member-600 dark:bg-blue-500/20 dark:text-blue-300'
-            : 'font-semibold text-slate-600 hover:bg-white/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-ink-50',
-        )
-      }
+      className={cn(
+        'group flex items-center gap-3.5 rounded-2xl px-4 py-2.5 text-sm transition',
+        active
+          ? 'bg-blue-100/70 font-bold text-member-600 dark:bg-blue-500/20 dark:text-blue-300'
+          : 'font-semibold text-slate-600 hover:bg-white/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-ink-50',
+      )}
     >
       <Icon className="h-5 w-5 shrink-0 stroke-[2]" />
       <span className="truncate">{label}</span>
-    </NavLink>
+    </Link>
   );
 }
 

@@ -7,9 +7,12 @@ import (
 	"atozika/internal/auth"
 	"atozika/internal/examcsv"
 	"atozika/internal/httpx"
+	"atozika/internal/id"
+	"atozika/internal/materials"
 	"atozika/internal/models"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 var startedAt = time.Now()
@@ -332,4 +335,59 @@ func (h *Handler) ResolveBlock(c *fiber.Ctx) error {
 	h.DB.Model(&blk).Updates(map[string]any{"resolvedAt": now, "updatedAt": now})
 	h.DB.First(&blk, "id = ?", blk.ID)
 	return httpx.Success(c, blk)
+}
+
+func (h *Handler) GetUserMaterialCategories(c *fiber.Ctx) error {
+	var user models.User
+	if err := h.DB.First(&user, "id = ?", c.Params("id")).Error; err != nil {
+		return httpx.New(404, "Member tidak ditemukan")
+	}
+	var rows []models.MemberMaterialCategory
+	h.DB.Where(`"userId" = ?`, user.ID).Find(&rows)
+	selected := make([]string, 0, len(rows))
+	for _, row := range rows {
+		selected = append(selected, row.Category)
+	}
+	return httpx.Success(c, fiber.Map{
+		"userId":     user.ID,
+		"categories": materials.Ordered(selected),
+		"options":    materials.Categories,
+	})
+}
+
+func (h *Handler) PutUserMaterialCategories(c *fiber.Ctx) error {
+	var user models.User
+	if err := h.DB.First(&user, "id = ?", c.Params("id")).Error; err != nil {
+		return httpx.New(404, "Member tidak ditemukan")
+	}
+	var body struct {
+		Categories []string `json:"categories"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return httpx.New(400, "Invalid body")
+	}
+	chosen := materials.Ordered(body.Categories)
+	if len(chosen) != len(body.Categories) {
+		return httpx.New(400, "Kategori materi tidak valid")
+	}
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where(`"userId" = ?`, user.ID).Delete(&models.MemberMaterialCategory{}).Error; err != nil {
+			return err
+		}
+		if len(chosen) == 0 {
+			return nil
+		}
+		rows := make([]models.MemberMaterialCategory, 0, len(chosen))
+		now := time.Now()
+		for _, category := range chosen {
+			rows = append(rows, models.MemberMaterialCategory{
+				ID: id.New(), UserID: user.ID, Category: category, CreatedAt: now,
+			})
+		}
+		return tx.Create(&rows).Error
+	})
+	if err != nil {
+		return httpx.New(500, "Gagal menyimpan kategori materi")
+	}
+	return httpx.Success(c, fiber.Map{"userId": user.ID, "categories": chosen})
 }

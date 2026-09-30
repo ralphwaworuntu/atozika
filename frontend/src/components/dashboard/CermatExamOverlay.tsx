@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { CermatIcon } from '@/components/dashboard/CermatIcon';
@@ -17,8 +18,14 @@ type CermatExamOverlayProps = {
   questionOrder: number;
   answers: Record<number, string | null>;
   submitPending: boolean;
+  allAnswered: boolean;
   modeLabels: Record<CermatMode, { reference: string; prompt: string; button: string }>;
+  breakSecondsLeft?: number | null;
+  nextSessionIndex?: number | null;
+  isBreaking?: boolean;
   onAnswer: (value?: string | null) => void;
+  onFinish: () => void;
+  onContinueBreak?: () => void;
 };
 
 function formatTimer(seconds: number) {
@@ -46,23 +53,64 @@ function StatPill({ label, value, urgent }: { label: string; value: string; urge
   );
 }
 
-function CermatImageBrandHeader({ sessionIndex, totalSessions }: { sessionIndex: number; totalSessions: number }) {
+function CermatExamHeader({
+  mode,
+  sessionIndex,
+  totalSessions,
+  currentIndex,
+  totalQuestions,
+  timeLeft,
+}: {
+  mode: CermatMode;
+  sessionIndex: number;
+  totalSessions: number;
+  currentIndex: number;
+  totalQuestions: number;
+  timeLeft: number;
+}) {
+  const isImage = mode === 'IMAGE';
+
   return (
     <header className="chrome-navy shrink-0 border-b border-brand-400/25 bg-navy text-navy-fg">
       <div className="mx-auto max-w-2xl px-4 py-3 sm:max-w-3xl sm:px-6 sm:py-3.5 lg:max-w-5xl xl:max-w-6xl">
-        <div className="flex items-center justify-between gap-3 sm:gap-4">
-          <BrandMark size="md" variant="icon" className="min-w-0 flex-1" tone="ink" />
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
+          <div className="min-w-0 justify-self-start">
+            <BrandMark size="md" variant="icon" className="min-w-0" tone="ink" />
+          </div>
 
-          <div className="shrink-0 text-right">
-            <span className="inline-flex items-center rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-command text-ink-800 sm:px-3 sm:text-xs">
-              {CERMAT_MODE_LABELS.IMAGE}
-            </span>
-            <p className="type-caption mt-1.5 text-ink-200">
+          <div className="justify-self-center text-center">
+            <p className="type-caption text-[11px] font-bold uppercase tracking-command text-brand-300 sm:text-xs">
               Tes Kecermatan
             </p>
-            <p className="type-h2 tabular-nums text-brand-300">
-              Sesi {sessionIndex}/{totalSessions}
-            </p>
+            {isImage ? (
+              <span className="mt-1 inline-flex items-center rounded-full bg-brand-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-command text-ink-800 sm:px-3 sm:text-xs">
+                {CERMAT_MODE_LABELS.IMAGE}
+              </span>
+            ) : (
+              <h2 className="type-h1 mt-0.5 text-base sm:text-lg">
+                Sesi {sessionIndex}/{totalSessions}
+              </h2>
+            )}
+          </div>
+
+          <div className="justify-self-end text-right">
+            {isImage ? (
+              <>
+                <p className="type-caption text-ink-200">Sesi</p>
+                <p className="type-h2 tabular-nums text-brand-300">
+                  {sessionIndex}/{totalSessions}
+                </p>
+              </>
+            ) : (
+              <div className="inline-flex flex-col items-end gap-1">
+                <p className="type-caption text-ink-200">
+                  Soal {currentIndex + 1}/{totalQuestions}
+                </p>
+                <div className="rounded-xl bg-brand-500 px-3 py-1.5 text-center text-ink-800 sm:px-4">
+                  <p className="text-lg font-bold tabular-nums sm:text-xl">{timeLeft}s</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -71,26 +119,126 @@ function CermatImageBrandHeader({ sessionIndex, totalSessions }: { sessionIndex:
   );
 }
 
+function SessionContinueButton({
+  sessionIndex,
+  totalSessions,
+  submitPending,
+  onFinish,
+}: {
+  sessionIndex: number;
+  totalSessions: number;
+  submitPending: boolean;
+  onFinish: () => void;
+}) {
+  const isLast = sessionIndex >= totalSessions;
+  const label = isLast ? 'Selesai' : `Sesi ${sessionIndex + 1}`;
+
+  return (
+    <Button
+      type="button"
+      className={cn(
+        'min-w-[8.5rem] transition active:scale-95',
+        isLast ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-brand-600 hover:bg-brand-500',
+      )}
+      onClick={onFinish}
+      disabled={submitPending}
+    >
+      {submitPending ? 'Mengirim…' : label}
+    </Button>
+  );
+}
+
+function AnswerChoiceButtons({
+  baseSet,
+  questionOrder,
+  answers,
+  submitPending,
+  variant,
+  onAnswer,
+}: {
+  baseSet: string[];
+  questionOrder: number;
+  answers: Record<number, string | null>;
+  submitPending: boolean;
+  variant: 'image' | 'text';
+  onAnswer: (value?: string | null) => void;
+}) {
+  const [pressKey, setPressKey] = useState(0);
+  const [pressedOption, setPressedOption] = useState<string | null>(null);
+
+  return (
+    <div className={cn('grid grid-cols-5', variant === 'image' ? 'gap-1.5 sm:gap-2.5 lg:gap-3' : 'gap-1.5 sm:gap-2')}>
+      {baseSet.map((option, index) => {
+        const label = String.fromCharCode(65 + index);
+        const selected = answers[questionOrder] === option;
+        const isPressed = pressedOption === option;
+        return (
+          <button
+            key={option}
+            type="button"
+            disabled={submitPending}
+            onClick={() => {
+              setPressedOption(option);
+              setPressKey((prev) => prev + 1);
+              onAnswer(option);
+            }}
+            className={cn(
+              'transition will-change-transform',
+              variant === 'image'
+                ? 'rounded-xl border-2 py-3 text-lg font-bold sm:py-4 sm:text-xl lg:rounded-2xl lg:py-5 lg:text-2xl xl:py-6 xl:text-3xl'
+                : 'rounded-xl border py-3 text-base font-semibold sm:py-3.5 sm:text-lg',
+              selected
+                ? variant === 'image'
+                  ? 'border-brand-600 bg-brand-600 text-white shadow-md'
+                  : 'border-brand-500 bg-brand-50 text-brand-700 shadow-inner'
+                : variant === 'image'
+                  ? 'border-slate-300 bg-white text-slate-900 hover:border-brand-300 hover:bg-brand-50/50'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
+              isPressed && 'animate-cermat-answer-press',
+            )}
+            onAnimationEnd={() => {
+              if (pressedOption === option) setPressedOption(null);
+            }}
+            data-press={isPressed ? pressKey : undefined}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ImageExamContent({
   currentIndex,
   timeLeft,
   answeredCount,
+  totalQuestions,
   baseSet,
   sequence,
   questionOrder,
   answers,
   submitPending,
+  allAnswered,
+  sessionIndex,
+  totalSessions,
   onAnswer,
+  onFinish,
 }: {
   currentIndex: number;
   timeLeft: number;
   answeredCount: number;
+  totalQuestions: number;
   baseSet: string[];
   sequence: string[];
   questionOrder: number;
   answers: Record<number, string | null>;
   submitPending: boolean;
+  allAnswered: boolean;
+  sessionIndex: number;
+  totalSessions: number;
   onAnswer: (value?: string | null) => void;
+  onFinish: () => void;
 }) {
   const timerUrgent = timeLeft <= 10;
 
@@ -145,33 +293,27 @@ function ImageExamContent({
         </div>
       </section>
 
-      <section className="grid grid-cols-5 gap-1.5 sm:gap-2.5 lg:gap-3">
-        {baseSet.map((option, index) => {
-          const label = String.fromCharCode(65 + index);
-          const selected = answers[questionOrder] === option;
-          return (
-            <button
-              key={option}
-              type="button"
-              disabled={submitPending}
-              onClick={() => onAnswer(option)}
-              className={cn(
-                'rounded-xl border-2 py-3 text-lg font-bold transition sm:py-4 sm:text-xl lg:rounded-2xl lg:py-5 lg:text-2xl xl:py-6 xl:text-3xl',
-                selected
-                  ? 'border-brand-600 bg-brand-600 text-white shadow-md'
-                  : 'border-slate-300 bg-white text-slate-900 hover:border-brand-300 hover:bg-brand-50/50',
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </section>
+      <AnswerChoiceButtons
+        baseSet={baseSet}
+        questionOrder={questionOrder}
+        answers={answers}
+        submitPending={submitPending}
+        variant="image"
+        onAnswer={onAnswer}
+      />
 
-      <div className="flex justify-end pb-2 lg:pb-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 lg:pb-0">
         <Button variant="ghost" size="sm" onClick={() => onAnswer(null)} disabled={submitPending}>
           Lewati soal
         </Button>
+        {allAnswered ? (
+          <SessionContinueButton
+            sessionIndex={sessionIndex}
+            totalSessions={totalSessions}
+            submitPending={submitPending}
+            onFinish={onFinish}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -185,7 +327,11 @@ function TextExamContent({
   questionOrder,
   answers,
   submitPending,
+  allAnswered,
+  sessionIndex,
+  totalSessions,
   onAnswer,
+  onFinish,
 }: {
   mode: Exclude<CermatMode, 'IMAGE'>;
   modeLabels: CermatExamOverlayProps['modeLabels'];
@@ -194,7 +340,11 @@ function TextExamContent({
   questionOrder: number;
   answers: Record<number, string | null>;
   submitPending: boolean;
+  allAnswered: boolean;
+  sessionIndex: number;
+  totalSessions: number;
   onAnswer: (value?: string | null) => void;
+  onFinish: () => void;
 }) {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 sm:space-y-5">
@@ -230,34 +380,56 @@ function TextExamContent({
         <p className="mt-3 text-xs text-slate-500">{modeLabels[mode].prompt}</p>
       </div>
 
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-        {baseSet.map((option, index) => {
-          const label = String.fromCharCode(65 + index);
-          const selected = answers[questionOrder] === option;
-          return (
-            <button
-              key={option}
-              type="button"
-              disabled={submitPending}
-              onClick={() => onAnswer(option)}
-              className={cn(
-                'rounded-xl border py-3 text-base font-semibold transition sm:py-3.5 sm:text-lg',
-                selected
-                  ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-inner'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      <AnswerChoiceButtons
+        baseSet={baseSet}
+        questionOrder={questionOrder}
+        answers={answers}
+        submitPending={submitPending}
+        variant="text"
+        onAnswer={onAnswer}
+      />
 
-      <div className="flex justify-end pb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
         <Button variant="ghost" size="sm" onClick={() => onAnswer(null)} disabled={submitPending}>
           Lewati soal
         </Button>
+        {allAnswered ? (
+          <SessionContinueButton
+            sessionIndex={sessionIndex}
+            totalSessions={totalSessions}
+            submitPending={submitPending}
+            onFinish={onFinish}
+          />
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function SessionBreakPanel({
+  nextSessionIndex,
+  totalSessions,
+  secondsLeft,
+  onContinue,
+}: {
+  nextSessionIndex: number;
+  totalSessions: number;
+  secondsLeft: number;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center gap-5 rounded-3xl border border-slate-100 bg-white px-6 py-10 text-center shadow-sm sm:px-8">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-brand-500">Jeda Antar Sesi</p>
+      <h2 className="text-2xl font-extrabold text-slate-900">Sesi {nextSessionIndex} siap</h2>
+      <p className="text-sm text-slate-500">
+        Tetap di halaman tes. Bersiap untuk sesi {nextSessionIndex} dari {totalSessions}.
+      </p>
+      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-brand-50 to-brand-100 text-5xl font-bold text-brand-700 ring-8 ring-brand-100/80">
+        {secondsLeft}
+      </div>
+      <Button type="button" className="min-w-[10rem] bg-brand-600 hover:bg-brand-500" onClick={onContinue}>
+        Mulai Sesi {nextSessionIndex}
+      </Button>
     </div>
   );
 }
@@ -274,83 +446,94 @@ export function CermatExamOverlay({
   questionOrder,
   answers,
   submitPending,
+  allAnswered,
   modeLabels,
+  breakSecondsLeft = null,
+  nextSessionIndex = null,
+  isBreaking = false,
   onAnswer,
+  onFinish,
+  onContinueBreak,
 }: CermatExamOverlayProps) {
   if (typeof document === 'undefined') {
     return null;
   }
 
   const isImage = mode === 'IMAGE';
-  const answeredCount = Object.values(answers).filter(Boolean).length;
+  const showBreak =
+    isBreaking && typeof breakSecondsLeft === 'number' && typeof nextSessionIndex === 'number';
+  const answeredCount = Object.values(answers).filter((value) => typeof value === 'string' && value.length > 0).length;
+  const headerSessionIndex = showBreak ? nextSessionIndex : sessionIndex;
 
   return createPortal(
     <div
       className={cn(
         'fixed inset-0 z-[9999] flex h-[100dvh] w-screen flex-col overflow-hidden',
-        isImage ? 'bg-slate-50' : 'bg-ink-950',
+        showBreak || isImage ? 'bg-slate-50' : 'bg-[#070b12]',
       )}
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {isImage ? (
-        <CermatImageBrandHeader sessionIndex={sessionIndex} totalSessions={totalSessions} />
-      ) : (
-        <header className="chrome-navy shrink-0 border-b border-brand-400/25 bg-navy px-4 py-3 text-navy-fg sm:px-6 lg:py-3.5">
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-command text-brand-400 sm:text-xs">Tes Kecermatan</p>
-              <h2 className="type-h1 truncate">
-                Sesi {sessionIndex}/{totalSessions} · Soal {currentIndex + 1}/{totalQuestions}
-              </h2>
-            </div>
-            <div className="shrink-0 rounded-xl bg-brand-500 px-3 py-2 text-center text-ink-800 sm:px-4">
-              <p className="type-caption text-ink-800/80">Sisa Waktu</p>
-              <p className="text-xl font-bold tabular-nums sm:text-2xl">{timeLeft}s</p>
-            </div>
-          </div>
-        </header>
-      )}
+      <CermatExamHeader
+        mode={mode}
+        sessionIndex={headerSessionIndex}
+        totalSessions={totalSessions}
+        currentIndex={currentIndex}
+        totalQuestions={totalQuestions}
+        timeLeft={showBreak ? breakSecondsLeft : timeLeft}
+      />
 
       <main
         className={cn(
-          'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 sm:py-5',
-          isImage && 'lg:flex lg:flex-col lg:overflow-hidden lg:py-4',
-          !isImage && 'text-white',
+          'flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 sm:py-5',
+          isImage && 'lg:flex-col lg:overflow-hidden lg:py-4',
+          !isImage && !showBreak && 'text-white',
+          showBreak && 'items-center justify-center',
         )}
       >
-        {!isImage && (
-          <div className="mx-auto mb-4 flex max-w-3xl items-center justify-center gap-3 sm:mb-6">
-            <BrandMark size="sm" variant="icon" framed tone="ink" />
-            <p className="text-sm font-semibold tracking-tight text-white sm:text-base">ATOZIKA</p>
+        {showBreak ? (
+          <SessionBreakPanel
+            nextSessionIndex={nextSessionIndex}
+            totalSessions={totalSessions}
+            secondsLeft={breakSecondsLeft}
+            onContinue={() => onContinueBreak?.()}
+          />
+        ) : (
+          <div className={cn(!isImage && 'mx-auto max-w-3xl rounded-3xl bg-white/95 p-4 text-slate-900 shadow-xl sm:p-6')}>
+            {isImage ? (
+              <ImageExamContent
+                currentIndex={currentIndex}
+                timeLeft={timeLeft}
+                answeredCount={answeredCount}
+                totalQuestions={totalQuestions}
+                baseSet={baseSet}
+                sequence={sequence}
+                questionOrder={questionOrder}
+                answers={answers}
+                submitPending={submitPending}
+                allAnswered={allAnswered}
+                sessionIndex={sessionIndex}
+                totalSessions={totalSessions}
+                onAnswer={onAnswer}
+                onFinish={onFinish}
+              />
+            ) : (
+              <TextExamContent
+                mode={mode}
+                modeLabels={modeLabels}
+                baseSet={baseSet}
+                sequence={sequence}
+                questionOrder={questionOrder}
+                answers={answers}
+                submitPending={submitPending}
+                allAnswered={allAnswered}
+                sessionIndex={sessionIndex}
+                totalSessions={totalSessions}
+                onAnswer={onAnswer}
+                onFinish={onFinish}
+              />
+            )}
           </div>
         )}
-
-        <div className={cn(!isImage && 'mx-auto max-w-3xl rounded-3xl bg-white/95 p-4 text-slate-900 shadow-xl sm:p-6')}>
-          {isImage ? (
-            <ImageExamContent
-              currentIndex={currentIndex}
-              timeLeft={timeLeft}
-              answeredCount={answeredCount}
-              baseSet={baseSet}
-              sequence={sequence}
-              questionOrder={questionOrder}
-              answers={answers}
-              submitPending={submitPending}
-              onAnswer={onAnswer}
-            />
-          ) : (
-            <TextExamContent
-              mode={mode}
-              modeLabels={modeLabels}
-              baseSet={baseSet}
-              sequence={sequence}
-              questionOrder={questionOrder}
-              answers={answers}
-              submitPending={submitPending}
-              onAnswer={onAnswer}
-            />
-          )}
-        </div>
       </main>
     </div>,
     document.body,

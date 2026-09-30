@@ -63,6 +63,22 @@ export const dashboardMenu: NavSection[] = [
   },
 ];
 
+const examNavPaths = [
+  '/app/ujian/tryout',
+  '/app/ujian/tryout/riwayat',
+  '/app/ujian/soal',
+  '/app/ujian/soal/riwayat',
+];
+
+export function isDashboardPathActive(pathname: string, to: string, end?: boolean) {
+  if (pathname === to) return true;
+  if (end || !pathname.startsWith(`${to}/`)) return false;
+  const paths = [...dashboardMenu.flatMap((section) => section.items.map((item) => item.to)), ...examNavPaths];
+  return !paths.some(
+    (other) => other !== to && other.startsWith(`${to}/`) && (pathname === other || pathname.startsWith(`${other}/`)),
+  );
+}
+
 export const adminMenu: NavSection[] = [
   {
     title: 'Umum',
@@ -85,7 +101,7 @@ export const adminMenu: NavSection[] = [
       { label: 'Konversi Word → CSV', to: '/admin/word-converter' },
       { label: 'Tryouts & Tes', to: '/admin/tryouts' },
       { label: 'Latihan & Tugas', to: '/admin/practice' },
-      { label: 'Kecermatan', to: '/admin/kecermatan' },
+      { label: 'Pengaturan Kecermatan', to: '/admin/kecermatan' },
       { label: 'Materi Belajar', to: '/admin/materials' },
       { label: 'Kalkulator', to: '/admin/calculators' },
     ],

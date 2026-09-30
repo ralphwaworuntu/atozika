@@ -23,6 +23,7 @@ type PackageFormValues = {
   featuresText: string;
   tryoutQuota: number;
   moduleQuota: number;
+  cermatQuota: number;
   allowTryout: boolean;
   allowPractice: boolean;
   allowCermat: boolean;
@@ -53,6 +54,7 @@ const defaultPackageValues: PackageFormValues = {
   featuresText: 'Tryout Online, Live Class',
   tryoutQuota: 10,
   moduleQuota: 10,
+  cermatQuota: 10,
   allowTryout: true,
   allowPractice: true,
   allowCermat: true,
@@ -111,6 +113,7 @@ export function AdminCommercePage() {
           .filter(Boolean),
         tryoutQuota: values.tryoutQuota,
         moduleQuota: values.moduleQuota,
+        cermatQuota: values.cermatQuota,
         allowTryout: values.allowTryout,
         allowPractice: values.allowPractice,
         allowCermat: values.allowCermat,
@@ -255,6 +258,7 @@ export function AdminCommercePage() {
             <Input placeholder="Fitur (pisahkan dengan koma)" {...packageForm.register('featuresText')} />
             <Input type="number" placeholder="Kuota Tryout" {...packageForm.register('tryoutQuota', { valueAsNumber: true })} />
             <Input type="number" placeholder="Jumlah Modul" {...packageForm.register('moduleQuota', { valueAsNumber: true })} />
+            <Input type="number" placeholder="Token Kecermatan" {...packageForm.register('cermatQuota', { valueAsNumber: true })} />
             <div className="md:col-span-2 rounded-2xl border border-slate-100 p-4">
               <p className="text-xs font-semibold uppercase text-slate-500">Akses Fitur</p>
               <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600">
@@ -332,6 +336,7 @@ export function AdminCommercePage() {
                           featuresText: (pkg.features ?? []).join(', '),
                           tryoutQuota: pkg.tryoutQuota ?? 0,
                           moduleQuota: pkg.moduleQuota ?? 0,
+                          cermatQuota: pkg.cermatQuota ?? 0,
                           allowTryout: pkg.allowTryout ?? true,
                           allowPractice: pkg.allowPractice ?? true,
                           allowCermat: pkg.allowCermat ?? true,
@@ -353,6 +358,7 @@ export function AdminCommercePage() {
                 </div>
                 <p className="mt-2 text-sm text-slate-600">{pkg.description}</p>
                 <p className="text-xs text-slate-500">Kuota Tryout: {pkg.tryoutQuota ?? 0}</p>
+                <p className="text-xs text-slate-500">Token Kecermatan: {pkg.cermatQuota ?? 0}</p>
                 <p className="text-xs text-slate-500">Modul: {pkg.materialCount ?? pkg.materialIds?.length ?? 0}</p>
                 <p className="text-xs text-slate-500">
                   Akses: {[

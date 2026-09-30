@@ -255,10 +255,61 @@ func (h *Handler) PutCermatConfig(c *fiber.Ctx) error {
 	return h.GetCermatConfig(c)
 }
 
-func (h *Handler) GetPsikoConfig(c *fiber.Ctx) error {
+func (h *Handler) GetCermatModes(c *fiber.Ctx) error {
 	return httpx.Success(c, fiber.Map{
-		"breakSeconds": h.setting("psiko_tryout_break_seconds"),
-		"cermatMode":   h.setting("psiko_tryout_cermat_mode"),
+		"imageEnabled":  h.setting("cermat_mode_image_enabled") != "false",
+		"letterEnabled": h.setting("cermat_mode_letter_enabled") != "false",
+		"numberEnabled": h.setting("cermat_mode_number_enabled") != "false",
+	})
+}
+
+func (h *Handler) PutCermatModes(c *fiber.Ctx) error {
+	var body struct {
+		ImageEnabled  *bool `json:"imageEnabled"`
+		LetterEnabled *bool `json:"letterEnabled"`
+		NumberEnabled *bool `json:"numberEnabled"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return httpx.New(400, "Invalid body")
+	}
+	boolStr := func(v bool) string {
+		if v {
+			return "true"
+		}
+		return "false"
+	}
+	if body.ImageEnabled != nil {
+		h.upsertSetting("cermat_mode_image_enabled", boolStr(*body.ImageEnabled))
+	}
+	if body.LetterEnabled != nil {
+		h.upsertSetting("cermat_mode_letter_enabled", boolStr(*body.LetterEnabled))
+	}
+	if body.NumberEnabled != nil {
+		h.upsertSetting("cermat_mode_number_enabled", boolStr(*body.NumberEnabled))
+	}
+	imageOn := h.setting("cermat_mode_image_enabled") != "false"
+	letterOn := h.setting("cermat_mode_letter_enabled") != "false"
+	numberOn := h.setting("cermat_mode_number_enabled") != "false"
+	if !imageOn && !letterOn && !numberOn {
+		return httpx.New(400, "Minimal satu varian tes kecermatan harus aktif.")
+	}
+	return h.GetCermatModes(c)
+}
+
+func (h *Handler) GetPsikoConfig(c *fiber.Ctx) error {
+	breakSec := 5
+	if v := h.setting("psiko_tryout_break_seconds"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			breakSec = i
+		}
+	}
+	mode := h.setting("psiko_tryout_cermat_mode")
+	if mode == "" {
+		mode = "NUMBER"
+	}
+	return httpx.Success(c, fiber.Map{
+		"breakSeconds": breakSec,
+		"cermatMode":   mode,
 	})
 }
 

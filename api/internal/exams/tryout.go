@@ -357,43 +357,285 @@ func (h *Handler) TryoutHistory(c *fiber.Ctx) error {
 	return httpx.Success(c, items)
 }
 
+func answerSelectedIDs(a models.TryoutAnswer) []string {
+	ids := jsonutil.Strings(a.SelectedOptionIDs)
+	if len(ids) > 0 {
+		return ids
+	}
+	if a.OptionID != nil && *a.OptionID != "" {
+		return []string{*a.OptionID}
+	}
+	return nil
+}
+
+func questionHasMultipleCorrect(options []models.TryoutOption) bool {
+	n := 0
+	for _, o := range options {
+		if o.IsCorrect {
+			n++
+			if n > 1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func buildTryoutReviewQuestions(questions []models.TryoutQuestion, answers []models.TryoutAnswer) []fiber.Map {
+	answerMap := map[string]models.TryoutAnswer{}
+	for _, a := range answers {
+		answerMap[a.QuestionID] = a
+	}
+	out := make([]fiber.Map, 0, len(questions))
+	for _, q := range questions {
+		var correctIDs []string
+		for _, o := range q.Options {
+			if o.IsCorrect {
+				correctIDs = append(correctIDs, o.ID)
+			}
+		}
+		ans, hasAns := answerMap[q.ID]
+		sel := []string{}
+		if hasAns {
+			sel = answerSelectedIDs(ans)
+		}
+		credit, ok := grade(sel, correctIDs)
+		status := "incorrect"
+		if ok {
+			status = "correct"
+		}
+		var userOptionID any
+		if len(sel) > 0 {
+			userOptionID = sel[0]
+		} else {
+			userOptionID = nil
+		}
+		opts := make([]fiber.Map, 0, len(q.Options))
+		for _, o := range q.Options {
+			opts = append(opts, fiber.Map{
+				"id": o.ID, "label": o.Label, "imageUrl": o.ImageURL, "isCorrect": o.IsCorrect,
+			})
+		}
+		out = append(out, fiber.Map{
+			"id": q.ID, "order": q.Order, "prompt": q.Prompt, "imageUrl": q.ImageURL,
+			"explanation": q.Explanation, "explanationImageUrl": q.ExplanationImageURL,
+			"multipleCorrect": q.MultipleCorrect || questionHasMultipleCorrect(q.Options),
+			"options": opts, "userOptionId": userOptionID, "userOptionIds": sel,
+			"isCorrect": ok, "credit": credit, "gradeStatus": status,
+		})
+	}
+	return out
+}
+
+func (h *Handler) loadTryoutResultForReview(resultID, userID string) (*models.TryoutResult, error) {
+	var result models.TryoutResult
+	err := h.DB.
+		Preload("Tryout").
+		Preload("Tryout.SubCategory").
+		Preload("Tryout.SubCategory.Category").
+		Preload("Tryout.Questions", func(db *gorm.DB) *gorm.DB { return db.Order(`"order" ASC`) }).
+		Preload("Tryout.Questions.Options").
+		Preload("Answers").
+		Where("id = ? AND \"userId\" = ?", resultID, userID).
+		First(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 func (h *Handler) TryoutReview(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
-	var result models.TryoutResult
-	if err := h.DB.Preload("Tryout").Preload("Tryout.Questions").Preload("Tryout.Questions.Options").
-		Preload("Answers").Where("id = ? AND \"userId\" = ?", c.Params("resultId"), uid).First(&result).Error; err != nil {
-		return httpx.New(404, "Result not found")
+	result, err := h.loadTryoutResultForReview(c.Params("resultId"), uid)
+	if err != nil {
+		return httpx.New(404, "Hasil tryout tidak ditemukan.")
 	}
-	return httpx.Success(c, result)
+	if _, err := h.ensureAccess(uid, result.Tryout.IsFree, result.Tryout.FreeForNewMembers, result.Tryout.FreePackageIDs); err != nil {
+		return err
+	}
+
+	score := 0.0
+	if result.Score != nil {
+		score = *result.Score
+	}
+	completedAt := result.CreatedAt
+	if result.CompletedAt != nil {
+		completedAt = *result.CompletedAt
+	}
+	durationSeconds := tDurationSeconds(result, result.Tryout.DurationMinutes)
+
+	t := result.Tryout
+	return httpx.Success(c, fiber.Map{
+		"tryout": fiber.Map{
+			"id": t.ID, "name": t.Name, "slug": t.Slug, "isFree": t.IsFree,
+			"sessionOrder": t.SessionOrder, "isPsikoSession": isPsiko(t),
+			"totalQuestions": t.TotalQuestions, "durationMinutes": t.DurationMinutes,
+			"subCategory": fiber.Map{
+				"id": t.SubCategory.ID, "name": t.SubCategory.Name,
+				"category": fiber.Map{"id": t.SubCategory.Category.ID, "name": t.SubCategory.Category.Name},
+			},
+		},
+		"score":            score,
+		"completedAt":      completedAt,
+		"durationSeconds":  durationSeconds,
+		"questions":        buildTryoutReviewQuestions(t.Questions, result.Answers),
+	})
+}
+
+func tDurationSeconds(result *models.TryoutResult, durationMinutes int) int {
+	if result.CompletedAt != nil {
+		sec := int(result.CompletedAt.Sub(result.StartedAt).Seconds())
+		if sec > 0 {
+			return sec
+		}
+	}
+	if result.DurationSeconds != nil && *result.DurationSeconds > 0 {
+		return *result.DurationSeconds
+	}
+	if durationMinutes > 0 {
+		return durationMinutes * 60
+	}
+	return 0
 }
 
 func (h *Handler) PackageReview(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
-	var result models.TryoutResult
-	if err := h.DB.Preload("Tryout").Preload("Tryout.SubCategory").Preload("Tryout.SubCategory.Category").
-		Where("id = ? AND \"userId\" = ?", c.Params("resultId"), uid).First(&result).Error; err != nil {
-		return httpx.New(404, "Result not found")
+	anchor, err := h.loadTryoutResultForReview(c.Params("resultId"), uid)
+	if err != nil {
+		return httpx.New(404, "Hasil tryout tidak ditemukan.")
 	}
-	var results []models.TryoutResult
-	h.DB.Preload("Tryout").Where(`"userId" = ? AND "completedAt" IS NOT NULL`, uid).
-		Joins(`JOIN "Tryout" ON "Tryout".id = "TryoutResult"."tryoutId"`).
-		Where(`"Tryout"."subCategoryId" = ? AND "Tryout"."sessionOrder" IS NOT NULL`, result.Tryout.SubCategoryID).
-		Find(&results)
-	sum := 0.0
-	n := 0
-	sessions := []fiber.Map{}
-	for _, r := range results {
-		if r.Score != nil {
-			sum += *r.Score
-			n++
+	if _, err := h.ensureAccess(uid, anchor.Tryout.IsFree, anchor.Tryout.FreeForNewMembers, anchor.Tryout.FreePackageIDs); err != nil {
+		return err
+	}
+	if !isPsiko(anchor.Tryout) {
+		return httpx.New(400, "Tryout ini bukan paket POLRI / PSIKO.")
+	}
+
+	var sequence []models.Tryout
+	h.DB.Where(`"subCategoryId" = ? AND "isPublished" = true AND "sessionOrder" IS NOT NULL`, anchor.Tryout.SubCategoryID).
+		Order(`"sessionOrder" ASC, "createdAt" ASC`).Find(&sequence)
+	if len(sequence) == 0 {
+		return httpx.New(404, "Data paket PSIKO tidak ditemukan.")
+	}
+
+	tryoutIDs := make([]string, 0, len(sequence))
+	for _, item := range sequence {
+		tryoutIDs = append(tryoutIDs, item.ID)
+	}
+
+	var recent []models.TryoutResult
+	h.DB.Preload("Tryout").
+		Where(`"userId" = ? AND "completedAt" IS NOT NULL AND "tryoutId" IN ?`, uid, tryoutIDs).
+		Order(`"completedAt" DESC`).
+		Limit(len(sequence) * 5).
+		Find(&recent)
+
+	resultIDByOrder := map[int]string{}
+	for _, item := range recent {
+		if item.Tryout.SessionOrder == nil {
+			continue
 		}
-		sessions = append(sessions, fiber.Map{"resultId": r.ID, "score": r.Score, "tryout": r.Tryout})
+		order := *item.Tryout.SessionOrder
+		if _, exists := resultIDByOrder[order]; !exists {
+			resultIDByOrder[order] = item.ID
+		}
 	}
+	if len(resultIDByOrder) == 0 {
+		return httpx.New(404, "Belum ada data pembahasan paket PSIKO.")
+	}
+
+	selectedIDs := make([]string, 0, len(resultIDByOrder))
+	for _, id := range resultIDByOrder {
+		selectedIDs = append(selectedIDs, id)
+	}
+
+	var packageResults []models.TryoutResult
+	h.DB.
+		Preload("Tryout").
+		Preload("Tryout.Questions", func(db *gorm.DB) *gorm.DB { return db.Order(`"order" ASC`) }).
+		Preload("Tryout.Questions.Options").
+		Preload("Answers").
+		Where(`id IN ? AND "userId" = ?`, selectedIDs, uid).
+		Find(&packageResults)
+	resultMap := map[string]models.TryoutResult{}
+	for _, item := range packageResults {
+		resultMap[item.ID] = item
+	}
+
+	sections := []fiber.Map{}
+	totalScore := 0.0
+	totalCorrect := 0
+	totalQuestions := 0
+	for _, item := range sequence {
+		if item.SessionOrder == nil {
+			continue
+		}
+		order := *item.SessionOrder
+		selectedID, ok := resultIDByOrder[order]
+		if !ok {
+			continue
+		}
+		result, ok := resultMap[selectedID]
+		if !ok {
+			continue
+		}
+		questions := buildTryoutReviewQuestions(result.Tryout.Questions, result.Answers)
+		score := 0.0
+		if result.Score != nil {
+			score = *result.Score
+		}
+		completedAt := result.CreatedAt
+		if result.CompletedAt != nil {
+			completedAt = *result.CompletedAt
+		}
+		correctCount := 0
+		for _, q := range questions {
+			if isCorrect, _ := q["isCorrect"].(bool); isCorrect {
+				correctCount++
+			}
+		}
+		totalScore += score
+		totalCorrect += correctCount
+		totalQuestions += len(questions)
+		sections = append(sections, fiber.Map{
+			"sessionOrder": order,
+			"resultId":     result.ID,
+			"score":        score,
+			"completedAt":  completedAt,
+			"tryout": fiber.Map{
+				"id": result.Tryout.ID, "name": result.Tryout.Name, "slug": result.Tryout.Slug,
+				"totalQuestions": result.Tryout.TotalQuestions, "durationMinutes": result.Tryout.DurationMinutes,
+			},
+			"questions": questions,
+		})
+	}
+
 	avg := 0.0
-	if n > 0 {
-		avg = sum / float64(n)
+	if len(sections) > 0 {
+		avg = totalScore / float64(len(sections))
 	}
-	return httpx.Success(c, fiber.Map{"average": avg, "sessions": sessions})
+	mode := "NUMBER"
+	var s models.SiteSetting
+	if err := h.DB.Where("key = ?", "psiko_tryout_cermat_mode").First(&s).Error; err == nil && s.Value != "" {
+		mode = s.Value
+	}
+
+	return httpx.Success(c, fiber.Map{
+		"package": fiber.Map{
+			"categoryId":      anchor.Tryout.SubCategory.Category.ID,
+			"categoryName":    anchor.Tryout.SubCategory.Category.Name,
+			"subCategoryId":   anchor.Tryout.SubCategory.ID,
+			"subCategoryName": anchor.Tryout.SubCategory.Name,
+			"totalSessions":   len(sequence),
+			"cermatMode":      mode,
+		},
+		"overall": fiber.Map{
+			"averageScore":   avg,
+			"totalCorrect":   totalCorrect,
+			"totalQuestions": totalQuestions,
+		},
+		"sections": sections,
+	})
 }
 
 func atoi(s string) int {

@@ -41,6 +41,7 @@ func (l landingish) packages(c *fiber.Ctx) error {
 			"id": p.ID, "name": p.Name, "slug": p.Slug, "category": p.Category, "tagline": p.Tagline,
 			"description": p.Description, "price": p.Price, "durationDays": p.DurationDays, "badgeLabel": p.BadgeLabel,
 			"features": jsonutil.Strings(p.Features), "tryoutQuota": p.TryoutQuota, "moduleQuota": p.ModuleQuota,
+			"cermatQuota": p.CermatQuota,
 			"allowTryout": p.AllowTryout, "allowPractice": p.AllowPractice, "allowCermat": p.AllowCermat,
 			"accessAllPackages": p.AccessAllPackages, "isActive": p.IsActive, "materialIds": ids, "materialCount": len(ids),
 		})
@@ -97,6 +98,14 @@ func (h *Handler) MembershipStatus(c *fiber.Ctx) error {
 		}
 		moduleRem = v
 	}
+	cermatRem := any(nil)
+	if trx.CermatQuota > 0 {
+		v := trx.CermatQuota - trx.CermatUsed
+		if v < 0 {
+			v = 0
+		}
+		cermatRem = v
+	}
 	matIDs := membership.MaterialIDs(trx)
 	if premium {
 		matIDs = membership.AllMaterialIDs(h.DB, uid)
@@ -112,6 +121,7 @@ func (h *Handler) MembershipStatus(c *fiber.Ctx) error {
 		"allowCermat": premium || trx.Package.AllowCermat,
 		"tryoutQuota": trx.TryoutQuota, "tryoutUsed": trx.TryoutUsed, "tryoutRemaining": tryoutRem,
 		"moduleQuota": trx.ModuleQuota, "moduleUsed": trx.ModuleUsed, "moduleRemaining": moduleRem,
+		"cermatQuota": trx.CermatQuota, "cermatUsed": trx.CermatUsed, "cermatRemaining": cermatRem,
 		"allowedMaterialIds": matIDs,
 	})
 }
@@ -262,6 +272,8 @@ func MarkStatus(db *gorm.DB, trxID, status string) (*models.Transaction, error) 
 		updates["tryoutUsed"] = 0
 		updates["moduleQuota"] = trx.Package.ModuleQuota
 		updates["moduleUsed"] = 0
+		updates["cermatQuota"] = trx.Package.CermatQuota
+		updates["cermatUsed"] = 0
 	} else {
 		updates["activatedAt"] = nil
 		updates["expiresAt"] = nil

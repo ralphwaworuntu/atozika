@@ -26,6 +26,7 @@ import { TryoutListPage } from '@/pages/dashboard/TryoutListPage';
 import { TryoutDetailPage } from '@/pages/dashboard/TryoutDetailPage';
 import { TryoutHistoryPage } from '@/pages/dashboard/TryoutHistoryPage';
 import { TryoutReviewPage } from '@/pages/dashboard/TryoutReviewPage';
+import { TryoutPembahasanPage } from '@/pages/dashboard/TryoutPembahasanPage';
 import { PracticePage } from '@/pages/dashboard/PracticePage';
 import { PracticeCategoriesPage } from '@/pages/dashboard/PracticeCategoriesPage';
 import { PracticeSubCategoriesPage } from '@/pages/dashboard/PracticeSubCategoriesPage';
@@ -52,6 +53,7 @@ import { ExamPracticeReviewPage } from '@/pages/dashboard/ExamPracticeReviewPage
 import { CermatPage } from '@/pages/dashboard/CermatPage';
 import { CermatHistoryPage } from '@/pages/dashboard/CermatHistoryPage';
 import { CermatHistoryDetailPage } from '@/pages/dashboard/CermatHistoryDetailPage';
+import { CermatScoringPage } from '@/pages/dashboard/CermatScoringPage';
 import { MaterialsPage } from '@/pages/dashboard/MaterialsPage';
 import { MembershipPage } from '@/pages/dashboard/MembershipPage';
 import { TransactionsPage } from '@/pages/dashboard/TransactionsPage';
@@ -109,6 +111,7 @@ export default function App() {
           <Route path="latihan/tryout/detail/:slug" element={<TryoutDetailPage />} />
           <Route path="latihan/tryout/riwayat" element={<TryoutHistoryPage />} />
           <Route path="latihan/tryout/review/:resultId" element={<TryoutReviewPage />} />
+          <Route path="latihan/tryout/review/:resultId/pembahasan" element={<TryoutPembahasanPage />} />
           <Route path="latihan-soal" element={<PracticeCategoriesPage />} />
           <Route path="latihan-soal/kategori/:categorySlug" element={<PracticeSubCategoriesPage />} />
           <Route path="latihan-soal/kategori/:categorySlug/sub/:subCategoryId" element={<PracticeSubSubCategoriesPage />} />
@@ -135,6 +138,7 @@ export default function App() {
           <Route path="tes-kecermatan" element={<CermatPage />} />
           <Route path="tes-kecermatan/riwayat" element={<CermatHistoryPage />} />
           <Route path="tes-kecermatan/riwayat/:attemptId" element={<CermatHistoryDetailPage />} />
+          <Route path="tes-kecermatan/hasil/:attemptId" element={<CermatScoringPage />} />
           <Route path="materi" element={<MaterialsPage />} />
           <Route path="paket-membership" element={<MembershipPage />} />
           <Route path="konfirmasi-pembayaran" element={<PaymentConfirmationPage />} />

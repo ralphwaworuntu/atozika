@@ -153,10 +153,14 @@ function ReviewQuestionNavigator({
 function ExamReviewQuestionCard({
   question,
   showAnswerSummary = false,
+  hideExplanation = false,
+  onReport,
   footer,
 }: {
   question: ExamReviewQuestionItem;
   showAnswerSummary?: boolean;
+  hideExplanation?: boolean;
+  onReport?: (question: ExamReviewQuestionItem) => void;
   footer?: ReactNode;
 }) {
   const grade = getGradeBadge(question);
@@ -195,6 +199,15 @@ function ExamReviewQuestionCard({
             </p>
           </div>
         </div>
+        {onReport ? (
+          <button
+            type="button"
+            onClick={() => onReport(question)}
+            className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-ink-900 dark:text-ink-100"
+          >
+            Laporkan soal
+          </button>
+        ) : null}
       </div>
 
       <div className="space-y-5 p-4 sm:p-5 lg:p-6">
@@ -276,28 +289,30 @@ function ExamReviewQuestionCard({
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pembahasan</p>
-          {(showAnswerSummary || !isCorrect) && (
-            <div className="mt-2 grid gap-1.5 text-sm text-slate-600 sm:grid-cols-2">
-              <p>
-                <span className="font-medium text-slate-800">Jawaban kamu:</span>{' '}
-                {userLabels.join(', ') || 'Tidak dijawab'}
-              </p>
-              <p>
-                <span className="font-medium text-slate-800">Kunci:</span> {correctLabels.join(', ') || '—'}
-              </p>
-            </div>
-          )}
-          <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700 sm:text-[15px]">
-            {question.explanation?.trim() || 'Pembahasan belum tersedia untuk soal ini.'}
-          </p>
-          {question.explanationImageUrl ? (
-            <div className="mt-3">
-              <ReviewMedia src={question.explanationImageUrl} alt="Ilustrasi pembahasan" />
-            </div>
-          ) : null}
-        </div>
+        {!hideExplanation ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pembahasan</p>
+            {(showAnswerSummary || !isCorrect) && (
+              <div className="mt-2 grid gap-1.5 text-sm text-slate-600 sm:grid-cols-2">
+                <p>
+                  <span className="font-medium text-slate-800">Jawaban kamu:</span>{' '}
+                  {userLabels.join(', ') || 'Tidak dijawab'}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-800">Kunci:</span> {correctLabels.join(', ') || '—'}
+                </p>
+              </div>
+            )}
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700 sm:text-[15px]">
+              {question.explanation?.trim() || 'Pembahasan belum tersedia untuk soal ini.'}
+            </p>
+            {question.explanationImageUrl ? (
+              <div className="mt-3">
+                <ReviewMedia src={question.explanationImageUrl} alt="Ilustrasi pembahasan" />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {footer ? <div className="border-t border-slate-100 pt-4">{footer}</div> : null}
       </div>
@@ -308,9 +323,13 @@ function ExamReviewQuestionCard({
 export function ExamReviewQuestionList({
   questions,
   showAnswerSummary = false,
+  hideExplanation = false,
+  onReportQuestion,
 }: {
   questions: ExamReviewQuestionItem[];
   showAnswerSummary?: boolean;
+  hideExplanation?: boolean;
+  onReportQuestion?: (question: ExamReviewQuestionItem) => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const questionKey = questions.map((q) => q.id).join('|');
@@ -381,6 +400,8 @@ export function ExamReviewQuestionList({
           key={currentQuestion.id}
           question={currentQuestion}
           showAnswerSummary={showAnswerSummary}
+          hideExplanation={hideExplanation}
+          onReport={onReportQuestion}
           footer={navFooter}
         />
       </div>

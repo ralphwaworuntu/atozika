@@ -444,6 +444,15 @@ type CermatAnswer struct {
 
 func (CermatAnswer) TableName() string { return "CermatAnswer" }
 
+type MemberMaterialCategory struct {
+	ID        string    `gorm:"column:id;primaryKey" json:"id"`
+	UserID    string    `gorm:"column:userId" json:"userId"`
+	Category  string    `gorm:"column:category" json:"category"`
+	CreatedAt time.Time `gorm:"column:createdAt" json:"createdAt"`
+}
+
+func (MemberMaterialCategory) TableName() string { return "MemberMaterialCategory" }
+
 type Material struct {
 	ID           string    `gorm:"column:id;primaryKey" json:"id"`
 	Title        string    `gorm:"column:title" json:"title"`
@@ -470,6 +479,7 @@ type MembershipPackage struct {
 	Features          datatypes.JSON    `gorm:"column:features" json:"features"`
 	TryoutQuota       int               `gorm:"column:tryoutQuota" json:"tryoutQuota"`
 	ModuleQuota       int               `gorm:"column:moduleQuota" json:"moduleQuota"`
+	CermatQuota       int               `gorm:"column:cermatQuota" json:"cermatQuota"`
 	AllowTryout       bool              `gorm:"column:allowTryout" json:"allowTryout"`
 	AllowPractice     bool              `gorm:"column:allowPractice" json:"allowPractice"`
 	AllowCermat       bool              `gorm:"column:allowCermat" json:"allowCermat"`
@@ -499,6 +509,8 @@ type Transaction struct {
 	TryoutUsed          int               `gorm:"column:tryoutUsed" json:"tryoutUsed"`
 	ModuleQuota         int               `gorm:"column:moduleQuota" json:"moduleQuota"`
 	ModuleUsed          int               `gorm:"column:moduleUsed" json:"moduleUsed"`
+	CermatQuota         int               `gorm:"column:cermatQuota" json:"cermatQuota"`
+	CermatUsed          int               `gorm:"column:cermatUsed" json:"cermatUsed"`
 	CreatedAt           time.Time         `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt           time.Time         `gorm:"column:updatedAt" json:"updatedAt"`
 	Package             MembershipPackage `gorm:"foreignKey:PackageID" json:"package,omitempty"`

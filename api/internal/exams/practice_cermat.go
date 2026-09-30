@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -218,11 +219,23 @@ func (h *Handler) settingInt(key string, fallback int) int {
 }
 
 func (h *Handler) CermatConfig(c *fiber.Ctx) error {
+	enabledUnlessFalse := func(key string) bool {
+		var s models.SiteSetting
+		if err := h.DB.Where("key = ?", key).First(&s).Error; err != nil {
+			return true
+		}
+		return s.Value != "false"
+	}
 	return httpx.Success(c, fiber.Map{
 		"questionCount":   h.settingInt("cermat_question_count", 60),
 		"durationSeconds": h.settingInt("cermat_duration_seconds", 60),
 		"totalSessions":   h.settingInt("cermat_total_sessions", 10),
 		"breakSeconds":    h.settingInt("cermat_break_seconds", 5),
+		"modes": fiber.Map{
+			"imageEnabled":  enabledUnlessFalse("cermat_mode_image_enabled"),
+			"letterEnabled": enabledUnlessFalse("cermat_mode_letter_enabled"),
+			"numberEnabled": enabledUnlessFalse("cermat_mode_number_enabled"),
+		},
 	})
 }
 
@@ -256,6 +269,72 @@ func shuffleSeeded[T any](in []T, rng func() float64) []T {
 		out[i], out[j] = out[j], out[i]
 	}
 	return out
+}
+
+type cermatQuestion struct {
+	Sequence []string `json:"sequence"`
+	Answer   string   `json:"answer"`
+}
+
+func (h *Handler) buildCermatSessionPayload(uid, attemptID, mode string, idx, qCount, dur, brk, total int) fiber.Map {
+	if idx <= 0 {
+		idx = 1
+	}
+	now := time.Now()
+	seed := seeded(uid, attemptID, itoa(idx))
+	var base []string
+	switch mode {
+	case "LETTER":
+		letters := []string{}
+		for i := 0; i < 26; i++ {
+			letters = append(letters, string(rune('A'+i)))
+		}
+		base = shuffleSeeded(letters, seed)[:5]
+	case "IMAGE":
+		order := shuffleSeeded([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, seeded(uid, attemptID, "column-order"))
+		col := imageCols[order[(idx-1)%10]]
+		base = shuffleSeeded(append([]string{}, col...), seed)
+	default:
+		digits := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
+		base = shuffleSeeded(digits, seed)[:5]
+	}
+	questions := []cermatQuestion{}
+	for i := 0; i < qCount; i++ {
+		qRng := seeded(uid, attemptID, itoa(idx), "q", itoa(i))
+		missing := base[int(qRng()*float64(len(base)))]
+		prompt := []string{}
+		for _, tok := range base {
+			if tok != missing {
+				prompt = append(prompt, tok)
+			}
+		}
+		prompt = shuffleSeeded(prompt, qRng)
+		questions = append(questions, cermatQuestion{Sequence: prompt, Answer: missing})
+	}
+	if mode == "IMAGE" {
+		questions = shuffleSeeded(questions, seeded(uid, attemptID, itoa(idx), "order"))
+	}
+	b, _ := json.Marshal(base)
+	sess := models.CermatSession{
+		ID: id.New(), UserID: uid, AttemptID: &attemptID, SessionIndex: idx, TotalQuestions: qCount,
+		CorrectCount: 0, DurationSeconds: dur, BaseSet: string(b), Mode: mode, StartedAt: now, CreatedAt: now,
+	}
+	h.DB.Create(&sess)
+	qOut := []fiber.Map{}
+	for i, item := range questions {
+		seq, _ := json.Marshal(item.Sequence)
+		h.DB.Create(&models.CermatAnswer{
+			ID: id.New(), SessionID: sess.ID, Order: i, Sequence: string(seq),
+			CorrectAnswer: item.Answer, IsCorrect: false,
+		})
+		qOut = append(qOut, fiber.Map{"order": i, "sequence": item.Sequence})
+	}
+	return fiber.Map{
+		"sessionId": sess.ID, "attemptId": attemptID, "sessionIndex": idx, "mode": mode,
+		"durationSeconds": dur, "breakSeconds": brk, "totalSessions": total,
+		"timerSeconds": dur, "questionCount": qCount,
+		"questions": qOut, "baseSet": base,
+	}
 }
 
 func (h *Handler) CermatStart(c *fiber.Ctx) error {
@@ -293,6 +372,11 @@ func (h *Handler) CermatStart(c *fiber.Ctx) error {
 	now := time.Now()
 	attemptID := body.AttemptID
 	if attemptID == "" {
+		if !membership.IsPremium(h.DB, uid) {
+			if _, err := membership.ConsumeCermat(h.DB, uid); err != nil {
+				return err
+			}
+		}
 		att := models.CermatAttempt{
 			ID: id.New(), UserID: uid, Mode: mode, TotalSessions: total, QuestionCount: qCount,
 			DurationSeconds: dur, BreakSeconds: brk, StartedAt: now,
@@ -304,64 +388,17 @@ func (h *Handler) CermatStart(c *fiber.Ctx) error {
 	if idx <= 0 {
 		idx = 1
 	}
-	seed := seeded(uid, attemptID, itoa(idx))
-	var base []string
-	switch mode {
-	case "LETTER":
-		letters := []string{}
-		for i := 0; i < 26; i++ {
-			letters = append(letters, string(rune('A'+i)))
-		}
-		base = shuffleSeeded(letters, seed)[:5]
-	case "IMAGE":
-		order := shuffleSeeded([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, seeded(uid, attemptID, "column-order"))
-		col := imageCols[order[(idx-1)%10]]
-		base = shuffleSeeded(append([]string{}, col...), seed)
-	default:
-		digits := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
-		base = shuffleSeeded(digits, seed)[:5]
+	return httpx.Success(c, h.buildCermatSessionPayload(uid, attemptID, mode, idx, qCount, dur, brk, total))
+}
+
+func cermatBand(score float64) string {
+	if score >= 85 {
+		return "Sangat Baik"
 	}
-	type q struct {
-		Sequence []string `json:"sequence"`
-		Answer   string   `json:"answer"`
+	if score >= 70 {
+		return "Baik"
 	}
-	questions := []q{}
-	for i := 0; i < qCount; i++ {
-		qRng := seeded(uid, attemptID, itoa(idx), "q", itoa(i))
-		missing := base[int(qRng()*float64(len(base)))]
-		prompt := []string{}
-		for _, tok := range base {
-			if tok != missing {
-				prompt = append(prompt, tok)
-			}
-		}
-		prompt = shuffleSeeded(prompt, qRng)
-		questions = append(questions, q{Sequence: prompt, Answer: missing})
-	}
-	if mode == "IMAGE" {
-		questions = shuffleSeeded(questions, seeded(uid, attemptID, itoa(idx), "order"))
-	}
-	b, _ := json.Marshal(base)
-	sess := models.CermatSession{
-		ID: id.New(), UserID: uid, AttemptID: &attemptID, SessionIndex: idx, TotalQuestions: qCount,
-		CorrectCount: 0, DurationSeconds: dur, BaseSet: string(b), Mode: mode, StartedAt: now, CreatedAt: now,
-	}
-	h.DB.Create(&sess)
-	qOut := []fiber.Map{}
-	for i, item := range questions {
-		seq, _ := json.Marshal(item.Sequence)
-		h.DB.Create(&models.CermatAnswer{
-			ID: id.New(), SessionID: sess.ID, Order: i, Sequence: string(seq),
-			CorrectAnswer: item.Answer, IsCorrect: false,
-		})
-		qOut = append(qOut, fiber.Map{"order": i, "sequence": item.Sequence})
-	}
-	return httpx.Success(c, fiber.Map{
-		"sessionId": sess.ID, "attemptId": attemptID, "sessionIndex": idx, "mode": mode,
-		"durationSeconds": dur, "breakSeconds": brk, "totalSessions": total,
-		"timerSeconds": dur, "questionCount": qCount,
-		"questions": qOut, "baseSet": base,
-	})
+	return "Cukup"
 }
 
 func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
@@ -399,36 +436,136 @@ func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
 	if total == 0 {
 		total = 1
 	}
-	score := float64(correct) / float64(total) * 100
+	score := math.Round(float64(correct) / float64(total) * 100)
 	h.DB.Model(&sess).Updates(map[string]any{"correctCount": correct, "score": score, "finishedAt": now})
-	band := "Cukup"
-	if score >= 85 {
-		band = "Sangat Baik"
-	} else if score >= 70 {
-		band = "Baik"
+	band := cermatBand(score)
+	sessionSummary := fiber.Map{
+		"sessionIndex": sess.SessionIndex, "score": score, "correct": correct, "total": total, "category": band,
 	}
-	return httpx.Success(c, fiber.Map{"sessionId": sess.ID, "score": score, "correctCount": correct, "totalQuestions": total, "band": band, "attemptId": sess.AttemptID})
+
+	if sess.AttemptID == nil || *sess.AttemptID == "" {
+		return httpx.Success(c, fiber.Map{
+			"completed": true,
+			"summary": fiber.Map{
+				"averageScore": score, "totalCorrect": correct, "totalQuestions": total,
+				"sessions": []fiber.Map{sessionSummary},
+			},
+		})
+	}
+
+	var attempt models.CermatAttempt
+	if err := h.DB.First(&attempt, "id = ?", *sess.AttemptID).Error; err != nil {
+		return httpx.New(404, "Sesi tidak ditemukan")
+	}
+
+	if sess.SessionIndex < attempt.TotalSessions {
+		next := h.buildCermatSessionPayload(
+			uid, attempt.ID, attempt.Mode, sess.SessionIndex+1,
+			attempt.QuestionCount, attempt.DurationSeconds, attempt.BreakSeconds, attempt.TotalSessions,
+		)
+		return httpx.Success(c, fiber.Map{
+			"completed": false, "sessionSummary": sessionSummary, "nextSession": next,
+		})
+	}
+
+	var sessions []models.CermatSession
+	h.DB.Where(`"attemptId" = ?`, attempt.ID).Order(`"sessionIndex" ASC`).Find(&sessions)
+	totalCorrect := 0
+	totalQuestions := 0
+	scoreSum := 0.0
+	sessionOut := []fiber.Map{}
+	for _, item := range sessions {
+		totalCorrect += item.CorrectCount
+		totalQuestions += item.TotalQuestions
+		itemScore := 0.0
+		if item.Score != nil {
+			itemScore = *item.Score
+		}
+		scoreSum += itemScore
+		sessionOut = append(sessionOut, fiber.Map{
+			"sessionIndex": item.SessionIndex, "score": itemScore,
+			"correct": item.CorrectCount, "total": item.TotalQuestions,
+		})
+	}
+	averageScore := 0.0
+	if len(sessions) > 0 {
+		averageScore = math.Round((scoreSum/float64(len(sessions)))*100) / 100
+	}
+	h.DB.Model(&attempt).Updates(map[string]any{
+		"finishedAt": now, "averageScore": averageScore, "totalAnswered": totalCorrect,
+	})
+	return httpx.Success(c, fiber.Map{
+		"completed": true,
+		"summary": fiber.Map{
+			"attemptId": attempt.ID, "mode": attempt.Mode, "averageScore": averageScore,
+			"totalCorrect": totalCorrect, "totalQuestions": totalQuestions, "sessions": sessionOut,
+		},
+	})
+}
+
+func shapeCermatAttempt(att models.CermatAttempt) fiber.Map {
+	sessions := append([]models.CermatSession(nil), att.Sessions...)
+	sort.Slice(sessions, func(i, j int) bool {
+		return sessions[i].SessionIndex < sessions[j].SessionIndex
+	})
+	totalCorrect := 0
+	totalQuestions := 0
+	scoreSum := 0.0
+	sessionOut := []fiber.Map{}
+	for _, item := range sessions {
+		totalCorrect += item.CorrectCount
+		totalQuestions += item.TotalQuestions
+		itemScore := 0.0
+		if item.Score != nil {
+			itemScore = *item.Score
+		}
+		scoreSum += itemScore
+		sessionOut = append(sessionOut, fiber.Map{
+			"id": item.ID, "sessionIndex": item.SessionIndex, "totalQuestions": item.TotalQuestions,
+			"correctCount": item.CorrectCount, "score": itemScore,
+			"finishedAt": item.FinishedAt, "createdAt": item.CreatedAt,
+		})
+	}
+	averageScore := 0.0
+	if att.AverageScore != nil {
+		averageScore = *att.AverageScore
+	} else if len(sessions) > 0 {
+		averageScore = math.Round((scoreSum/float64(len(sessions)))*100) / 100
+	}
+	if att.TotalAnswered != nil {
+		totalCorrect = *att.TotalAnswered
+	}
+	return fiber.Map{
+		"id": att.ID, "mode": att.Mode, "totalSessions": att.TotalSessions,
+		"sessionCount": len(sessions), "averageScore": averageScore,
+		"totalCorrect": totalCorrect, "totalQuestions": totalQuestions,
+		"finishedAt": att.FinishedAt, "startedAt": att.StartedAt, "sessions": sessionOut,
+	}
 }
 
 func (h *Handler) CermatHistory(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
-	mode := c.Query("mode", "IMAGE")
+	mode := c.Query("mode")
 	var items []models.CermatAttempt
-	q := h.DB.Where(`"userId" = ?`, uid).Order(`"startedAt" DESC`)
+	q := h.DB.Preload("Sessions").Where(`"userId" = ? AND "finishedAt" IS NOT NULL`, uid).Order(`"finishedAt" DESC`)
 	if mode != "" {
 		q = q.Where("mode = ?", mode)
 	}
 	q.Find(&items)
-	return httpx.Success(c, items)
+	out := make([]fiber.Map, 0, len(items))
+	for _, item := range items {
+		out = append(out, shapeCermatAttempt(item))
+	}
+	return httpx.Success(c, out)
 }
 
 func (h *Handler) CermatAttempt(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
 	var att models.CermatAttempt
-	if err := h.DB.Preload("Sessions").Preload("Sessions.Answers").Where("id = ? AND \"userId\" = ?", c.Params("attemptId"), uid).First(&att).Error; err != nil {
+	if err := h.DB.Preload("Sessions").Where("id = ? AND \"userId\" = ?", c.Params("attemptId"), uid).First(&att).Error; err != nil {
 		return httpx.New(404, "Attempt tidak ditemukan")
 	}
-	return httpx.Success(c, att)
+	return httpx.Success(c, shapeCermatAttempt(att))
 }
 
 func itoa(n int) string {

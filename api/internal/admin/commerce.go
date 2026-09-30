@@ -21,6 +21,7 @@ func packageView(p models.MembershipPackage) fiber.Map {
 		"id": p.ID, "name": p.Name, "slug": p.Slug, "category": p.Category, "tagline": p.Tagline,
 		"description": p.Description, "price": p.Price, "durationDays": p.DurationDays, "badgeLabel": p.BadgeLabel,
 		"features": jsonutil.Strings(p.Features), "tryoutQuota": p.TryoutQuota, "moduleQuota": p.ModuleQuota,
+		"cermatQuota": p.CermatQuota,
 		"allowTryout": p.AllowTryout, "allowPractice": p.AllowPractice, "allowCermat": p.AllowCermat,
 		"accessAllPackages": p.AccessAllPackages, "isActive": p.IsActive, "materialIds": ids, "materials": p.Materials,
 	}
@@ -48,6 +49,7 @@ type packageBody struct {
 	Features          []string `json:"features"`
 	TryoutQuota       int      `json:"tryoutQuota"`
 	ModuleQuota       int      `json:"moduleQuota"`
+	CermatQuota       int      `json:"cermatQuota"`
 	AllowTryout       *bool    `json:"allowTryout"`
 	AllowPractice     *bool    `json:"allowPractice"`
 	AllowCermat       *bool    `json:"allowCermat"`
@@ -66,6 +68,7 @@ func (h *Handler) CreatePackage(c *fiber.Ctx) error {
 		Tagline: ptr(body.Tagline), Description: body.Description, Price: body.Price,
 		DurationDays: body.DurationDays, BadgeLabel: ptr(body.BadgeLabel),
 		Features: jsonutil.MustJSON(body.Features), TryoutQuota: body.TryoutQuota, ModuleQuota: body.ModuleQuota,
+		CermatQuota: body.CermatQuota,
 		AllowTryout: true, AllowPractice: true, AllowCermat: true, IsActive: true,
 	}
 	if body.AllowTryout != nil {
@@ -130,6 +133,7 @@ func (h *Handler) UpdatePackage(c *fiber.Ctx) error {
 	}
 	updates["tryoutQuota"] = body.TryoutQuota
 	updates["moduleQuota"] = body.ModuleQuota
+	updates["cermatQuota"] = body.CermatQuota
 	if body.AllowTryout != nil {
 		updates["allowTryout"] = *body.AllowTryout
 	}

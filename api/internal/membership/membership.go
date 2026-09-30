@@ -84,6 +84,28 @@ func ConsumeTryout(db *gorm.DB, userID string) (*models.Transaction, error) {
 	return trx, nil
 }
 
+func ConsumeCermat(db *gorm.DB, userID string) (*models.Transaction, error) {
+	trx, err := AssertActive(db, userID)
+	if err != nil {
+		return nil, err
+	}
+	if err := AssertFeature(trx, "CERMAT", false); err != nil {
+		return nil, err
+	}
+	if trx.CermatQuota == 0 {
+		return trx, nil
+	}
+	if trx.CermatUsed >= trx.CermatQuota {
+		return nil, httpx.New(403, "Token tes kecermatan Anda telah habis. Silakan hubungi admin atau perpanjang paket.", map[string]any{"code": "CERMAT_QUOTA_EXHAUSTED"})
+	}
+	res := db.Model(&models.Transaction{}).Where(`id = ? AND "cermatUsed" < "cermatQuota"`, trx.ID).
+		UpdateColumn("cermatUsed", gorm.Expr(`"cermatUsed" + 1`))
+	if res.RowsAffected == 0 {
+		return nil, httpx.New(403, "Token tes kecermatan Anda telah habis. Silakan hubungi admin atau perpanjang paket.", map[string]any{"code": "CERMAT_QUOTA_EXHAUSTED"})
+	}
+	return trx, nil
+}
+
 func MaterialIDs(trx *models.Transaction) []string {
 	if trx == nil {
 		return nil

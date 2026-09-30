@@ -97,6 +97,8 @@ func Register(r fiber.Router, h *Handler) {
 	r.Get("/practice/export", h.ExportPractice)
 	r.Get("/practice/questions/export", h.ExportPracticeQuestions)
 
+	r.Get("/users/:id/material-categories", h.GetUserMaterialCategories)
+	r.Put("/users/:id/material-categories", h.PutUserMaterialCategories)
 	r.Get("/materials", h.ListMaterials)
 	r.Get("/materials/export", h.ExportMaterials)
 	r.Post("/materials", h.CreateMaterial)
@@ -128,6 +130,8 @@ func Register(r fiber.Router, h *Handler) {
 	r.Delete("/site/welcome-modal/:id", h.DeleteWelcome)
 	r.Get("/exams/cermat-config", h.GetCermatConfig)
 	r.Put("/exams/cermat-config", h.PutCermatConfig)
+	r.Get("/exams/cermat-modes", h.GetCermatModes)
+	r.Put("/exams/cermat-modes", h.PutCermatModes)
 	r.Get("/site/hero-image", h.GetHeroImage)
 	r.Post("/site/hero-image", h.PutHeroImage)
 	r.Get("/site/hero-slides", h.ListHeroSlides)

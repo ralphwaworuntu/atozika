@@ -8,6 +8,7 @@ import (
 	"atozika/internal/examcsv"
 	"atozika/internal/httpx"
 	"atozika/internal/id"
+	"atozika/internal/materials"
 	"atozika/internal/middleware"
 	"atozika/internal/models"
 
@@ -398,6 +399,9 @@ func (h *Handler) CreateMaterial(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return httpx.New(400, "Invalid body")
 	}
+	if !materials.ValidCategory(body.Category) {
+		return httpx.New(400, "Kategori materi tidak valid")
+	}
 	body.ID = id.New()
 	body.CreatedAt = time.Now()
 	h.DB.Create(&body)
@@ -407,6 +411,9 @@ func (h *Handler) UpdateMaterial(c *fiber.Ctx) error {
 	var body map[string]any
 	if err := c.BodyParser(&body); err != nil || len(body) == 0 {
 		return httpx.New(400, "No data provided")
+	}
+	if raw, ok := body["category"].(string); ok && !materials.ValidCategory(raw) {
+		return httpx.New(400, "Kategori materi tidak valid")
 	}
 	var item models.Material
 	if err := h.DB.First(&item, "id = ?", c.Params("id")).Error; err != nil {

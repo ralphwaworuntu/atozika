@@ -55,6 +55,7 @@ export type TryoutReview = {
   };
   score: number;
   completedAt?: string | null;
+  durationSeconds?: number;
   questions: TryoutReviewQuestion[];
 };
 
@@ -205,6 +206,7 @@ export type MembershipPackage = {
   badgeLabel?: string | null;
   tryoutQuota?: number;
   moduleQuota?: number;
+  cermatQuota?: number;
   allowTryout?: boolean;
   allowPractice?: boolean;
   allowCermat?: boolean;
@@ -274,6 +276,9 @@ export type MembershipStatus = {
   moduleQuota?: number;
   moduleUsed?: number;
   moduleRemaining?: number | null;
+  cermatQuota?: number;
+  cermatUsed?: number;
+  cermatRemaining?: number | null;
   allowedMaterialIds?: string[];
 };
 

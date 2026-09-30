@@ -143,7 +143,8 @@ func (h *Handler) Packages(c *fiber.Ctx) error {
 			"id": p.ID, "name": p.Name, "slug": p.Slug, "category": p.Category, "tagline": p.Tagline,
 			"description": p.Description, "price": p.Price, "durationDays": p.DurationDays,
 			"badgeLabel": p.BadgeLabel, "features": features, "tryoutQuota": p.TryoutQuota,
-			"moduleQuota": p.ModuleQuota, "allowTryout": p.AllowTryout, "allowPractice": p.AllowPractice,
+			"moduleQuota": p.ModuleQuota, "cermatQuota": p.CermatQuota,
+			"allowTryout": p.AllowTryout, "allowPractice": p.AllowPractice,
 			"allowCermat": p.AllowCermat, "accessAllPackages": p.AccessAllPackages, "isActive": p.IsActive,
 			"materialIds": ids, "materialCount": len(ids),
 		})

@@ -165,6 +165,7 @@ func main() {
 	uj := v1.Group("/ujian", protect)
 	mountExams(uj, true)
 
+	v1.Get("/materials/categories", protect, member, matH.Categories)
 	v1.Get("/materials", protect, member, matH.List)
 	v1.Post("/materials", protect, adminOnly, matH.Create)
 

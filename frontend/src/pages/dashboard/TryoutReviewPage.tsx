@@ -1,15 +1,12 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { apiGet } from '@/lib/api';
 import type { TryoutPackageReview, TryoutReview } from '@/types/exam';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { MembershipRequired } from '@/components/dashboard/MembershipRequired';
-import { CERMAT_MODE_LABELS } from '@/types/cermat';
-import { isAxiosError } from 'axios';
-import { PageHeader } from '@/components/common/PageHeader';
-import { ExamReviewQuestionList, ExamReviewSummaryBar } from '@/components/dashboard/ExamReviewQuestions';
+import { TryoutResultReport } from '@/components/dashboard/tryout-result/TryoutResultReport';
 
 function tryoutListPath(categoryId?: string, subCategoryId?: string) {
   if (categoryId && subCategoryId) {
@@ -37,9 +34,6 @@ export function TryoutReviewPage() {
     enabled: Boolean(resultId && data?.tryout.isPsikoSession),
   });
 
-  const completedAtLabel = data?.completedAt ? new Date(data.completedAt).toLocaleString('id-ID') : '-';
-  const backToList = tryoutListPath(data?.tryout.subCategory?.category.id, data?.tryout.subCategory?.id);
-
   if (!resultId) {
     return <Navigate to="/app/latihan/tryout" replace />;
   }
@@ -50,7 +44,7 @@ export function TryoutReviewPage() {
 
   if (membership.data?.allowTryout === false) {
     return (
-      <section className="member-flow rounded-3xl border border-brand-200 bg-brand-50 p-6 text-sm text-brand-800">
+      <section className="member-card p-6 text-sm font-semibold text-slate-600 dark:text-ink-200">
         Paket membership kamu tidak mencakup akses latihan tryout. Hubungi admin untuk upgrade paket.
       </section>
     );
@@ -65,11 +59,15 @@ export function TryoutReviewPage() {
       return <MembershipRequired status={membership.data} />;
     }
     return (
-      <section className="space-y-4">
-        <p className="text-sm text-red-600">Gagal memuat pembahasan. Coba kembali.</p>
-        <Button variant="outline" onClick={() => navigate('/app/latihan/tryout')}>
+      <section className="member-card space-y-4 p-6">
+        <p className="text-sm font-semibold text-rose-600">Gagal memuat pembahasan. Coba kembali.</p>
+        <button
+          type="button"
+          onClick={() => navigate('/app/latihan/tryout')}
+          className="inline-flex items-center rounded-full bg-slate-100 px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 active:scale-95 dark:bg-white/10 dark:text-ink-50"
+        >
           Kembali ke Tryout
-        </Button>
+        </button>
       </section>
     );
   }
@@ -81,86 +79,71 @@ export function TryoutReviewPage() {
   if (data.tryout.isPsikoSession && packageReviewQuery.data) {
     const packageData = packageReviewQuery.data;
     const packageBack = tryoutListPath(packageData.package.categoryId, packageData.package.subCategoryId);
+    const flatQuestions = packageData.sections.flatMap((section) => section.questions);
+    const sectionBreakdowns = packageData.sections.map((section) => ({
+      label: `Sesi ${section.sessionOrder}: ${section.tryout.name}`,
+      score: section.score,
+      correct: section.questions.filter((question) => question.isCorrect).length,
+      total: section.questions.length,
+    }));
+    const firstSlug = packageData.sections[0]?.tryout.slug ?? data.tryout.slug;
+    const durationSeconds =
+      packageData.sections.reduce((sum, section) => sum + section.tryout.durationMinutes * 60, 0) ||
+      data.durationSeconds ||
+      data.tryout.durationMinutes * 60;
+
     return (
-      <section className="page-shell member-flow space-y-6">
-        <PageHeader
-          eyebrow="Pembahasan Paket Soal PSIKO"
-          title={packageData.package.subCategoryName}
-          description={`${packageData.package.totalSessions} sesi - Lanjutan kecermatan: ${CERMAT_MODE_LABELS[packageData.package.cermatMode]}`}
-          action={
-            <>
-              <Button variant="outline" onClick={() => navigate(packageBack)}>
-                Kembali
-              </Button>
-              <Button onClick={() => navigate('/app/latihan/tryout')}>Pilih Tryout Lain</Button>
-            </>
-          }
-        />
-
-        <ExamReviewSummaryBar
-          score={packageData.overall.averageScore}
-          correctCount={packageData.overall.totalCorrect}
-          totalQuestions={packageData.overall.totalQuestions}
-          meta={`${packageData.package.totalSessions} sesi · ${packageData.package.categoryName}`}
-          statusLabel={packageData.overall.averageScore >= 70 ? 'Lulus' : 'Perlu Perbaikan'}
-          passed={packageData.overall.averageScore >= 70}
-        />
-
-        <div className="space-y-8">
-          {packageData.sections.map((section) => {
-            const completedAt = section.completedAt ? new Date(section.completedAt).toLocaleString('id-ID') : '-';
-            return (
-              <div key={section.resultId} className="space-y-4">
-                <div className="rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 sm:px-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
-                        Section {section.sessionOrder}
-                      </p>
-                      <h2 className="text-xl font-semibold text-slate-900">{section.tryout.name}</h2>
-                      <p className="text-sm text-slate-600">Selesai {completedAt}</p>
-                    </div>
-                    <div className="rounded-xl bg-white px-4 py-2 text-center shadow-sm">
-                      <p className="text-xs uppercase text-slate-500">Skor Sesi</p>
-                      <p className="text-2xl font-bold text-brand-600">{Math.round(section.score)}</p>
-                    </div>
-                  </div>
-                </div>
-                <ExamReviewQuestionList questions={section.questions} />
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <TryoutResultReport
+        resultId={resultId}
+        title={packageData.package.subCategoryName}
+        categoryName={packageData.package.categoryName}
+        subCategoryName={packageData.package.subCategoryName}
+        score={packageData.overall.averageScore}
+        correctCount={packageData.overall.totalCorrect}
+        totalQuestions={packageData.overall.totalQuestions}
+        durationSeconds={durationSeconds}
+        completedAtLabel={
+          packageData.sections[0]?.completedAt
+            ? new Date(packageData.sections[0].completedAt).toLocaleString('id-ID')
+            : '-'
+        }
+        tryoutSlug={firstSlug}
+        questions={flatQuestions}
+        sectionBreakdowns={sectionBreakdowns}
+        backToList={packageBack}
+        onRetry={() =>
+          navigate('/app/latihan/tryout/mulai', {
+            state: { startTryoutSlug: firstSlug, returnTo: packageBack },
+          })
+        }
+      />
     );
   }
 
+  const correctCount = data.questions.filter((question) => question.isCorrect).length;
+  const backToList = tryoutListPath(data.tryout.subCategory?.category.id, data.tryout.subCategory?.id);
+  const completedAtLabel = data.completedAt ? new Date(data.completedAt).toLocaleString('id-ID') : '-';
+  const durationSeconds = data.durationSeconds || data.tryout.durationMinutes * 60;
+
   return (
-    <section className="page-shell member-flow space-y-6">
-      <PageHeader
-        eyebrow="Pembahasan Tryout"
-        title={data.tryout.name}
-        description={`Diselesaikan ${completedAtLabel}`}
-        action={
-          <>
-            <Button variant="outline" onClick={() => navigate(backToList)}>
-              Kembali
-            </Button>
-            <Button onClick={() => navigate('/app/latihan/tryout')}>Pilih Tryout Lain</Button>
-          </>
-        }
-      />
-
-      <ExamReviewSummaryBar
-        score={data.score}
-        correctCount={data.questions.filter((q) => q.isCorrect).length}
-        totalQuestions={data.questions.length}
-        meta={`Durasi ${data.tryout.durationMinutes} menit`}
-        statusLabel={data.score >= 70 ? 'Lulus' : 'Perlu Perbaikan'}
-        passed={data.score >= 70}
-      />
-
-      <ExamReviewQuestionList questions={data.questions} />
-    </section>
+    <TryoutResultReport
+      resultId={resultId}
+      title={data.tryout.name}
+      categoryName={data.tryout.subCategory?.category.name}
+      subCategoryName={data.tryout.subCategory?.name}
+      score={data.score}
+      correctCount={correctCount}
+      totalQuestions={data.questions.length}
+      durationSeconds={durationSeconds}
+      completedAtLabel={completedAtLabel}
+      tryoutSlug={data.tryout.slug}
+      questions={data.questions}
+      backToList={backToList}
+      onRetry={() =>
+        navigate('/app/latihan/tryout/mulai', {
+          state: { startTryoutSlug: data.tryout.slug, returnTo: backToList },
+        })
+      }
+    />
   );
 }

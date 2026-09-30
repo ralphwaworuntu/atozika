@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { apiGet, apiPost } from '@/lib/api';
+import { apiGet, apiPost, getApiErrorMessage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
@@ -84,6 +83,7 @@ function getTestVariants(config: CermatConfig): Array<{ mode: CermatMode; title:
 export function CermatPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const membership = useMembershipStatus();
   const { data: blocks, refetch: refetchBlocks } = useExamBlocks(Boolean(membership.data?.isActive));
   const { data: blockConfig } = useExamBlockConfig(Boolean(membership.data?.isActive));
@@ -95,39 +95,37 @@ export function CermatPage() {
     queryFn: () => apiGet<CermatConfig>('/exams/cermat/config'),
     enabled: membership.data?.isActive === true && membership.data?.allowCermat !== false,
   });
-  const testVariants = useMemo(() => getTestVariants(cermatConfig), [cermatConfig]);
+  const testVariants = useMemo(() => {
+    const modes = cermatConfig.modes;
+    return getTestVariants(cermatConfig).filter((item) => {
+      if (!modes) return true;
+      if (item.mode === 'IMAGE') return modes.imageEnabled !== false;
+      if (item.mode === 'LETTER') return modes.letterEnabled !== false;
+      return modes.numberEnabled !== false;
+    });
+  }, [cermatConfig]);
   const configSummary = useMemo(() => formatCermatConfigSummary(cermatConfig), [cermatConfig]);
   const [session, setSession] = useState<CermatSession | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [breakLeft, setBreakLeft] = useState(0);
-  const [isBreaking, setIsBreaking] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string | null>>({});
-  const [result, setResult] = useState<
-    {
-      attemptId?: string;
-      mode?: CermatMode;
-      averageScore: number;
-      totalCorrect: number;
-      totalQuestions: number;
-      sessions: Array<{ sessionIndex: number; score: number; correct: number; total: number }>;
-    } | null
-  >(null);
-  const [resultCountdown, setResultCountdown] = useState(0);
-  const [pendingResultAttemptId, setPendingResultAttemptId] = useState<string | null>(null);
   const [pendingMode, setPendingMode] = useState<CermatMode | null>(null);
   const [pendingNext, setPendingNext] = useState<CermatSession | null>(null);
+  const [breakLeft, setBreakLeft] = useState(0);
+  const [isBreaking, setIsBreaking] = useState(false);
   const [pendingSession, setPendingSession] = useState<CermatSession | null>(null);
   const [countdownOpen, setCountdownOpen] = useState(false);
   const [countdownToken, setCountdownToken] = useState(0);
   const autoSubmitRef = useRef<string>('');
   const autoStartOnceRef = useRef(false);
   const answersRef = useRef<Record<number, string | null>>({});
+  const questionIndexRef = useRef(0);
   const timerRef = useRef<number | null>(null);
   const endTimeRef = useRef<number | null>(null);
+  const isBreakingRef = useRef(false);
 
   const { request: requestFullscreen, exit: exitFullscreen, setViolationHandler, isSupported: fullscreenSupported } = useFullscreenExam({
-    active: Boolean(session) && cermatBlockEnabled,
+    active: Boolean(session || isBreaking || pendingNext) && cermatBlockEnabled,
   });
 
   const violationMutation = useMutation({
@@ -153,10 +151,6 @@ export function CermatPage() {
   }, [location.search]);
   const autoStartRequested = useMemo(() => new URLSearchParams(location.search).get('autoStart') === '1', [location.search]);
 
-  useEffect(() => {
-    autoStartOnceRef.current = false;
-  }, [forcedMode, autoStartRequested]);
-
   const submitMutation = useMutation({
     mutationFn: ({ sessionId, answerMap }: { sessionId: string; answerMap: Record<number, string | null> }) => {
       const payload = Object.entries(answerMap).map(([order, value]) => ({
@@ -181,29 +175,51 @@ export function CermatPage() {
       );
     },
     onSuccess: (payload) => {
-      if (payload.completed && payload.summary) {
-        setResult(payload.summary);
+      if (payload.completed && payload.summary?.attemptId) {
+        isBreakingRef.current = false;
         setSession(null);
+        questionIndexRef.current = 0;
+        answersRef.current = {};
         setCurrentIndex(0);
         setTimeLeft(60);
+        setAnswers({});
+        setPendingNext(null);
         setBreakLeft(0);
         setIsBreaking(false);
-        setPendingNext(null);
         endTimeRef.current = null;
         exitFullscreen();
-        setPendingResultAttemptId(payload.summary.attemptId);
-        setResultCountdown(5);
         toast.success(`Tes selesai. Rata-rata ${payload.summary.averageScore}%`);
+        navigate(`/app/tes-kecermatan/hasil/${payload.summary.attemptId}`);
         return;
       }
       if (payload.nextSession) {
-        setCurrentIndex(0);
-        setTimeLeft(0);
-        setAnswers({});
-        setPendingNext(payload.nextSession);
-        setBreakLeft(payload.nextSession.breakSeconds ?? 5);
-        setIsBreaking(true);
+        const next = payload.nextSession;
+        const configuredBreak = Number(next.breakSeconds ?? cermatConfig.breakSeconds ?? 5);
+        const pause = Number.isFinite(configuredBreak) ? Math.max(0, configuredBreak) : 5;
+        isBreakingRef.current = true;
+        if (session?.sessionId) {
+          autoSubmitRef.current = session.sessionId;
+        }
         endTimeRef.current = null;
+        setPendingNext(next);
+        if (pause <= 0) {
+          isBreakingRef.current = false;
+          setSession(next);
+          setPendingNext(null);
+          answersRef.current = {};
+          questionIndexRef.current = 0;
+          setAnswers({});
+          setCurrentIndex(0);
+          setIsBreaking(false);
+          setBreakLeft(0);
+          autoSubmitRef.current = '';
+          endTimeRef.current = Date.now() + (next.timerSeconds ?? 60) * 1000;
+          setTimeLeft(next.timerSeconds ?? 60);
+          return;
+        }
+        setIsBreaking(true);
+        setBreakLeft(pause);
+        return;
       }
     },
     onError: () => toast.error('Gagal mengirim jawaban'),
@@ -218,9 +234,10 @@ export function CermatPage() {
       setPendingSession(payload);
       setCountdownToken((prev) => prev + 1);
       setCountdownOpen(true);
+      void queryClient.invalidateQueries({ queryKey: ['membership-status'] });
     },
-    onError: () => {
-      toast.error('Gagal memulai sesi');
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, 'Gagal memulai sesi'));
       exitFullscreen();
     },
     onSettled: () => setPendingMode(null),
@@ -228,52 +245,48 @@ export function CermatPage() {
 
   const handleAdvance = useCallback(
     (value?: string | null) => {
-      if (!session || !currentQuestion || submitMutation.isPending) return;
-      const nextAnswers = { ...answers, [currentQuestion.order]: typeof value === 'string' ? value : null };
+      if (!session || submitMutation.isPending) return;
+      const index = questionIndexRef.current;
+      const question = session.questions[index];
+      if (!question) return;
+
+      const nextAnswers = {
+        ...answersRef.current,
+        [question.order]: typeof value === 'string' ? value : null,
+      };
       answersRef.current = nextAnswers;
       setAnswers(nextAnswers);
-      const isLast = currentIndex + 1 >= session.questions.length;
-      if (isLast) {
-        submitMutation.mutate({ sessionId: session.sessionId, answerMap: nextAnswers });
-      } else {
-        setCurrentIndex((prev) => prev + 1);
-      }
+
+      if (index + 1 >= session.questions.length) return;
+      const nextIndex = index + 1;
+      questionIndexRef.current = nextIndex;
+      setCurrentIndex(nextIndex);
     },
-    [answers, currentQuestion, currentIndex, session, submitMutation],
+    [session, submitMutation],
   );
+
+  const handleFinishSession = useCallback(() => {
+    if (!session || submitMutation.isPending) return;
+    submitMutation.mutate({ sessionId: session.sessionId, answerMap: answersRef.current });
+  }, [session, submitMutation]);
+
+  const allQuestionsAnswered = useMemo(() => {
+    if (!session) return false;
+    return session.questions.every((question) => answers[question.order] !== undefined);
+  }, [answers, session]);
 
   useEffect(() => {
     autoSubmitRef.current = '';
   }, [session?.sessionId]);
 
   useEffect(() => {
-    answersRef.current = answers;
-  }, [answers]);
-
-  useEffect(() => {
-    if (resultCountdown <= 0 || !pendingResultAttemptId) return undefined;
-    const timer = window.setTimeout(() => {
-      if (resultCountdown <= 1) {
-        const attemptId = pendingResultAttemptId;
-        setResultCountdown(0);
-        setPendingResultAttemptId(null);
-        setResult(null);
-        navigate(attemptId ? `/app/tes-kecermatan/riwayat/${attemptId}` : '/app/tes-kecermatan/riwayat');
-        return;
-      }
-      setResultCountdown((prev) => prev - 1);
-    }, 1000);
-    return () => window.clearTimeout(timer);
-  }, [navigate, pendingResultAttemptId, resultCountdown]);
-
-  useEffect(() => {
-    if (!session && !countdownOpen && resultCountdown <= 0) return undefined;
+    if (!session && !countdownOpen && !isBreaking) return undefined;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prevOverflow;
     };
-  }, [session, countdownOpen, resultCountdown]);
+  }, [session, countdownOpen, isBreaking]);
 
   useEffect(() => {
     if (!session || isBreaking) {
@@ -300,7 +313,7 @@ export function CermatPage() {
   }, [session, isBreaking]);
 
   useEffect(() => {
-    if (!session || isBreaking) return;
+    if (!session || isBreaking || isBreakingRef.current) return;
     if (timeLeft > 0) return;
     if (!submitMutation.isPending && autoSubmitRef.current !== session.sessionId) {
       autoSubmitRef.current = session.sessionId;
@@ -308,44 +321,52 @@ export function CermatPage() {
     }
   }, [isBreaking, session, submitMutation, timeLeft]);
 
+  const startPendingNextSession = useCallback(() => {
+    if (!pendingNext) return;
+    const next = pendingNext;
+    isBreakingRef.current = false;
+    setSession(next);
+    setPendingNext(null);
+    answersRef.current = {};
+    questionIndexRef.current = 0;
+    setAnswers({});
+    setCurrentIndex(0);
+    setIsBreaking(false);
+    setBreakLeft(0);
+    autoSubmitRef.current = '';
+    endTimeRef.current = Date.now() + (next.timerSeconds ?? 60) * 1000;
+    setTimeLeft(next.timerSeconds ?? 60);
+  }, [pendingNext]);
+
   useEffect(() => {
-    if (!pendingNext || breakLeft <= 0 || !isBreaking) return;
+    if (!pendingNext || !isBreaking) return undefined;
     const timer = window.setInterval(() => {
       setBreakLeft((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [pendingNext, breakLeft, isBreaking]);
+  }, [pendingNext?.sessionId, isBreaking]);
 
   useEffect(() => {
-    if (!(pendingNext && breakLeft === 0 && isBreaking)) return;
-    const timer = window.setTimeout(() => {
-      setSession(pendingNext);
-      setPendingNext(null);
-      setAnswers({});
-      setCurrentIndex(0);
-      endTimeRef.current = Date.now() + (pendingNext.timerSeconds ?? 60) * 1000;
-      setTimeLeft(pendingNext.timerSeconds ?? 60);
-      setIsBreaking(false);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [breakLeft, pendingNext, isBreaking]);
+    if (!(pendingNext && isBreaking && breakLeft === 0)) return;
+    startPendingNextSession();
+  }, [breakLeft, pendingNext, isBreaking, startPendingNextSession]);
 
   const handleForceStop = useCallback(
     (reason?: string) => {
       if (reason) {
         toast.error(`Tes dihentikan: ${reason}`);
       }
+      isBreakingRef.current = false;
       setSession(null);
+      answersRef.current = {};
+      questionIndexRef.current = 0;
       setCurrentIndex(0);
       setTimeLeft(60);
-      setBreakLeft(0);
       setAnswers({});
-      setResult(null);
-      setIsBreaking(false);
-      setPendingNext(null);
       setPendingSession(null);
-      setResultCountdown(0);
-      setPendingResultAttemptId(null);
+      setPendingNext(null);
+      setBreakLeft(0);
+      setIsBreaking(false);
       endTimeRef.current = null;
       exitFullscreen();
       if (cermatBlockEnabled && reason) {
@@ -370,21 +391,29 @@ export function CermatPage() {
     if (!membership.data?.isActive || membership.data?.allowCermat === false) return;
     if (cermatBlock) return;
     if (session || pendingSession || countdownOpen || startMutation.isPending) return;
-    autoStartOnceRef.current = true;
 
+    let cancelled = false;
     const startForcedMode = async () => {
       if (fullscreenSupported) {
         try {
           await requestFullscreen();
         } catch {
-          toast.error('Izinkan mode layar penuh untuk mulai tes.');
+          if (!cancelled) {
+            toast.error('Izinkan mode layar penuh untuk mulai tes.');
+          }
           return;
         }
       }
+      if (cancelled || autoStartOnceRef.current) return;
+      autoStartOnceRef.current = true;
       startMutation.mutate(forcedMode);
+      navigate(`/app/tes-kecermatan?mode=${forcedMode}`, { replace: true });
     };
 
     void startForcedMode();
+    return () => {
+      cancelled = true;
+    };
   }, [
     autoStartRequested,
     cermatBlock,
@@ -393,6 +422,7 @@ export function CermatPage() {
     fullscreenSupported,
     membership.data?.allowCermat,
     membership.data?.isActive,
+    navigate,
     pendingSession,
     requestFullscreen,
     session,
@@ -417,14 +447,13 @@ export function CermatPage() {
 
   if (cermatBlock) {
     return (
-      <section className="space-y-4">
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-6">
-          <p className="text-sm font-semibold text-red-800">Akses tes kecermatan kamu sedang diblokir.</p>
-          <p className="mt-2 text-xs text-red-600">
-            Sistem mendeteksi kamu meninggalkan halaman pengerjaan. Hubungi admin melalui WhatsApp untuk mendapatkan kode
-            buka blokir, lalu masukkan di bawah ini.
+      <div className="grid items-stretch gap-4 md:grid-cols-2">
+        <section className="member-card space-y-4 p-6">
+          <p className="text-sm font-extrabold text-rose-600">Akses tes kecermatan kamu sedang diblokir.</p>
+          <p className="text-sm text-slate-600">
+            Sistem mendeteksi kamu meninggalkan halaman pengerjaan. Masukkan kode buka blokir untuk mengerjakan lagi.
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             <Input
               placeholder="Kode 6 digit"
               value={unlockCode}
@@ -433,16 +462,21 @@ export function CermatPage() {
             />
             <Button
               onClick={() => unlockMutation.mutate(unlockCode)}
-              disabled={unlockMutation.isPending || unlockCode.length < 6}
+              disabled={unlockMutation.isPending || unlockCode.trim().length < 4}
             >
               {unlockMutation.isPending ? 'Membuka...' : 'Buka Blokir'}
             </Button>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="text-xs text-slate-500">
             Terakhir pelanggaran: {new Date(cermatBlock.blockedAt).toLocaleString('id-ID')}
           </p>
-        </div>
-      </section>
+        </section>
+        <aside className="member-card flex flex-col justify-center p-6">
+          <p className="text-[10px] font-bold uppercase text-slate-400">Kode buka blokir</p>
+          <p className="mt-1 text-[11px] font-semibold text-slate-400">Ditampilkan hanya untuk masa testing.</p>
+          <p className="mt-3 text-3xl font-extrabold tracking-widest text-member-600">{cermatBlock.code || '—'}</p>
+        </aside>
+      </div>
     );
   }
 
@@ -498,6 +532,15 @@ export function CermatPage() {
                   >
                     {MODE_LABELS[variant.mode].button}
                   </Button>
+                  {typeof membership.data?.cermatQuota === 'number' && membership.data.cermatQuota > 0 && (
+                    <span className="text-sm text-slate-500">
+                      Token tersisa{' '}
+                      <span className="font-semibold text-slate-800">
+                        {Math.max((membership.data.cermatRemaining ?? membership.data.cermatQuota - (membership.data.cermatUsed ?? 0)), 0)}
+                      </span>
+                      /{membership.data.cermatQuota}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -507,79 +550,30 @@ export function CermatPage() {
         );
       })}
 
-      {session && currentQuestion && !isBreaking && (
+      {(session || (isBreaking && pendingNext)) && (
         <CermatExamOverlay
-          mode={session.mode}
-          sessionIndex={session.sessionIndex}
-          totalSessions={session.totalSessions}
+          mode={(pendingNext ?? session)!.mode}
+          sessionIndex={(isBreaking && pendingNext ? pendingNext.sessionIndex : session?.sessionIndex) ?? 1}
+          totalSessions={(pendingNext ?? session)!.totalSessions}
           currentIndex={currentIndex}
-          totalQuestions={session.questions.length}
+          totalQuestions={session?.questions.length ?? pendingNext?.questions.length ?? 0}
           timeLeft={timeLeft}
-          baseSet={session.baseSet}
-          sequence={currentQuestion.sequence}
-          questionOrder={currentQuestion.order}
+          baseSet={(session ?? pendingNext)!.baseSet}
+          sequence={currentQuestion?.sequence ?? (session ?? pendingNext)!.baseSet.slice(0, 4)}
+          questionOrder={currentQuestion?.order ?? 0}
           answers={answers}
           submitPending={submitMutation.isPending}
+          allAnswered={allQuestionsAnswered}
           modeLabels={MODE_LABELS}
+          isBreaking={isBreaking && Boolean(pendingNext)}
+          breakSecondsLeft={isBreaking ? breakLeft : null}
+          nextSessionIndex={pendingNext?.sessionIndex ?? null}
           onAnswer={handleAdvance}
+          onFinish={handleFinishSession}
+          onContinueBreak={startPendingNextSession}
         />
       )}
 
-      {resultCountdown > 0 && typeof document !== 'undefined' &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center bg-slate-950 px-4">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,99,235,0.22),_transparent_55%)]"
-            />
-            <div className="relative w-full max-w-lg rounded-[2rem] border border-white/10 bg-white px-8 py-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-brand-500">Tes Selesai</p>
-              <h2 className="mt-3 text-3xl font-bold text-slate-900">Melihat hasil</h2>
-              <p className="mt-2 text-base text-slate-600">
-                Rata-rata {result?.averageScore ?? 0}% — {result?.totalCorrect ?? 0}/{result?.totalQuestions ?? 0} benar
-              </p>
-              <div className="mx-auto mt-8 flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-br from-brand-50 to-brand-100 text-7xl font-bold text-brand-700 ring-8 ring-brand-100/80">
-                {resultCountdown}
-              </div>
-              <p className="mt-4 text-sm font-medium text-slate-500">
-                Mengalihkan ke halaman rincian hasil dalam {resultCountdown} detik
-              </p>
-              <div className="mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const attemptId = pendingResultAttemptId;
-                    setResultCountdown(0);
-                    setPendingResultAttemptId(null);
-                    setResult(null);
-                    navigate(attemptId ? `/app/tes-kecermatan/riwayat/${attemptId}` : '/app/tes-kecermatan/riwayat');
-                  }}
-                >
-                  Lihat Hasil Sekarang
-                </Button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {pendingNext && breakLeft > 0 && isBreaking && typeof document !== 'undefined' &&
-        createPortal(
-        <div className="fixed inset-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center bg-slate-950 px-4">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(37,99,235,0.18),_transparent_55%)]"
-          />
-          <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-white px-8 py-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-brand-500">Jeda Antar Sesi</p>
-            <div className="mx-auto mt-6 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-brand-50 to-brand-100 text-5xl font-bold text-brand-700 ring-8 ring-brand-100/80">
-              {breakLeft}
-            </div>
-            <p className="mt-4 text-base text-slate-600">Bersiap untuk sesi berikutnya.</p>
-          </div>
-        </div>,
-        document.body,
-      )}
       <ExamCountdownModal
         open={countdownOpen}
         resetKey={countdownToken}
@@ -593,15 +587,15 @@ export function CermatPage() {
             return;
           }
           setSession(pendingSession);
+          answersRef.current = {};
+          questionIndexRef.current = 0;
           setAnswers({});
-          setResult(null);
-          setResultCountdown(0);
-          setPendingResultAttemptId(null);
           setCurrentIndex(0);
-          endTimeRef.current = Date.now() + (pendingSession.timerSeconds ?? 60) * 1000;
-          setTimeLeft(pendingSession.timerSeconds ?? 60);
+          setPendingNext(null);
           setBreakLeft(0);
           setIsBreaking(false);
+          endTimeRef.current = Date.now() + (pendingSession.timerSeconds ?? 60) * 1000;
+          setTimeLeft(pendingSession.timerSeconds ?? 60);
           setCountdownOpen(false);
           setPendingSession(null);
           toast.success('Tes kecermatan dimulai. Fokus pada setiap soal!');

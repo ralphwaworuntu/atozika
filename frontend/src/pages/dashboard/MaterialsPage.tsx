@@ -1,29 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
 import type { Material } from '@/types/exam';
 import { formatDate } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { MembershipRequired } from '@/components/dashboard/MembershipRequired';
+import { PageHeader } from '@/components/common/PageHeader';
+import { MATERIAL_CATEGORIES, MATERIAL_TYPE_LABELS } from '@/constants/materials';
+
+const typeFilters = ['', 'PDF', 'VIDEO', 'LINK'] as const;
 
 export function MaterialsPage() {
   const [category, setCategory] = useState<string>('');
-  const [type, setType] = useState<'PDF' | 'VIDEO' | 'LINK' | ''>('');
+  const [type, setType] = useState<(typeof typeFilters)[number]>('');
   const membership = useMembershipStatus();
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['materials', category, type],
-    queryFn: () => apiGet<Material[]>('/materials', { params: { category: category || undefined, type: type || undefined } }),
+  const categoriesQuery = useQuery({
+    queryKey: ['material-categories'],
+    queryFn: () => apiGet<{ categories: string[] }>('/materials/categories'),
     enabled: Boolean(membership.data?.isActive),
   });
+  const assignedCategories = useMemo(() => {
+    const allowed = new Set(categoriesQuery.data?.categories ?? []);
+    return MATERIAL_CATEGORIES.filter((item) => allowed.has(item));
+  }, [categoriesQuery.data?.categories]);
 
-  const uniqueCategories = Array.from(new Set((data ?? []).map((item) => item.category))).filter(Boolean);
-  const typeFilters: Array<typeof type> = ['', 'PDF', 'VIDEO', 'LINK'];
+  useEffect(() => {
+    if (category && !assignedCategories.includes(category as (typeof MATERIAL_CATEGORIES)[number])) {
+      setCategory('');
+    }
+  }, [assignedCategories, category]);
 
-  if (membership.isLoading) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['materials', category, type],
+    queryFn: () => apiGet<Material[]>('/materials', { params: { category: category || undefined, type: type || undefined } }),
+    enabled: Boolean(membership.data?.isActive) && assignedCategories.length > 0,
+  });
+
+  if (membership.isLoading || categoriesQuery.isLoading) {
     return <Skeleton className="h-72" />;
   }
 
@@ -32,71 +47,91 @@ export function MaterialsPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-wrap items-center gap-4">
-        <div>
-          <label className="text-xs font-semibold uppercase text-slate-500">Kategori</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button variant={category === '' ? 'primary' : 'outline'} size="sm" onClick={() => setCategory('')}>
-              Semua
-            </Button>
-            {uniqueCategories.map((cat) => (
-              <Button key={cat} variant={category === cat ? 'primary' : 'outline'} size="sm" onClick={() => setCategory(cat)}>
-                {cat}
-              </Button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-semibold uppercase text-slate-500">Tipe</label>
-          <div className="mt-2 flex gap-2">
-            {typeFilters.map((filter) => (
-              <Button key={filter || 'ALL'} variant={type === filter ? 'primary' : 'outline'} size="sm" onClick={() => setType(filter)}>
-                {filter || 'Semua'}
-              </Button>
-            ))}
-          </div>
-        </div>
-        <Button variant="ghost" onClick={() => refetch()}>
-          Muat ulang
-        </Button>
-      </div>
+    <section className="page-shell space-y-5">
+      <PageHeader
+        eyebrow="Modul & Materi"
+        title="Materi Belajar"
+        description="Kategori yang tampil adalah kategori yang sudah dipilih admin untuk akun ini."
+      />
 
-      {isLoading && <Skeleton className="h-72" />}
-
-      {!isLoading && data && (
+      {assignedCategories.length === 0 ? (
+        <div className="member-card p-8 text-center">
+          <p className="text-sm font-semibold text-slate-700 dark:text-ink-100">Belum ada kategori materi.</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-ink-200">
+            Materi muncul setelah admin memilih kategori untuk akun ini.
+          </p>
+        </div>
+      ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {data.map((material) => (
-              <Card key={material.id} className="h-full rounded-3xl border border-slate-100 shadow-sm">
-                <CardHeader className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="text-[11px] uppercase tracking-widest">
-                      {material.category}
-                    </Badge>
-                    <span className="type-caption text-slate-400">{formatDate(material.createdAt)}</span>
-                  </div>
-                  <CardTitle>{material.title}</CardTitle>
-                  <p className="type-body text-slate-600">{material.description}</p>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600">
-                    <span>Tipe Materi</span>
-                    <span>{material.type}</span>
-                  </div>
-                  <Button asChild variant="outline">
-                    <a href={material.fileUrl} target="_blank" rel="noreferrer">
-                      Akses Materi
-                    </a>
+          <div className="member-card space-y-4 p-5 sm:p-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-ink-200">Kategori</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button variant={category === '' ? 'primary' : 'outline'} size="sm" onClick={() => setCategory('')}>
+                  Semua
+                </Button>
+                {assignedCategories.map((item) => (
+                  <Button
+                    key={item}
+                    variant={category === item ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setCategory(item)}
+                  >
+                    {item}
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {data.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-              Belum ada materi yang bisa ditampilkan. Hubungi admin jika Anda merasa ini adalah kesalahan.
+                ))}
+              </div>
             </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-ink-200">Tipe</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {typeFilters.map((filter) => (
+                  <Button
+                    key={filter || 'ALL'}
+                    variant={type === filter ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setType(filter)}
+                  >
+                    {filter ? MATERIAL_TYPE_LABELS[filter] : 'Semua'}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {isLoading && <Skeleton className="h-72" />}
+
+          {!isLoading && (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {(data ?? []).map((material) => (
+                  <article key={material.id} className="member-card flex h-full flex-col p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/15 dark:text-brand-200">
+                        {material.category}
+                      </span>
+                      <span className="text-xs text-slate-400">{formatDate(material.createdAt)}</span>
+                    </div>
+                    <h2 className="mt-3 text-lg font-extrabold text-slate-900 dark:text-ink-50">{material.title}</h2>
+                    <p className="mt-2 flex-1 text-sm text-slate-600 dark:text-ink-200">{material.description}</p>
+                    <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 dark:bg-ink-900 dark:text-ink-100">
+                      <span>Tipe materi</span>
+                      <span>{MATERIAL_TYPE_LABELS[material.type]}</span>
+                    </div>
+                    <Button asChild variant="outline" className="mt-4">
+                      <a href={material.fileUrl} target="_blank" rel="noreferrer">
+                        {material.type === 'PDF' ? 'Buka PDF' : material.type === 'VIDEO' ? 'Tonton video' : 'Buka tautan'}
+                      </a>
+                    </Button>
+                  </article>
+                ))}
+              </div>
+              {(data ?? []).length === 0 && (
+                <div className="member-card p-8 text-center text-sm text-slate-500 dark:text-ink-200">
+                  Belum ada materi pada kategori ini.
+                </div>
+              )}
+            </>
           )}
         </>
       )}

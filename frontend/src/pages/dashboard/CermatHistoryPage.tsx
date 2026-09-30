@@ -70,7 +70,7 @@ export function CermatHistoryPage() {
       <PageHeader
         eyebrow="Riwayat Tes Kecermatan"
         title="Rekap Tes Kecermatan"
-        description="Setiap baris adalah satu paket tes lengkap. Buka Detail untuk melihat rincian sesi."
+        description="Setiap baris adalah satu paket tes lengkap. Buka Lihat Skor untuk halaman skoring per sesi."
         action={
           <>
             {HISTORY_MODES.map((mode) => (
@@ -108,7 +108,7 @@ export function CermatHistoryPage() {
                     <p className="text-sm text-slate-500">Rata-rata skor</p>
                   </div>
                   <Button asChild variant="outline">
-                    <Link to={`/app/tes-kecermatan/riwayat/${item.id}`}>Detail</Link>
+                    <Link to={`/app/tes-kecermatan/hasil/${item.id}`}>Lihat Skor</Link>
                   </Button>
                 </div>
               </div>

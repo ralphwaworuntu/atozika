@@ -94,9 +94,16 @@ export default {
           '0%': { backgroundPosition: '-700px 0' },
           '100%': { backgroundPosition: '700px 0' },
         },
+        'cermat-answer-press': {
+          '0%': { transform: 'scale(1)' },
+          '35%': { transform: 'scale(0.88)' },
+          '70%': { transform: 'scale(1.06)' },
+          '100%': { transform: 'scale(1)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 2s linear infinite',
+        'cermat-answer-press': 'cermat-answer-press 280ms ease-out',
       },
     },
   },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -11,8 +11,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Material } from '@/types/exam';
 import { useAuth } from '@/hooks/useAuth';
 import { PageHeader } from '@/components/common/PageHeader';
+import { MATERIAL_CATEGORIES, MATERIAL_TYPE_LABELS } from '@/constants/materials';
 
 const materialTypes = ['PDF', 'VIDEO', 'LINK'] as const;
+
+type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'MEMBER';
+};
+
+const selectClassName =
+  'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100';
 
 export function AdminMaterialsPage() {
   const queryClient = useQueryClient();
@@ -22,7 +33,19 @@ export function AdminMaterialsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   const form = useForm<Omit<Material, 'id' | 'createdAt'>>({
-    defaultValues: { title: '', category: '', type: 'PDF', description: '', fileUrl: '' },
+    defaultValues: { title: '', category: 'POLRI', type: 'PDF', description: '', fileUrl: '' },
+  });
+  const [memberId, setMemberId] = useState('');
+  const [memberCategories, setMemberCategories] = useState<string[]>([]);
+  const { data: users } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => apiGet<AdminUser[]>('/admin/users'),
+  });
+  const members = (users ?? []).filter((user) => user.role === 'MEMBER');
+  const accessQuery = useQuery({
+    queryKey: ['admin-material-categories', memberId],
+    queryFn: () => apiGet<{ categories: string[] }>(`/admin/users/${memberId}/material-categories`),
+    enabled: Boolean(memberId),
   });
 
   const mutation = useMutation<void, unknown, Omit<Material, 'id' | 'createdAt'>>({
@@ -31,7 +54,7 @@ export function AdminMaterialsPage() {
     onSuccess: () => {
       toast.success('Materi disimpan');
       setEditing(null);
-      form.reset({ title: '', category: '', type: 'PDF', description: '', fileUrl: '' });
+      form.reset({ title: '', category: 'POLRI', type: 'PDF', description: '', fileUrl: '' });
       queryClient.invalidateQueries({ queryKey: ['admin-materials'] });
     },
     onError: () => toast.error('Gagal menyimpan materi'),
@@ -43,11 +66,28 @@ export function AdminMaterialsPage() {
       toast.success('Materi dihapus');
       if (editing && editing.id === id) {
         setEditing(null);
-        form.reset({ title: '', category: '', type: 'PDF', description: '', fileUrl: '' });
+        form.reset({ title: '', category: 'POLRI', type: 'PDF', description: '', fileUrl: '' });
       }
       queryClient.invalidateQueries({ queryKey: ['admin-materials'] });
     },
     onError: () => toast.error('Tidak dapat menghapus materi'),
+  });
+
+  useEffect(() => {
+    if (accessQuery.data) {
+      setMemberCategories(accessQuery.data.categories ?? []);
+    }
+  }, [accessQuery.data]);
+
+  const saveAccess = useMutation({
+    mutationFn: () => apiPut(`/admin/users/${memberId}/material-categories`, { categories: memberCategories }),
+    onSuccess: () => {
+      toast.success('Kategori materi member disimpan');
+      queryClient.invalidateQueries({ queryKey: ['admin-material-categories', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['material-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
+    },
+    onError: () => toast.error('Gagal menyimpan kategori materi member'),
   });
 
   const onSubmit = form.handleSubmit((values) => mutation.mutate(values));
@@ -102,7 +142,7 @@ export function AdminMaterialsPage() {
                 size="sm"
                 onClick={() => {
                   setEditing(null);
-                  form.reset({ title: '', category: '', type: 'PDF', description: '', fileUrl: '' });
+                  form.reset({ title: '', category: 'POLRI', type: 'PDF', description: '', fileUrl: '' });
                 }}
               >
                 Batal
@@ -116,17 +156,20 @@ export function AdminMaterialsPage() {
             </div>
             <div>
               <label className="admin-field-label">Kategori</label>
-              <Input placeholder="Kategori" {...form.register('category')} />
+              <select className={selectClassName} {...form.register('category')}>
+                {MATERIAL_CATEGORIES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="admin-field-label">Tipe</label>
-              <select
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                {...form.register('type')}
-              >
+              <select className={selectClassName} {...form.register('type')}>
                 {materialTypes.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {MATERIAL_TYPE_LABELS[type]}
                   </option>
                 ))}
               </select>
@@ -143,6 +186,62 @@ export function AdminMaterialsPage() {
               {mutation.isPending ? 'Menyimpan...' : editing ? 'Perbarui Materi' : 'Tambah Materi'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <div>
+            <p className="eyebrow-label">Akses member</p>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900">Kategori materi untuk member</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Member hanya melihat modul setelah kategori ini dipilih.
+            </p>
+          </div>
+          <div className="max-w-md">
+            <label className="admin-field-label">Member</label>
+            <select
+              className={selectClassName}
+              value={memberId}
+              onChange={(event) => {
+                setMemberId(event.target.value);
+                setMemberCategories([]);
+              }}
+            >
+              <option value="">Pilih member</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name} • {member.email}
+                </option>
+              ))}
+            </select>
+          </div>
+          {memberId && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3">
+                {MATERIAL_CATEGORIES.map((item) => {
+                  const checked = memberCategories.includes(item);
+                  return (
+                    <label key={item} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setMemberCategories((current) =>
+                            checked ? current.filter((value) => value !== item) : [...current, item],
+                          );
+                        }}
+                      />
+                      {item}
+                    </label>
+                  );
+                })}
+              </div>
+              <Button type="button" onClick={() => saveAccess.mutate()} disabled={saveAccess.isPending || accessQuery.isLoading}>
+                {saveAccess.isPending ? 'Menyimpan...' : 'Simpan kategori member'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

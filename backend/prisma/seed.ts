@@ -76,6 +76,64 @@ async function seedUsers() {
   });
 }
 
+async function seedDemoMemberMembership() {
+  const member = await prisma.user.findUnique({ where: { email: 'member@atozika.id' } });
+  if (!member) {
+    return;
+  }
+
+  const pkg =
+    (await prisma.membershipPackage.findUnique({ where: { slug: 'silver-membership' } })) ??
+    (await prisma.membershipPackage.findFirst({ where: { isActive: true }, orderBy: { durationDays: 'asc' } }));
+
+  if (!pkg) {
+    return;
+  }
+
+  const activatedAt = new Date();
+  const expiresAt = new Date(activatedAt);
+  expiresAt.setDate(expiresAt.getDate() + Math.max(pkg.durationDays, 90));
+
+  await prisma.transaction.upsert({
+    where: { code: 'SEED-DEMO-MEMBER-SILVER' },
+    update: {
+      userId: member.id,
+      packageId: pkg.id,
+      amount: pkg.price,
+      method: 'SEED',
+      type: 'MEMBERSHIP',
+      status: 'PAID',
+      activatedAt,
+      expiresAt,
+      tryoutQuota: pkg.tryoutQuota,
+      tryoutUsed: 0,
+      moduleQuota: pkg.moduleQuota,
+      moduleUsed: 0,
+      cermatQuota: 10,
+      cermatUsed: 0,
+      description: 'Membership demo member seed',
+    },
+    create: {
+      code: 'SEED-DEMO-MEMBER-SILVER',
+      userId: member.id,
+      packageId: pkg.id,
+      amount: pkg.price,
+      method: 'SEED',
+      type: 'MEMBERSHIP',
+      status: 'PAID',
+      activatedAt,
+      expiresAt,
+      tryoutQuota: pkg.tryoutQuota,
+      tryoutUsed: 0,
+      moduleQuota: pkg.moduleQuota,
+      moduleUsed: 0,
+      cermatQuota: 10,
+      cermatUsed: 0,
+      description: 'Membership demo member seed',
+    },
+  });
+}
+
 export async function seedPremiumMember() {
   const passwordHash = await hashPassword('Premium@123');
 
@@ -774,6 +832,90 @@ async function seedMaterials() {
       description: 'Pembahasan pola soal psikotes TNI terkini.',
       fileUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     },
+    {
+      title: 'Video Strategi Tes POLRI',
+      category: 'POLRI',
+      type: 'VIDEO' satisfies MaterialType,
+      description: 'Pembahasan video pola soal dan strategi tes POLRI.',
+      fileUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    },
+    {
+      title: 'Tautan Resmi Seleksi POLRI',
+      category: 'POLRI',
+      type: 'LINK' satisfies MaterialType,
+      description: 'Halaman resmi informasi seleksi POLRI.',
+      fileUrl: 'https://www.polri.go.id',
+    },
+    {
+      title: 'Tautan Penerimaan TNI',
+      category: 'TNI',
+      type: 'LINK' satisfies MaterialType,
+      description: 'Informasi penerimaan TNI dan jadwal seleksi.',
+      fileUrl: 'https://rekrutmen-tni.mil.id',
+    },
+    {
+      title: 'Modul SKD Kedinasan',
+      category: 'Kedinasan',
+      type: 'PDF' satisfies MaterialType,
+      description: 'Ringkasan materi SKD untuk sekolah kedinasan.',
+      fileUrl: '/dummy-modul.pdf',
+    },
+    {
+      title: 'Video Psikotes Kedinasan',
+      category: 'Kedinasan',
+      type: 'VIDEO' satisfies MaterialType,
+      description: 'Latihan video soal psikotes kedinasan.',
+      fileUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    },
+    {
+      title: 'Tautan Portal Kedinasan',
+      category: 'Kedinasan',
+      type: 'LINK' satisfies MaterialType,
+      description: 'Referensi portal informasi sekolah kedinasan.',
+      fileUrl: 'https://www.stan.ac.id',
+    },
+    {
+      title: 'Modul TIU BUMN',
+      category: 'BUMN',
+      type: 'PDF' satisfies MaterialType,
+      description: 'Materi TIU untuk seleksi BUMN.',
+      fileUrl: '/dummy-modul.pdf',
+    },
+    {
+      title: 'Video Wawancara BUMN',
+      category: 'BUMN',
+      type: 'VIDEO' satisfies MaterialType,
+      description: 'Simulasi video wawancara seleksi BUMN.',
+      fileUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    },
+    {
+      title: 'Tautan Rekrutmen BUMN',
+      category: 'BUMN',
+      type: 'LINK' satisfies MaterialType,
+      description: 'Halaman rekrutmen bersama BUMN.',
+      fileUrl: 'https://rekrutmenbersama2025.fhcibumn.id',
+    },
+    {
+      title: 'Modul Seleksi PCPN-BI',
+      category: 'PCPN-BI',
+      type: 'PDF' satisfies MaterialType,
+      description: 'Panduan belajar seleksi PCPN dan Bank Indonesia.',
+      fileUrl: '/dummy-modul.pdf',
+    },
+    {
+      title: 'Video Tes PCPN-BI',
+      category: 'PCPN-BI',
+      type: 'VIDEO' satisfies MaterialType,
+      description: 'Pembahasan video tes PCPN dan Bank Indonesia.',
+      fileUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    },
+    {
+      title: 'Tautan PCPN-BI',
+      category: 'PCPN-BI',
+      type: 'LINK' satisfies MaterialType,
+      description: 'Referensi informasi seleksi PCPN dan Bank Indonesia.',
+      fileUrl: 'https://www.bi.go.id',
+    },
   ];
 
   const materials = [] as Array<{ id: string }>;
@@ -797,7 +939,8 @@ async function seedPackages(materials: Array<{ id: string }>) {
       durationDays: 90,
       tryoutQuota: 10,
       moduleQuota: 10,
-      features: ['10 Tryout', 'Modul PDF', 'Group Mentorship'],
+      cermatQuota: 10,
+      features: ['10 Tryout', '10 Token Kecermatan', 'Modul PDF', 'Group Mentorship'],
     },
     {
       name: 'Gold Membership',
@@ -809,6 +952,7 @@ async function seedPackages(materials: Array<{ id: string }>) {
       durationDays: 180,
       tryoutQuota: 20,
       moduleQuota: 20,
+      cermatQuota: 20,
       features: ['20 Tryout', 'Live Class', 'Psikotest'],
       badgeLabel: 'Populer',
     },
@@ -822,6 +966,7 @@ async function seedPackages(materials: Array<{ id: string }>) {
       durationDays: 365,
       tryoutQuota: 0,
       moduleQuota: 0,
+      cermatQuota: 0,
       features: ['Semua Paket', 'Multi Perangkat', 'Tryout Unlimited'],
       badgeLabel: 'Premium',
       accessAllPackages: true,
@@ -836,6 +981,7 @@ async function seedPackages(materials: Array<{ id: string }>) {
       durationDays: 180,
       tryoutQuota: 25,
       moduleQuota: 20,
+      cermatQuota: 25,
       features: ['Tryout Kedinasan', 'Latihan CPNS', 'Tes Kecermatan'],
       badgeLabel: 'Aparatur',
     },
@@ -849,6 +995,7 @@ async function seedPackages(materials: Array<{ id: string }>) {
       durationDays: 180,
       tryoutQuota: 30,
       moduleQuota: 25,
+      cermatQuota: 30,
       features: ['Simulasi BUMN', 'Pola Bank Indonesia', 'Mentoring Integritas'],
       badgeLabel: 'Elit',
     },
@@ -1076,7 +1223,23 @@ async function main() {
   });
 
   await seedSiteContact();
+  await seedDemoMemberMembership();
   await seedPremiumMember();
+  await seedMemberMaterialCategories();
+}
+
+const materialCategories = ['POLRI', 'TNI', 'Kedinasan', 'BUMN', 'PCPN-BI'] as const;
+
+async function seedMemberMaterialCategories() {
+  const member = await prisma.user.findUnique({ where: { email: 'member@atozika.id' } });
+  if (!member) return;
+  for (const category of materialCategories) {
+    await prisma.memberMaterialCategory.upsert({
+      where: { userId_category: { userId: member.id, category } },
+      update: {},
+      create: { userId: member.id, category },
+    });
+  }
 }
 
 if (require.main === module) {
