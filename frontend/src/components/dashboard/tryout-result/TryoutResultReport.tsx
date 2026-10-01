@@ -166,47 +166,123 @@ function ShareStatusModal({
   );
 }
 
-function SubTestCards({ items }: { items: SubTestBreakdown[] }) {
+function ScoringTable({
+  items,
+  score,
+  correctCount,
+  totalQuestions,
+}: {
+  items: SubTestBreakdown[];
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+}) {
+  const incorrectCount = Math.max(0, totalQuestions - correctCount);
+  const unansweredCount = Math.max(
+    0,
+    totalQuestions - items.reduce((sum, item) => sum + item.total, 0),
+  );
+
   return (
-    <section className="space-y-3">
-      <h2 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">Breakdown Sub-Tes</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
-          <article key={item.id} className="member-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Sub-tes</p>
-                <h3 className="mt-1 text-sm font-extrabold text-slate-900 dark:text-ink-50">{item.label}</h3>
-              </div>
-              <span
+    <section className="member-card overflow-hidden print:break-inside-avoid">
+      <div className="border-b border-slate-100 px-5 py-4 sm:px-6 dark:border-white/10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-600">Hasil Penilaian</p>
+        <h2 className="mt-1 text-base font-extrabold tracking-tight text-slate-900 dark:text-ink-50 sm:text-lg">
+          Tabel Penilaian Tryout
+        </h2>
+        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-ink-300">
+          Rincian skor per sub-tes setelah kamu menyelesaikan pengerjaan.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+          <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-ink-200">
+            <tr>
+              <th className="px-4 py-3 sm:px-5">Sub-tes</th>
+              <th className="px-3 py-3 text-center">Soal</th>
+              <th className="px-3 py-3 text-center">Benar</th>
+              <th className="px-3 py-3 text-center">Salah</th>
+              <th className="px-3 py-3 text-center">Skor</th>
+              <th className="px-3 py-3 text-center">PG</th>
+              <th className="px-4 py-3 text-center sm:px-5">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-white/10">
+            {items.map((item) => {
+              const wrong = Math.max(0, item.total - item.correct);
+              return (
+                <tr key={item.id} className="transition hover:bg-slate-50/80 dark:hover:bg-white/[0.03]">
+                  <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-ink-50 sm:px-5">{item.label}</td>
+                  <td className="px-3 py-3.5 text-center tabular-nums font-semibold text-slate-600 dark:text-ink-200">
+                    {item.total}
+                  </td>
+                  <td className="px-3 py-3.5 text-center tabular-nums font-bold text-emerald-600">{item.correct}</td>
+                  <td className="px-3 py-3.5 text-center tabular-nums font-bold text-rose-600">{wrong}</td>
+                  <td
+                    className={cn(
+                      'px-3 py-3.5 text-center text-base font-extrabold tabular-nums',
+                      item.passed ? 'text-emerald-600' : 'text-rose-600',
+                    )}
+                  >
+                    {Math.round(item.score)}
+                  </td>
+                  <td className="px-3 py-3.5 text-center tabular-nums font-semibold text-slate-500">{item.passingGrade}</td>
+                  <td className="px-4 py-3.5 text-center sm:px-5">
+                    <span
+                      className={cn(
+                        'inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide',
+                        item.passed
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                          : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300',
+                      )}
+                    >
+                      {item.passed ? 'Lulus' : 'TMS'}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot className="border-t-2 border-slate-200 bg-slate-50/90 dark:border-white/15 dark:bg-white/5">
+            <tr>
+              <td className="px-4 py-3.5 font-extrabold text-slate-900 dark:text-ink-50 sm:px-5">Total</td>
+              <td className="px-3 py-3.5 text-center tabular-nums font-extrabold text-slate-800 dark:text-ink-100">
+                {totalQuestions}
+              </td>
+              <td className="px-3 py-3.5 text-center tabular-nums font-extrabold text-emerald-600">{correctCount}</td>
+              <td className="px-3 py-3.5 text-center tabular-nums font-extrabold text-rose-600">{incorrectCount}</td>
+              <td
                 className={cn(
-                  'rounded-full px-2.5 py-1 text-[10px] font-bold',
-                  item.passed ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300',
+                  'px-3 py-3.5 text-center text-base font-extrabold tabular-nums',
+                  score >= TRYOUT_PASSING_GRADE ? 'text-emerald-600' : 'text-rose-600',
                 )}
               >
-                {item.passed ? 'Lulus' : 'TMS'}
-              </span>
-            </div>
-            <p
-              className={cn(
-                'mt-3 text-3xl font-extrabold tabular-nums',
-                item.passed ? 'text-emerald-600' : 'text-rose-600',
-              )}
-            >
-              {Math.round(item.score)}
-            </p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">
-              {item.correct}/{item.total} benar · PG {item.passingGrade}
-            </p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-              <div
-                className={cn('h-full rounded-full', item.passed ? 'bg-emerald-500' : 'bg-rose-500')}
-                style={{ width: `${Math.min(100, Math.max(0, item.score))}%` }}
-              />
-            </div>
-          </article>
-        ))}
+                {Math.round(score)}
+              </td>
+              <td className="px-3 py-3.5 text-center tabular-nums font-semibold text-slate-500">{TRYOUT_PASSING_GRADE}</td>
+              <td className="px-4 py-3.5 text-center sm:px-5">
+                <span
+                  className={cn(
+                    'inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide',
+                    score >= TRYOUT_PASSING_GRADE
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300',
+                  )}
+                >
+                  {score >= TRYOUT_PASSING_GRADE ? 'Lulus' : 'TMS'}
+                </span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
+
+      {unansweredCount > 0 ? (
+        <p className="border-t border-slate-100 px-5 py-3 text-xs font-semibold text-amber-700 dark:border-white/10 dark:text-amber-300 sm:px-6">
+          Catatan: {unansweredCount} soal belum masuk ke sub-tes di atas.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -344,6 +420,13 @@ export function TryoutResultReport({
         </div>
       </article>
 
+      <ScoringTable
+        items={subTests}
+        score={score}
+        correctCount={correctCount}
+        totalQuestions={totalQuestions}
+      />
+
       <section className="grid gap-3 print:hidden sm:grid-cols-3">
         <Link
           to={pembahasanHref}
@@ -383,8 +466,6 @@ export function TryoutResultReport({
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">Unduh dokumen rapor resmi</span>
         </button>
       </section>
-
-      <SubTestCards items={subTests} />
 
       <section className="member-card space-y-4 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

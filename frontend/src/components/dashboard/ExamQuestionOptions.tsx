@@ -44,13 +44,13 @@ export function ExamQuestionOptions({
             onClick={() => (multipleCorrect ? onToggleMulti(option.id) : onSelectSingle(option.id))}
             className={examOptionClass(active)}
           >
-            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-lg font-black shadow-md ${LETTER_TONE[index % LETTER_TONE.length]}`}>
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black shadow-md sm:h-10 sm:w-10 sm:text-lg ${LETTER_TONE[index % LETTER_TONE.length]}`}>
               {letter}
             </span>
-            <span className="min-w-0 text-base font-bold text-white sm:text-lg">
+            <span className="min-w-0 text-sm font-bold text-white sm:text-base">
               <span className="whitespace-pre-wrap break-words">{option.label}</span>
               {option.imageUrl ? (
-                <img src={getAssetUrl(option.imageUrl)} alt="" className="mt-2 max-h-24 rounded-lg object-contain" />
+                <img src={getAssetUrl(option.imageUrl)} alt="" className="mt-2 max-h-20 rounded-lg object-contain sm:max-h-24" />
               ) : null}
             </span>
           </button>
