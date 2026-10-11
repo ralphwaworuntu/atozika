@@ -1,6 +1,6 @@
 package materials
 
-var Categories = []string{"POLRI", "TNI", "Kedinasan", "BUMN", "PCPN-BI"}
+var Categories = []string{"POLRI", "TNI", "Kedinasan", "BUMN", "Umum", "PCPN-BI"}
 
 func ValidCategory(value string) bool {
 	for _, item := range Categories {

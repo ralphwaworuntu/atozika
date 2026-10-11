@@ -1,4 +1,4 @@
-export const MATERIAL_CATEGORIES = ['POLRI', 'TNI', 'Kedinasan', 'BUMN', 'PCPN-BI'] as const;
+export const MATERIAL_CATEGORIES = ['POLRI', 'TNI', 'Kedinasan', 'BUMN', 'Umum', 'PCPN-BI'] as const;
 
 export type MaterialCategory = (typeof MATERIAL_CATEGORIES)[number];
 

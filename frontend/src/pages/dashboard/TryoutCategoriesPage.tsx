@@ -1,77 +1,170 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { LayoutGrid, List, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, Check, ChevronRight, Clock3, ExternalLink, Flame, Megaphone, ScrollText, Trophy } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
-import { getAssetUrl } from '@/lib/media';
 import type { Tryout } from '@/types/exam';
+import type { DashboardOverview } from '@/types/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { cn } from '@/utils/cn';
+import { consecutiveStreak } from '@/lib/memberHome';
+import { LEARNING_TOPICS, topicByName } from '@/constants/learningCatalog';
 
-const COVERS = ['bg-[#FDEAE2]', 'bg-[#E1F7F3]', 'bg-[#F0EAFB]', 'bg-[#FCF5E3]', 'bg-[#F1F9F0]', 'bg-[#EDF3FC]', 'bg-[#FDF0EE]', 'bg-[#FFF8E6]'];
+const WEEK_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
-const EXAMPLE_CATEGORIES = [
-  { name: 'Tes Masuk TNI', subs: 2, packs: 4 },
-  { name: 'Sekolah Kedinasan', subs: 3, packs: 6 },
-  { name: 'BUMN', subs: 2, packs: 3 },
-  { name: 'Psikotes', subs: 1, packs: 5 },
-  { name: 'Samapta Jasmani', subs: 2, packs: 2 },
-  { name: 'TWK dan TIU', subs: 4, packs: 8 },
-  { name: 'Tes Kecermatan', subs: 1, packs: 3 },
+const CATEGORY_CARDS = [
+  { key: 'TNI', label: 'TNI', subs: 2, packs: 4, tint: 'bg-emerald-50', ring: 'bg-emerald-200/70' },
+  { key: 'POLRI', label: 'POLRI', subs: 1, packs: 1, tint: 'bg-rose-50', ring: 'bg-rose-200/70' },
+  { key: 'Kedinasan', label: 'Sekolah Kedinasan', subs: 3, packs: 6, tint: 'bg-violet-50', ring: 'bg-violet-200/70' },
+  { key: 'BUMN', label: 'BUMN', subs: 2, packs: 3, tint: 'bg-amber-50', ring: 'bg-amber-200/70' },
 ];
+
+const EXAMPLE_RESULTS = [
+  { id: 'tni', name: 'Tryout TNI - Paket A', meta: '5 Okt 2026 • 100 soal • 120 menit', score: 82, topic: 'TNI' },
+  { id: 'polri', name: 'Tryout POLRI - Paket 1', meta: '1 Okt 2026 • 100 soal • 120 menit', score: 75, topic: 'POLRI' },
+  { id: 'kedinasan', name: 'Tryout Kedinasan - Paket 2', meta: '25 Sep 2026 • 100 soal • 120 menit', score: 68, topic: 'Kedinasan' },
+];
+
+const POPULAR_MATERIALS = [
+  { title: 'TWK - Wawasan Kebangsaan', meta: '45 materi • 1.2k siswa', topic: 'TWK' },
+  { title: 'TIU - Kemampuan Numerik', meta: '38 materi • 980 siswa', topic: 'TIU' },
+  { title: 'TKP - Kepribadian', meta: '32 materi • 870 siswa', topic: 'TKP' },
+  { title: 'Tes Kecermatan', meta: '25 materi • 650 siswa', topic: 'Tes Kecermatan' },
+];
+
+const TARGET_DAYS: Array<'done' | 'empty' | 'today'> = ['done', 'done', 'done', 'done', 'empty', 'today', 'empty'];
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function currentWeekDone(activityDates: string[]) {
+  const done = new Set(activityDates.map((value) => startOfDay(new Date(value))));
+  const today = new Date();
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7));
+  return WEEK_LABELS.map((_, index) => done.has(startOfDay(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index))));
+}
+
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function StatCard({ icon, tone, label, value, extra, note }: { icon: ReactNode; tone: string; label: string; value: string; extra?: ReactNode; note: string }) {
+  return (
+    <section className="member-card flex items-start gap-3 p-4">
+      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', tone)}>{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium text-slate-500 dark:text-ink-200">{label}</p>
+        <div className="mt-0.5 flex items-center gap-2">
+          <p className="text-2xl font-extrabold leading-none text-slate-900 dark:text-ink-50">{value}</p>
+          {extra}
+        </div>
+        <p className="mt-1.5 truncate text-[10px] font-medium text-slate-400">{note}</p>
+      </div>
+    </section>
+  );
+}
+
+function SectionLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="inline-flex items-center gap-1 text-xs font-bold text-member-600 hover:text-member-700">
+      {children} <ArrowRight className="h-3.5 w-3.5" />
+    </button>
+  );
+}
 
 export function TryoutCategoriesPage() {
   const navigate = useNavigate();
   const membership = useMembershipStatus();
   const hasActiveMembership = Boolean(membership.data?.isActive);
-  const [query, setQuery] = useState('');
-  const [layout, setLayout] = useState<'grid' | 'list'>('grid');
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const categoriesRef = useRef<HTMLElement>(null);
   const { data: tryouts, isLoading } = useQuery({
     queryKey: ['tryouts'],
     queryFn: () => apiGet<Tryout[]>('/exams/tryouts'),
   });
+  const { data: overview } = useQuery({
+    queryKey: ['dashboard-overview'],
+    queryFn: () => apiGet<DashboardOverview>('/dashboard/overview'),
+  });
 
-  const categoryGroups = useMemo(() => {
-    if (!tryouts) return [];
-    const map = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        thumbnail?: string | null;
-        subCategories: Array<{ id: string; name: string; tryouts: Tryout[] }>;
-      }
-    >();
-    tryouts.forEach((item) => {
+  const realCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; subIds: Set<string>; packs: number }>();
+    (tryouts ?? []).forEach((item) => {
       const category = item.subCategory.category;
-      if (!map.has(category.id)) {
-        map.set(category.id, { id: category.id, name: category.name, thumbnail: category.thumbnail ?? null, subCategories: [] });
-      }
-      const group = map.get(category.id)!;
-      let subGroup = group.subCategories.find((sub) => sub.id === item.subCategory.id);
-      if (!subGroup) {
-        subGroup = { id: item.subCategory.id, name: item.subCategory.name, tryouts: [] };
-        group.subCategories.push(subGroup);
-      }
-      subGroup.tryouts.push(item);
+      const entry = map.get(category.id) ?? { id: category.id, name: category.name, subIds: new Set<string>(), packs: 0 };
+      entry.subIds.add(item.subCategory.id);
+      entry.packs += 1;
+      map.set(category.id, entry);
     });
     return Array.from(map.values());
   }, [tryouts]);
 
-  const visible = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return categoryGroups;
-    return categoryGroups.filter((category) => category.name.toLowerCase().includes(term));
-  }, [categoryGroups, query]);
+  const categoryCards = useMemo(() => {
+    const cards = CATEGORY_CARDS.map((card) => {
+      const real = realCategories.find((category) => topicByName(category.name)?.key === card.key);
+      return {
+        key: card.key,
+        label: card.label,
+        tint: card.tint,
+        ring: card.ring,
+        icon: LEARNING_TOPICS.find((topic) => topic.key === card.key)?.icon ?? LEARNING_TOPICS[0].icon,
+        subs: real ? real.subIds.size : card.subs,
+        packs: real ? real.packs : card.packs,
+        categoryId: real?.id,
+      };
+    });
+    if (!showAllCategories) return cards;
+    const extras = realCategories
+      .filter((category) => !cards.some((card) => card.categoryId === category.id))
+      .map((category) => ({
+        key: category.id,
+        label: category.name,
+        tint: 'bg-sky-50',
+        ring: 'bg-sky-200/70',
+        icon: topicByName(category.name)?.icon ?? LEARNING_TOPICS[4].icon,
+        subs: category.subIds.size,
+        packs: category.packs,
+        categoryId: category.id as string | undefined,
+      }));
+    return [...cards, ...extras];
+  }, [realCategories, showAllCategories]);
 
-  const examples = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return EXAMPLE_CATEGORIES;
-    return EXAMPLE_CATEGORIES.filter((item) => item.name.toLowerCase().includes(term));
-  }, [query]);
+  const results = overview?.tryoutResults ?? [];
+  const activityDates = results.map((item) => item.startedAt);
+  const weekDone = currentWeekDone(activityDates);
+  const streak = consecutiveStreak(activityDates);
+  const averageScore = results.length ? results.reduce((sum, item) => sum + item.score, 0) / results.length : null;
+  const latest = results[0];
+  const announcement = overview?.announcements?.[0];
 
-  if (membership.isLoading || isLoading || !tryouts) {
+  const recentRows = results.length
+    ? results.slice(0, 3).map((item) => ({
+        id: item.id,
+        name: item.tryout.name,
+        meta: `${formatShortDate(item.startedAt)} • ${item.tryout.subCategory.category.name}`,
+        score: Math.round(item.score),
+        icon: (topicByName(item.tryout.subCategory.category.name) ?? topicByName(item.tryout.name) ?? LEARNING_TOPICS[1]).icon,
+        href: `/app/latihan/tryout/review/${item.id}`,
+      }))
+    : EXAMPLE_RESULTS.map((item) => ({
+        id: item.id,
+        name: item.name,
+        meta: item.meta,
+        score: item.score,
+        icon: topicByName(item.topic)?.icon ?? LEARNING_TOPICS[0].icon,
+        href: undefined as string | undefined,
+      }));
+
+  const scrollToCategories = () => categoriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const continueLearning = () => {
+    if (latest) navigate(`/app/latihan/tryout/review/${latest.id}`);
+    else scrollToCategories();
+  };
+
+  if (membership.isLoading || isLoading) {
     return <Skeleton className="h-72" />;
   }
 
@@ -83,146 +176,276 @@ export function TryoutCategoriesPage() {
     );
   }
 
-  const remaining = membership.data?.tryoutRemaining;
-  const quotaLabel =
-    remaining === null || remaining === undefined ? 'Tidak terbatas' : `${remaining} kali tersisa`;
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Tryout</h1>
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-          <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Cari kategori tryout"
-              className="w-full rounded-lg border-0 bg-slate-100/80 py-1.5 pl-8 pr-3 text-xs font-medium text-slate-800 outline-none ring-member-600 placeholder:text-slate-400 focus:bg-white focus:ring-1 dark:bg-white/5 dark:text-ink-50 dark:focus:bg-ink-800"
-            />
-          </div>
-          <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 dark:bg-white/5">
-            <button
-              type="button"
-              title="Tampilan kisi"
-              onClick={() => setLayout('grid')}
-              className={cn('rounded-md p-1.5', layout === 'grid' ? 'bg-[#1B3A4B] text-white shadow-sm' : 'text-slate-500')}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              title="Tampilan daftar"
-              onClick={() => setLayout('list')}
-              className={cn('rounded-md p-1.5', layout === 'list' ? 'bg-[#1B3A4B] text-white shadow-sm' : 'text-slate-500')}
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/app/latihan/tryout/riwayat')}
-            className="inline-flex items-center rounded-full bg-member-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-member-700 active:scale-95"
-          >
-            Riwayat Tryout
-          </button>
-        </div>
-      </div>
-
-      {!hasActiveMembership ? (
-        <p className="text-xs font-semibold text-slate-500">
-          Kamu belum memiliki paket aktif. Daftar tryout tetap bisa dilihat, tetapi hanya tryout gratis yang bisa dikerjakan.
-        </p>
-      ) : null}
-
-      <section className="grid items-stretch gap-4 md:grid-cols-2">
-        <div className="member-card flex flex-col justify-center p-5">
-          <p className="text-[10px] font-bold uppercase text-slate-400">Kuota tryout</p>
-          <p className="mt-1 text-xl font-extrabold text-member-600">{quotaLabel}</p>
-          {typeof membership.data?.tryoutQuota === 'number' ? (
-            <p className="text-[11px] font-semibold text-slate-400">
-              Total {membership.data.tryoutQuota} • Terpakai {membership.data.tryoutUsed ?? 0}
-            </p>
-          ) : null}
-        </div>
-        <section className="member-card p-5 text-sm text-slate-600 dark:text-ink-200">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Aturan Anti-Cheat</p>
-          <p className="mt-1 text-[11px] font-semibold text-slate-400">Informasi skema tryout</p>
-          <ul className="mt-3 list-disc space-y-1 pl-4">
-            <li>Tryout berjalan dalam mode layar penuh.</li>
-            <li>Dilarang berpindah tab, mengecilkan layar, atau membuka aplikasi lain.</li>
-            <li>Pelanggaran akan menghentikan sesi dan kuota tetap terhitung.</li>
-          </ul>
-        </section>
+    <div className="space-y-4">
+      <section className="relative overflow-hidden rounded-[20px] shadow-sm">
+        <img src="/banners/banner-tryout.png" alt="Menempa Intelektual, Mengunci Kelulusan. Persiapan elit, hasil nyata." className="block h-auto w-full" />
+        <button
+          type="button"
+          aria-label="Mulai Tryout Sekarang"
+          onClick={scrollToCategories}
+          className="absolute rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+          style={{ left: '3.4%', top: '74%', width: '19.7%', height: '12.9%' }}
+        />
+        <button
+          type="button"
+          aria-label="Lanjutkan Belajar"
+          onClick={continueLearning}
+          className="absolute rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          style={{ left: '24.1%', top: '74%', width: '16.4%', height: '12.9%' }}
+        />
       </section>
 
-      {visible.length === 0 && examples.length === 0 ? (
-        <div className="member-card p-8 text-center text-sm font-semibold text-slate-400">Belum ada tryout yang tersedia.</div>
-      ) : (
-        <div className={cn('grid gap-5', layout === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1')}>
-          {visible.map((category, index) => {
-            const totalTryouts = category.subCategories.reduce((acc, subCategory) => acc + subCategory.tryouts.length, 0);
-            const cover = getAssetUrl(category.thumbnail);
-            return (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => navigate(`/app/latihan/tryout/kategori/${category.id}`)}
-                className={cn(
-                  'member-card group overflow-hidden text-left transition hover:shadow-md',
-                  layout === 'list' && 'flex items-stretch',
-                )}
-              >
-                <div className={cn('relative overflow-hidden', layout === 'grid' ? 'h-32' : 'h-24 w-36 shrink-0', !cover && COVERS[index % COVERS.length])}>
-                  {cover ? (
-                    <img src={cover} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <div className="h-16 w-16 rounded-xl bg-white/80 shadow-sm" />
-                    </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.9fr)]">
+        <StatCard
+          icon={<ScrollText className="h-5 w-5" />}
+          tone="bg-rose-50 text-rose-500"
+          label="Total Tryout"
+          value={`${results.length || 12}x`}
+          note="Sudah kamu kerjakan"
+        />
+        <StatCard
+          icon={<Trophy className="h-5 w-5" />}
+          tone="bg-amber-50 text-amber-500"
+          label="Rata-rata Skor"
+          value={(averageScore ?? 78.5).toLocaleString('id-ID', { maximumFractionDigits: 1 })}
+          extra={
+            averageScore === null ? (
+              <span className="whitespace-nowrap rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">↑ 12%</span>
+            ) : undefined
+          }
+          note="Meningkat dari bulan lalu"
+        />
+        <StatCard icon={<BarChart3 className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" label="Peringkat Kelas" value="#124" note="dari 2.431 peserta" />
+        <StatCard icon={<Clock3 className="h-5 w-5" />} tone="bg-violet-50 text-violet-600" label="Total Waktu Belajar" value="36 jam" note="Selama 30 hari terakhir" />
+        <section className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.5rem] border border-amber-100 bg-gradient-to-r from-[#FFF4E4] to-[#FFF8EE] p-4 sm:col-span-2 xl:col-span-1 dark:border-amber-500/20 dark:from-amber-950/40 dark:to-ink-800">
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Flame className="h-9 w-9 shrink-0 fill-orange-500 text-orange-500" />
+            <div>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-ink-200">Streak Belajar</p>
+              <p className="whitespace-nowrap text-2xl font-extrabold leading-none text-slate-900 dark:text-ink-50">{streak} Hari</p>
+              <p className="mt-1.5 whitespace-nowrap text-[10px] font-medium text-slate-500">Pertahankan konsistensimu!</p>
+            </div>
+          </div>
+          <div className="ml-auto flex shrink-0 gap-1">
+            {WEEK_LABELS.map((label, index) => (
+              <div key={label} className="flex w-5 flex-col items-center gap-1">
+                <span className="text-[9px] font-semibold text-slate-500">{label}</span>
+                <span
+                  className={cn(
+                    'flex h-5 w-5 items-center justify-center rounded-full',
+                    weekDone[index] ? 'bg-member-600 text-white' : 'border border-slate-200 bg-white dark:border-white/20 dark:bg-transparent',
                   )}
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col justify-between">
-                  <h3 className="line-clamp-2 p-4 text-sm font-bold leading-snug text-slate-900 dark:text-ink-50">{category.name}</h3>
-                  <div className="flex items-center justify-between px-4 pb-3.5 text-[11px] font-semibold text-slate-400">
-                    <span>
-                      {category.subCategories.length} sub kategori
-                      <span className="mx-1.5 text-slate-300">•</span>
-                      {totalTryouts} paket
+                >
+                  {weekDone[index] ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="min-w-0 space-y-4">
+          <section ref={categoriesRef} className="member-card p-4 sm:p-5">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Pilih Kategori Tryout</h2>
+                <p className="text-[11px] font-medium text-slate-500">Mulai latihan sesuai target tujuanmu</p>
+              </div>
+              <SectionLink onClick={() => setShowAllCategories((value) => !value)}>{showAllCategories ? 'Lebih Sedikit' : 'Lihat Semua'}</SectionLink>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {categoryCards.map((card) => (
+                <article key={card.key} className={cn('relative flex min-h-[5.5rem] items-center gap-2.5 rounded-2xl border border-slate-100 p-3 pb-9 dark:border-white/10 dark:bg-white/5', card.tint)}>
+                  <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full', card.ring)}>
+                    <img src={card.icon} alt="" className="h-9 w-9 object-contain mix-blend-multiply" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold leading-tight text-slate-900 dark:text-ink-50">{card.label}</h3>
+                    <p className="mt-0.5 text-[10px] font-medium leading-snug text-slate-500">
+                      {card.subs} sub kategori • {card.packs} paket
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Buka ${card.label}`}
+                    onClick={() => {
+                      if (card.categoryId) navigate(`/app/latihan/tryout/kategori/${card.categoryId}`);
+                      else toast.message(`Tryout ${card.label} segera tersedia.`);
+                    }}
+                    className="absolute bottom-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:bg-ink-800 dark:text-ink-50"
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="member-card p-4 sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Tryout Terbaru</h2>
+                <SectionLink onClick={() => navigate('/app/latihan/tryout/riwayat')}>Lihat Riwayat</SectionLink>
+              </div>
+              <ul className="divide-y divide-slate-100 dark:divide-white/10">
+                {recentRows.map((row) => (
+                  <li key={row.id} className="flex items-center gap-3 py-2.5">
+                    <img src={row.icon} alt="" className="h-8 w-8 shrink-0 rounded-full object-contain mix-blend-multiply" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{row.name}</p>
+                      <p className="truncate text-[10px] font-medium text-slate-400">{row.meta}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-md px-2 py-1 text-[10px] font-bold',
+                        row.score >= 70 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600',
+                      )}
+                    >
+                      Skor {row.score}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => (row.href ? navigate(row.href) : navigate('/app/latihan/tryout/riwayat'))}
+                      className="shrink-0 rounded-lg bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-member-600 hover:bg-blue-100"
+                    >
+                      Lihat Hasil
+                    </button>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="member-card p-4 sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Materi Populer</h2>
+                <SectionLink onClick={() => navigate('/app/materi')}>Lihat Semua</SectionLink>
+              </div>
+              <ul className="divide-y divide-slate-100 dark:divide-white/10">
+                {POPULAR_MATERIALS.map((item) => (
+                  <li key={item.title}>
+                    <button type="button" onClick={() => navigate('/app/materi')} className="flex w-full items-center gap-3 py-2 text-left">
+                      <img src={topicByName(item.topic)?.icon ?? LEARNING_TOPICS[4].icon} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain mix-blend-multiply" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{item.title}</p>
+                        <p className="truncate text-[10px] font-medium text-slate-400">{item.meta}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <aside className="space-y-4">
+          <section className="member-card p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Lanjutkan Belajar</h2>
+              <button
+                type="button"
+                aria-label="Riwayat tryout"
+                onClick={() => navigate('/app/latihan/tryout/riwayat')}
+                className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-member-600"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="rounded-2xl border border-slate-100 p-3 dark:border-white/10">
+              <div className="flex items-center gap-3">
+                <img src="/covers/cover-study.jpg" alt="" className="h-12 w-16 shrink-0 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{latest?.tryout.name ?? 'Tryout POLRI - Paket 1'}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                      <div className="h-full w-[60%] rounded-full bg-member-600" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500">60%</span>
                   </div>
                 </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={continueLearning}
+                  className="flex-1 rounded-lg bg-member-600 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-member-700"
+                >
+                  Lanjutkan Tryout
+                </button>
+                <button
+                  type="button"
+                  aria-label="Buka riwayat tryout"
+                  onClick={() => navigate('/app/latihan/tryout/riwayat')}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-white/10"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="member-card p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Target Belajar Minggu Ini</h2>
+              <button type="button" onClick={() => toast.message('Pengaturan target segera tersedia.')} className="inline-flex items-center gap-1 text-[10px] font-bold text-member-600">
+                Atur Target <ArrowRight className="h-3 w-3" />
               </button>
-            );
-          })}
-          {examples.map((item, index) => (
-            <article
-              key={item.name}
-              className={cn(
-                'member-card group overflow-hidden text-left',
-                layout === 'list' && 'flex items-stretch',
-              )}
-            >
-              <div className={cn('relative overflow-hidden', layout === 'grid' ? 'h-32' : 'h-24 w-36 shrink-0', COVERS[(visible.length + index) % COVERS.length])}>
-                <div className="flex h-full items-center justify-center">
-                  <div className="h-16 w-16 rounded-xl bg-white/80 shadow-sm" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ background: 'conic-gradient(#1d72fe 0% 75%, #e2e8f0 75% 100%)' }}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xs font-extrabold text-slate-900 dark:bg-ink-800 dark:text-ink-50">75%</div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-extrabold text-slate-800 dark:text-ink-50">6 dari 8 sesi</p>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                  <div className="h-full w-[75%] rounded-full bg-member-600" />
                 </div>
               </div>
-              <div className="flex min-w-0 flex-1 flex-col justify-between">
-                <h3 className="line-clamp-2 p-4 text-sm font-bold leading-snug text-slate-900 dark:text-ink-50">{item.name}</h3>
-                <div className="flex items-center justify-between px-4 pb-3.5 text-[11px] font-semibold text-slate-400">
-                  <span>
-                    {item.subs} sub kategori
-                    <span className="mx-1.5 text-slate-300">•</span>
-                    {item.packs} paket
-                  </span>
-                  <span className="text-slate-300">Contoh</span>
-                </div>
+            </div>
+            <div className="mt-3 grid grid-cols-7 gap-1">
+              {WEEK_LABELS.map((label, index) => {
+                const state = TARGET_DAYS[index];
+                return (
+                  <div key={label} className="flex flex-col items-center gap-1">
+                    <span
+                      className={cn(
+                        'flex h-5 w-5 items-center justify-center rounded-full',
+                        state === 'done' ? 'bg-member-600 text-white' : 'border border-slate-200 bg-white dark:border-white/20 dark:bg-transparent',
+                      )}
+                    >
+                      {state === 'done' ? <Check className="h-3 w-3" strokeWidth={3} /> : state === 'today' ? <span className="h-1.5 w-1.5 rounded-full bg-slate-500" /> : null}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-500">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <button
+            type="button"
+            onClick={() => navigate('/app/pengumuman')}
+            className="flex w-full items-start gap-3 rounded-[1.5rem] border border-amber-100 bg-gradient-to-r from-[#FFF4E4] to-[#FFF8EE] p-4 text-left dark:border-amber-500/20 dark:from-amber-950/40 dark:to-ink-800"
+          >
+            <Megaphone className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-extrabold text-slate-900 dark:text-ink-50">Pengumuman</p>
+                <p className="text-[10px] font-medium text-slate-500">
+                  {announcement ? formatShortDate(announcement.publishedAt) : '3 Okt 2026'}
+                </p>
               </div>
-            </article>
-          ))}
-        </div>
-      )}
+              <p className="mt-1 line-clamp-2 text-[11px] font-medium text-slate-600 dark:text-ink-200">
+                {announcement ? announcement.title : 'Tryout Kedinasan Paket Baru sudah tersedia! Latihan sekarang dan tingkatkan peluang lolosmu.'}
+              </p>
+            </div>
+            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+          </button>
+        </aside>
+      </div>
     </div>
   );
 }

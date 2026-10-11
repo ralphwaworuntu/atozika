@@ -42,6 +42,7 @@ func ensureProfileColumns(gdb *gorm.DB) {
 		`"surgeryHistory" TEXT`,
 		`"eyeCondition" TEXT`,
 		`"fullBodyUrl" TEXT`,
+		`"profileDocuments" JSONB`,
 	}
 	for _, column := range columns {
 		if err := gdb.Exec(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS ` + column).Error; err != nil {

@@ -80,6 +80,7 @@ model User {
   surgeryHistory         String?
   eyeCondition           String?
   fullBodyUrl            String?
+  profileDocuments       Json?
   createdAt              DateTime                    @default(now())
   updatedAt              DateTime                    @updatedAt
   refreshTokens          RefreshToken[]

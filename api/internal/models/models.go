@@ -40,8 +40,9 @@ type User struct {
 	BackupTarget           *string    `gorm:"column:backupTarget" json:"backupTarget"`
 	SurgeryHistory         *string    `gorm:"column:surgeryHistory" json:"surgeryHistory"`
 	EyeCondition           *string    `gorm:"column:eyeCondition" json:"eyeCondition"`
-	FullBodyURL            *string    `gorm:"column:fullBodyUrl" json:"fullBodyUrl"`
-	CreatedAt              time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	FullBodyURL            *string        `gorm:"column:fullBodyUrl" json:"fullBodyUrl"`
+	ProfileDocuments       datatypes.JSON `gorm:"column:profileDocuments" json:"profileDocuments"`
+	CreatedAt              time.Time      `gorm:"column:createdAt" json:"createdAt"`
 	UpdatedAt              time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 }
 

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { getPsikoSequenceBySubCategory, isPolriPsikoTryout } from '@/utils/tryoutPackage';
 import { cn } from '@/utils/cn';
+import { exampleCover } from '@/lib/exampleCovers';
 
 function formatDateTime(value?: string | null) {
   return value ? new Date(value).toLocaleString('id-ID') : '-';
@@ -151,14 +152,8 @@ export function TryoutDetailPage() {
       </div>
 
       <article className="member-card overflow-hidden">
-        <div className={cn('relative h-40 overflow-hidden sm:h-52', !cover && 'bg-[#E1F7F3]')}>
-          {cover ? (
-            <img src={cover} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <div className="h-16 w-16 rounded-xl bg-white/80 shadow-sm" />
-            </div>
-          )}
+        <div className="relative h-40 overflow-hidden sm:h-52">
+          <img src={cover || exampleCover(0)} alt="" className="h-full w-full object-cover" />
         </div>
         <div className="space-y-4 p-5">
           <p className={cn('text-[11px] font-semibold', status.canStart ? 'text-emerald-600' : 'text-rose-500')}>{status.label}</p>
@@ -179,8 +174,8 @@ export function TryoutDetailPage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {psikoSessions.map((session) => (
               <article key={session.id} className="member-card overflow-hidden">
-                <div className="flex h-32 items-center justify-center bg-[#F0EAFB]">
-                  <div className="h-16 w-16 rounded-xl bg-white/80 shadow-sm" />
+                <div className="h-32 overflow-hidden">
+                  <img src={exampleCover(session.sessionOrder ?? 1)} alt="" className="h-full w-full object-cover" />
                 </div>
                 <div className="p-4">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Sesi {session.sessionOrder}</p>

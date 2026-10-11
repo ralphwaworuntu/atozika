@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Pencil, X } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Check, FileArchive, FileText, ImageIcon, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, apiGet, apiPatch, getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl } from '@/lib/media';
@@ -14,6 +15,29 @@ const TARGETS = ['Akpol', 'Akmil', 'Bintara', 'Tamtama', 'Kedinasan'] as const;
 const EYE_CONDITIONS = ['Normal', 'Minus', 'Plus', 'Silinder', 'Buta Warna'] as const;
 const INCOMES = ['Di bawah Rp2 juta', 'Rp2–5 juta', 'Rp5–10 juta', 'Di atas Rp10 juta'] as const;
 const GRADES = ['10', '11', '12'] as const;
+
+type StoredDocument = {
+  id: string;
+  kind: string;
+  name: string;
+  url: string;
+  uploadedAt: string;
+};
+
+type ProfileFileItem = {
+  id: string;
+  name: string;
+  url: string;
+  uploadedAt?: string | null;
+  visual: 'image' | 'doc';
+};
+
+const DOCUMENT_KINDS = [
+  { value: 'ktp', label: 'Foto KTP' },
+  { value: 'ijazah', label: 'Ijazah' },
+  { value: 'rapor', label: 'Nilai rapor' },
+  { value: 'other', label: 'Berkas lain' },
+] as const;
 
 type MemberProfile = {
   id: string;
@@ -38,6 +62,8 @@ type MemberProfile = {
   surgeryHistory?: string | null;
   eyeCondition?: string | null;
   fullBodyUrl?: string | null;
+  profileDocuments?: StoredDocument[] | null;
+  updatedAt?: string | null;
 };
 
 type Section = 'self' | 'parent' | 'qualify';
@@ -110,6 +136,161 @@ function draftFromProfile(profile: MemberProfile): Draft {
     surgeryHistory: profile.surgeryHistory ?? '',
     eyeCondition: profile.eyeCondition ?? '',
   };
+}
+
+function fileMeta(value?: string | null) {
+  if (!value) return 'Baru diunggah';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Baru diunggah';
+  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function profileFiles(profile: MemberProfile): ProfileFileItem[] {
+  const items: ProfileFileItem[] = [];
+  if (profile.avatarUrl) {
+    items.push({ id: 'foto-diri', name: 'Foto diri', url: profile.avatarUrl, uploadedAt: profile.updatedAt, visual: 'image' });
+  }
+  if (profile.fullBodyUrl) {
+    items.push({ id: 'foto-full-body', name: 'Foto full body', url: profile.fullBodyUrl, uploadedAt: profile.updatedAt, visual: 'image' });
+  }
+  for (const doc of profile.profileDocuments ?? []) {
+    items.push({
+      id: doc.id,
+      name: doc.name,
+      url: doc.url,
+      uploadedAt: doc.uploadedAt,
+      visual: doc.kind === 'other' ? 'doc' : 'image',
+    });
+  }
+  return items;
+}
+
+function FileChip({ file }: { file: ProfileFileItem }) {
+  const zip = file.url.toLowerCase().endsWith('.zip');
+  const image = !zip && file.visual === 'image';
+  const Icon = zip ? FileArchive : image ? ImageIcon : FileText;
+  const tone = zip ? 'bg-amber-50 text-amber-500' : image ? 'bg-emerald-50 text-emerald-500' : 'bg-blue-50 text-blue-500';
+  return (
+    <a
+      href={getAssetUrl(file.url)}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-3 dark:border-white/10 dark:bg-white/5"
+    >
+      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', tone)}>
+        <Icon className="h-5 w-5" strokeWidth={2} />
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold text-slate-800 dark:text-ink-50">{file.name}</p>
+        <p className="text-xs font-medium text-slate-400">{fileMeta(file.uploadedAt)}</p>
+      </div>
+    </a>
+  );
+}
+
+function ProfileFilesCard({
+  files,
+  uploading,
+  onUpload,
+}: {
+  files: ProfileFileItem[];
+  uploading: boolean;
+  onUpload: (kind: string, file: File, note: string) => void;
+}) {
+  const [kind, setKind] = useState<(typeof DOCUMENT_KINDS)[number]['value']>('ktp');
+  const [note, setNote] = useState('');
+  const noteRequired = kind !== 'ktp';
+  const preview = files.slice(0, 4);
+  return (
+    <section className="member-card p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-ink-50">Files</h2>
+        <Dialog.Root>
+          <Dialog.Trigger className="text-sm font-semibold text-member-600 hover:text-member-700">View all</Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-[80] bg-slate-950/50" />
+            <Dialog.Content className="fixed left-1/2 top-1/2 z-[81] max-h-[min(36rem,calc(100dvh-2rem))] w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#121a28]">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <Dialog.Title className="text-base font-extrabold text-slate-900 dark:text-ink-50">Files</Dialog.Title>
+                  <Dialog.Description className="mt-1 text-xs font-medium text-slate-400">
+                    Seluruh berkas yang sudah diunggah.
+                  </Dialog.Description>
+                </div>
+                <Dialog.Close className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10">
+                  <X className="h-4 w-4" />
+                </Dialog.Close>
+              </div>
+              {files.length === 0 ? (
+                <p className="text-sm font-semibold text-slate-400">Belum ada berkas yang diunggah.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {files.map((file) => (
+                    <FileChip key={file.id} file={file} />
+                  ))}
+                </div>
+              )}
+              <label className="mt-5 block text-[11px] font-bold uppercase text-slate-400">
+                Unggah berkas
+                <span className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <select
+                    value={kind}
+                    onChange={(event) => {
+                      setKind(event.target.value as (typeof DOCUMENT_KINDS)[number]['value']);
+                      setNote('');
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold normal-case text-slate-800 dark:border-white/10 dark:bg-ink-900 dark:text-ink-50"
+                  >
+                    {DOCUMENT_KINDS.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  {noteRequired ? (
+                    <input
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                      maxLength={80}
+                      placeholder="Keterangan berkas"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold normal-case text-slate-800 outline-none focus:border-member-600 dark:border-white/10 dark:bg-ink-900 dark:text-ink-50"
+                    />
+                  ) : null}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    disabled={uploading || (noteRequired && note.trim() === '')}
+                    className="text-sm font-medium normal-case text-slate-600 disabled:opacity-50"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      if (!file) return;
+                      if (noteRequired && note.trim() === '') {
+                        toast.error('Keterangan berkas wajib diisi.');
+                        return;
+                      }
+                      onUpload(kind, file, note.trim());
+                      setNote('');
+                    }}
+                  />
+                </span>
+                {noteRequired ? <span className="mt-1 block font-medium normal-case text-slate-400">Wajib diisi. Teks ini menjadi nama berkas.</span> : null}
+              </label>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
+      {preview.length === 0 ? (
+        <p className="text-sm font-semibold text-slate-400">Belum ada berkas yang diunggah.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {preview.map((file) => (
+            <FileChip key={file.id} file={file} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function filled(value?: string | null, min = 1) {
@@ -199,6 +380,24 @@ export function MemberProfilePage() {
       toast.success('Foto full body diperbarui');
     },
     onError: (error) => toast.error(getApiErrorMessage(error, 'Gagal mengunggah foto full body')),
+  });
+
+  const documentMutation = useMutation({
+    mutationFn: ({ kind, file, note }: { kind: string; file: File; note: string }) => {
+      const data = new FormData();
+      data.append('kind', kind);
+      data.append('note', note);
+      data.append('file', file);
+      return api.post('/auth/documents', data);
+    },
+    onSuccess: (payload) => {
+      const profileDocuments = payload.data?.data?.profileDocuments as StoredDocument[] | undefined;
+      queryClient.setQueryData(['member-profile'], (current: MemberProfile | undefined) =>
+        current ? { ...current, profileDocuments: profileDocuments ?? current.profileDocuments } : current,
+      );
+      toast.success('Berkas berhasil diunggah');
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, 'Gagal mengunggah berkas')),
   });
 
   const steps = useMemo(() => {
@@ -342,6 +541,12 @@ export function MemberProfilePage() {
             </div>
           ) : null}
         </div>
+
+        <ProfileFilesCard
+          files={profileFiles(profile)}
+          uploading={documentMutation.isPending}
+          onUpload={(kind, file, note) => documentMutation.mutate({ kind, file, note })}
+        />
 
         <section className="member-card p-6">
           <CardHead title="Biodata diri" editing={editing === 'self'} onEdit={() => setEditing('self')} onCancel={cancel} />

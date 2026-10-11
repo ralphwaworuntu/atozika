@@ -111,6 +111,7 @@ func main() {
 	ag.Post("/password", protect, authH.Password)
 	ag.Post("/avatar", protect, authH.Avatar)
 	ag.Post("/full-body", protect, authH.FullBody)
+	ag.Post("/documents", protect, authH.Document)
 
 	lg := v1.Group("/landing")
 	lg.Get("/home", landH.Home)

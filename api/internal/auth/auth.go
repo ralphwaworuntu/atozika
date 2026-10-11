@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -325,6 +326,81 @@ func (h *Handler) FullBody(c *fiber.Ctx) error {
 	return httpx.Success(c, fiber.Map{"fullBodyUrl": saved.PublicURL})
 }
 
+type profileDocument struct {
+	ID         string    `json:"id"`
+	Kind       string    `json:"kind"`
+	Name       string    `json:"name"`
+	URL        string    `json:"url"`
+	UploadedAt time.Time `json:"uploadedAt"`
+}
+
+func (h *Handler) Document(c *fiber.Ctx) error {
+	u := middleware.Current(c)
+	kind := strings.TrimSpace(c.FormValue("kind"))
+	labels := map[string]string{
+		"ktp":    "Foto KTP",
+		"ijazah": "Ijazah",
+		"rapor":  "Nilai rapor",
+		"other":  "Berkas lain",
+	}
+	label, ok := labels[kind]
+	if !ok {
+		return httpx.New(400, "Jenis berkas tidak dikenal.")
+	}
+	note := strings.TrimSpace(c.FormValue("note"))
+	if kind != "ktp" {
+		if note == "" {
+			return httpx.New(400, "Keterangan berkas wajib diisi.")
+		}
+		if len([]rune(note)) > 80 {
+			return httpx.New(400, "Keterangan berkas maksimal 80 karakter.")
+		}
+		label = note
+	}
+	allowed := map[string]bool{}
+	for ext := range upload.Proof {
+		allowed[ext] = true
+	}
+	allowed[".doc"] = true
+	allowed[".docx"] = true
+	saved, err := upload.Save(c, "file", h.Upload+"/documents", "uploads/documents", 10<<20, allowed)
+	if err != nil {
+		return err
+	}
+	if saved == nil {
+		return httpx.New(400, "Berkas wajib diunggah.")
+	}
+	var user models.User
+	if err := h.DB.Select(`id, "profileDocuments"`).First(&user, "id = ?", u.ID).Error; err != nil {
+		return httpx.New(404, "User not found")
+	}
+	var docs []profileDocument
+	if len(user.ProfileDocuments) > 0 {
+		_ = json.Unmarshal(user.ProfileDocuments, &docs)
+	}
+	if kind == "ktp" {
+		kept := docs[:0]
+		for _, doc := range docs {
+			if doc.Kind != kind {
+				kept = append(kept, doc)
+			}
+		}
+		docs = kept
+	}
+	docs = append(docs, profileDocument{
+		ID: id.New(), Kind: kind, Name: label, URL: saved.PublicURL, UploadedAt: time.Now(),
+	})
+	raw, err := json.Marshal(docs)
+	if err != nil {
+		return err
+	}
+	h.DB.Model(&models.User{}).Where("id = ?", u.ID).Updates(map[string]any{
+		"profileDocuments": raw,
+		"updatedAt":        time.Now(),
+	})
+	return httpx.Success(c, fiber.Map{"profileDocuments": docs})
+}
+
 func (h *Handler) createSession(userID string, bump bool) (fiber.Map, error) {
 	profile, err := h.buildProfile(userID)
 	if err != nil {
@@ -409,8 +485,9 @@ func (h *Handler) buildProfile(userID string) (fiber.Map, error) {
 		"parentAddress": user.ParentAddress, "healthIssues": user.HealthIssues,
 		"primaryTarget": user.PrimaryTarget, "backupTarget": user.BackupTarget,
 		"surgeryHistory": user.SurgeryHistory, "eyeCondition": user.EyeCondition,
-		"fullBodyUrl": user.FullBodyURL,
-		"memberArea":  memberArea, "membership": membershipData,
+		"fullBodyUrl": user.FullBodyURL, "profileDocuments": json.RawMessage(user.ProfileDocuments),
+		"updatedAt": user.UpdatedAt,
+		"memberArea": memberArea, "membership": membershipData,
 	}, nil
 }
 

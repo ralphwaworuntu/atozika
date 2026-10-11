@@ -8,8 +8,7 @@ import type { Tryout } from '@/types/exam';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { cn } from '@/utils/cn';
-
-const COVERS = ['bg-[#FDEAE2]', 'bg-[#E1F7F3]', 'bg-[#F0EAFB]', 'bg-[#FCF5E3]', 'bg-[#F1F9F0]', 'bg-[#EDF3FC]'];
+import { exampleCover } from '@/lib/exampleCovers';
 
 export function TryoutSubCategoriesPage() {
   const navigate = useNavigate();
@@ -137,14 +136,8 @@ export function TryoutSubCategoriesPage() {
                   layout === 'list' && 'flex items-stretch',
                 )}
               >
-                <div className={cn('relative overflow-hidden', layout === 'grid' ? 'h-32' : 'h-24 w-36 shrink-0', !cover && COVERS[index % COVERS.length])}>
-                  {cover ? (
-                    <img src={cover} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <div className="h-16 w-16 rounded-xl bg-white/80 shadow-sm" />
-                    </div>
-                  )}
+                <div className={cn('relative overflow-hidden', layout === 'grid' ? 'h-32' : 'h-24 w-36 shrink-0')}>
+                  <img src={cover || exampleCover(index)} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-between">
                   <h3 className="line-clamp-2 p-4 text-sm font-bold leading-snug text-slate-900 dark:text-ink-50">{subCategory.name}</h3>

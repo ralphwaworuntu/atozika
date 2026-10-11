@@ -13,15 +13,80 @@ import { useExamBlocks } from '@/hooks/useExamBlocks';
 import { useExamBlockConfig } from '@/hooks/useExamBlockConfig';
 import { ExamCountdownModal } from '@/components/dashboard/ExamCountdownModal';
 import { CermatExamOverlay } from '@/components/dashboard/CermatExamOverlay';
-import { CERMAT_MODE_ACCENT, CermatModePreview } from '@/components/dashboard/CermatModePreview';
-import { PageHeader } from '@/components/common/PageHeader';
-import {
-  CERMAT_MODE_LABELS,
-  DEFAULT_CERMAT_CONFIG,
-  formatCermatConfigSummary,
-  type CermatConfig,
-  type CermatMode,
-} from '@/types/cermat';
+import { ArrowRight, BarChart3, Clock3, FileText, ScanEye, Zap } from 'lucide-react';
+import { cn } from '@/utils/cn';
+import { LearningPageHeader, StatItem, type LearningLayout } from '@/components/dashboard/member/LearningPageHeader';
+import { DEFAULT_CERMAT_CONFIG, type CermatConfig, type CermatMode } from '@/types/cermat';
+
+type CermatCard = {
+  key: string;
+  mode: CermatMode | null;
+  badge: string;
+  title: string;
+  description: string;
+  image: string;
+  tint: string;
+  badgeTone: string;
+  buttonTone: string;
+};
+
+const CERMAT_CARDS: CermatCard[] = [
+  {
+    key: 'IMAGE',
+    mode: 'IMAGE',
+    badge: 'Gambar Hilang',
+    title: 'Gambar Hilang',
+    description: 'Temukan gambar yang hilang dari 5 pilihan referensi.',
+    image: '/illustrations/cermat-gambar-hilang.jpg',
+    tint: 'bg-[#FBF1DF]',
+    badgeTone: 'bg-[#8C6A1C]',
+    buttonTone: 'bg-[#8C6A1C] hover:bg-[#735614]',
+  },
+  {
+    key: 'LETTER',
+    mode: 'LETTER',
+    badge: 'Huruf Hilang',
+    title: 'Huruf Hilang',
+    description: 'Tentukan huruf yang tidak tampil dari 5 pilihan.',
+    image: '/illustrations/cermat-huruf-hilang.jpg',
+    tint: 'bg-[#F1EAFD]',
+    badgeTone: 'bg-violet-600',
+    buttonTone: 'bg-violet-600 hover:bg-violet-700',
+  },
+  {
+    key: 'NUMBER',
+    mode: 'NUMBER',
+    badge: 'Angka Hilang',
+    title: 'Angka Hilang',
+    description: 'Tentukan angka yang tidak tampil dari 5 pilihan.',
+    image: '/illustrations/cermat-angka-hilang.jpg',
+    tint: 'bg-[#E7F5EC]',
+    badgeTone: 'bg-[#1F7A4D]',
+    buttonTone: 'bg-[#1F7A4D] hover:bg-[#18623d]',
+  },
+  {
+    key: 'SAME',
+    mode: null,
+    badge: 'Gambar Sama',
+    title: 'Gambar Sama',
+    description: 'Cari gambar yang sama dalam waktu cepat.',
+    image: '/illustrations/cermat-gambar-sama.jpg',
+    tint: 'bg-[#E6F0FD]',
+    badgeTone: 'bg-blue-600',
+    buttonTone: 'bg-blue-600 hover:bg-blue-700',
+  },
+  {
+    key: 'COMPARE',
+    mode: null,
+    badge: 'Perbandingan',
+    title: 'Perbandingan',
+    description: 'Temukan perbedaan atau persamaan dengan cepat.',
+    image: '/illustrations/cermat-perbandingan.jpg',
+    tint: 'bg-[#FDECEC]',
+    badgeTone: 'bg-rose-500',
+    buttonTone: 'bg-rose-500 hover:bg-rose-600',
+  },
+];
 
 type CermatSession = {
   attemptId: string;
@@ -54,30 +119,12 @@ const MODE_LABELS: Record<CermatMode, { reference: string; prompt: string; butto
   },
 };
 
-function getTestVariants(config: CermatConfig): Array<{ mode: CermatMode; title: string; description: string }> {
-  const { totalSessions, questionCount, durationSeconds, breakSeconds } = config;
-  const sessionInfo = `${totalSessions} sesi, masing-masing ${questionCount} soal selama ${durationSeconds} detik, dengan jeda ${breakSeconds} detik antar sesi`;
-
-  return [
-    {
-      mode: 'IMAGE',
-      title: 'Tes Kecermatan Gambar Hilang',
-      description:
-        `5 gambar referensi ditampilkan dengan label A-E. Tiap soal menampilkan 4 gambar — tentukan huruf gambar yang hilang. Total ${sessionInfo}.`,
-    },
-    {
-      mode: 'LETTER',
-      title: 'Tes Kecermatan Huruf Hilang',
-      description:
-        `Dengan 5 huruf referensi yang diacak dari A-Z, kamu harus menentukan huruf mana yang tidak tampil. Total ${sessionInfo}.`,
-    },
-    {
-      mode: 'NUMBER',
-      title: 'Tes Kecermatan Angka Hilang',
-      description:
-        `Sistem membangkitkan 5 angka acak sebagai referensi. Kerjakan ${sessionInfo}.`,
-    },
-  ];
+function modeEnabled(config: CermatConfig, mode: CermatMode) {
+  const modes = config.modes;
+  if (!modes) return true;
+  if (mode === 'IMAGE') return modes.imageEnabled !== false;
+  if (mode === 'LETTER') return modes.letterEnabled !== false;
+  return modes.numberEnabled !== false;
 }
 
 export function CermatPage() {
@@ -95,16 +142,8 @@ export function CermatPage() {
     queryFn: () => apiGet<CermatConfig>('/exams/cermat/config'),
     enabled: membership.data?.isActive === true && membership.data?.allowCermat !== false,
   });
-  const testVariants = useMemo(() => {
-    const modes = cermatConfig.modes;
-    return getTestVariants(cermatConfig).filter((item) => {
-      if (!modes) return true;
-      if (item.mode === 'IMAGE') return modes.imageEnabled !== false;
-      if (item.mode === 'LETTER') return modes.letterEnabled !== false;
-      return modes.numberEnabled !== false;
-    });
-  }, [cermatConfig]);
-  const configSummary = useMemo(() => formatCermatConfigSummary(cermatConfig), [cermatConfig]);
+  const [query, setQuery] = useState('');
+  const [layout, setLayout] = useState<LearningLayout>('grid');
   const [session, setSession] = useState<CermatSession | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -480,75 +519,104 @@ export function CermatPage() {
     );
   }
 
-  return (
-    <section className="page-shell">
-      <PageHeader
-        eyebrow="Tes Kecermatan"
-        title="Latihan Fokus dan Ketelitian"
-        description="Pilih varian tes dan lihat riwayat per sesi setelah selesai."
-        action={
-          <Button variant="outline" onClick={() => navigate('/app/tes-kecermatan/riwayat')}>
-            Lihat Riwayat
-          </Button>
-        }
-      />
-      {(forcedMode ? testVariants.filter((item) => item.mode === forcedMode) : testVariants).map((variant) => {
-        const isLoading = startMutation.isPending && pendingMode === variant.mode;
-        const accent = CERMAT_MODE_ACCENT[variant.mode];
-        return (
-          <div
-            key={variant.mode}
-            className="surface-card overflow-hidden transition hover:shadow-md"
-          >
-            <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:gap-8 lg:p-8">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide text-white ${accent.badge}`}
-                  >
-                    {CERMAT_MODE_LABELS[variant.mode]}
-                  </span>
-                  <span className="text-xs font-medium uppercase tracking-wider text-slate-400">{configSummary}</span>
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">{variant.title}</h2>
-                <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">{variant.description}</p>
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <Button
-                    onClick={() => {
-                      if (fullscreenSupported) {
-                        requestFullscreen()
-                          .then(() => {
-                            startMutation.mutate(variant.mode);
-                          })
-                          .catch(() => {
-                            toast.error('Izinkan mode layar penuh untuk mulai tes.');
-                          });
-                        return;
-                      }
-                      startMutation.mutate(variant.mode);
-                    }}
-                    disabled={startMutation.isPending}
-                    isLoading={isLoading}
-                  >
-                    {MODE_LABELS[variant.mode].button}
-                  </Button>
-                  {typeof membership.data?.cermatQuota === 'number' && membership.data.cermatQuota > 0 && (
-                    <span className="text-sm text-slate-500">
-                      Token tersisa{' '}
-                      <span className="font-semibold text-slate-800">
-                        {Math.max((membership.data.cermatRemaining ?? membership.data.cermatQuota - (membership.data.cermatUsed ?? 0)), 0)}
-                      </span>
-                      /{membership.data.cermatQuota}
-                    </span>
-                  )}
-                </div>
-              </div>
+  const term = query.trim().toLowerCase();
+  const cards = CERMAT_CARDS.filter((card) => {
+    if (card.mode && !modeEnabled(cermatConfig, card.mode)) return false;
+    if (forcedMode && card.mode !== forcedMode) return false;
+    return !term || card.title.toLowerCase().includes(term);
+  });
+  const metaLine = `${cermatConfig.totalSessions} sesi • ${cermatConfig.questionCount} soal • ${cermatConfig.durationSeconds} detik`;
 
-              <CermatModePreview mode={variant.mode} className="w-full shrink-0 lg:w-[280px] xl:w-[300px]" />
-            </div>
+  const startCard = (card: CermatCard) => {
+    const mode = card.mode;
+    if (!mode) {
+      toast.message(`Tes Kecermatan ${card.title} segera tersedia.`);
+      return;
+    }
+    if (fullscreenSupported) {
+      requestFullscreen()
+        .then(() => startMutation.mutate(mode))
+        .catch(() => toast.error('Izinkan mode layar penuh untuk mulai tes.'));
+      return;
+    }
+    startMutation.mutate(mode);
+  };
+
+  return (
+    <div className="space-y-5">
+      <LearningPageHeader
+        title="Tes Kecermatan"
+        description="Latih fokus, ketelitian, dan kecepatan dengan berbagai variasi tes kecermatan."
+        searchPlaceholder="Cari jenis tes..."
+        query={query}
+        onQueryChange={setQuery}
+        layout={layout}
+        onLayoutChange={setLayout}
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]">
+        <section className="member-card grid grid-cols-2 gap-4 p-4 md:grid-cols-4">
+          <StatItem icon={<ScanEye className="h-5 w-5" />} tone="bg-violet-50 text-violet-600" value={String(CERMAT_CARDS.length)} label="Jenis Tes" />
+          <StatItem icon={<FileText className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" value="200" label="Total Soal" />
+          <StatItem icon={<Clock3 className="h-5 w-5" />} tone="bg-rose-50 text-rose-600" value={`± ${cermatConfig.durationSeconds} detik`} label="Durasi per soal" />
+          <StatItem icon={<Zap className="h-5 w-5" />} tone="bg-amber-50 text-amber-500" value={`${cermatConfig.breakSeconds} detik`} label="Jeda antar sesi" />
+        </section>
+        <section className="member-card flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <BarChart3 className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-[11px] font-medium text-slate-500">Rata-rata Skor</p>
+            <p className="text-xl font-extrabold text-slate-900 dark:text-ink-50">82</p>
           </div>
-        );
-      })}
+        </section>
+      </div>
+
+      {cards.length === 0 ? (
+        <div className="member-card p-8 text-center text-sm font-semibold text-slate-400">Jenis tes tidak ditemukan.</div>
+      ) : (
+        <div className={cn('grid gap-4', layout === 'grid' ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'grid-cols-1')}>
+          {cards.map((card) => {
+            const loading = startMutation.isPending && card.mode !== null && pendingMode === card.mode;
+            return (
+              <article
+                key={card.key}
+                className={cn(
+                  'flex overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-ink-800',
+                  layout === 'grid' ? 'flex-col' : 'flex-row items-stretch',
+                )}
+              >
+                <div className={cn('flex flex-col items-center gap-2 px-4 pb-3 pt-4', card.tint, layout === 'list' && 'w-48 shrink-0 justify-center')}>
+                  <span className={cn('rounded-md px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white', card.badgeTone)}>
+                    {card.badge}
+                  </span>
+                  <img src={card.image} alt="" className="h-20 w-28 object-contain mix-blend-multiply" />
+                </div>
+                <div className="flex flex-1 flex-col items-center px-4 pb-4 pt-3 text-center">
+                  <h3 className="text-sm font-extrabold leading-tight text-slate-900 dark:text-ink-50">
+                    Tes Kecermatan
+                    <br />
+                    {card.title}
+                  </h3>
+                  <p className="mt-2 text-xs font-medium text-slate-500 dark:text-ink-200">{card.description}</p>
+                  <p className="mt-2 text-[10px] font-medium text-slate-400">{metaLine}</p>
+                  <button
+                    type="button"
+                    onClick={() => startCard(card)}
+                    disabled={startMutation.isPending}
+                    className={cn(
+                      'mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-60',
+                      card.buttonTone,
+                    )}
+                  >
+                    {loading ? 'Memulai...' : 'Mulai Tes'} <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {(session || (isBreaking && pendingNext)) && (
         <CermatExamOverlay
@@ -606,7 +674,6 @@ export function CermatPage() {
           exitFullscreen();
         }}
       />
-
-    </section>
+    </div>
   );
 }
