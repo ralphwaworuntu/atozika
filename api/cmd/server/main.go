@@ -20,6 +20,7 @@ import (
 	"atozika/internal/materials"
 	"atozika/internal/middleware"
 	"atozika/internal/referrals"
+	"atozika/internal/whatsapp"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -93,13 +94,14 @@ func main() {
 	authH := &auth.Handler{DB: gdb, Cfg: cfg, Upload: cfg.UploadsDir}
 	landH := &landing.Handler{DB: gdb}
 	dashH := &dashboard.Handler{DB: gdb}
-	examH := &exams.Handler{DB: gdb}
+	wa := &whatsapp.Sender{DB: gdb, Cfg: cfg}
+	examH := &exams.Handler{DB: gdb, WA: wa}
 	matH := &materials.Handler{DB: gdb}
 	comH := &commerce.Handler{DB: gdb, Upload: cfg.UploadsDir}
 	refH := &referrals.Handler{DB: gdb, Cfg: cfg}
 	ctcH := &contact.Handler{DB: gdb}
 	calcH := &calculators.Handler{DB: gdb}
-	admH := &admin.Handler{DB: gdb, Cfg: cfg, Upload: cfg.UploadsDir, Calc: calcH}
+	admH := &admin.Handler{DB: gdb, Cfg: cfg, Upload: cfg.UploadsDir, Calc: calcH, WA: wa}
 
 	protect := middleware.Auth(gdb, cfg)
 	adminOnly := middleware.AdminOnly

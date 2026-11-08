@@ -12,6 +12,7 @@ import (
 	"atozika/internal/id"
 	"atozika/internal/models"
 	"atozika/internal/upload"
+	"atozika/internal/whatsapp"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -24,6 +25,7 @@ type Handler struct {
 	Cfg    config.Config
 	Upload string
 	Calc   *calculators.Handler
+	WA     *whatsapp.Sender
 }
 
 func Register(r fiber.Router, h *Handler) {
@@ -133,6 +135,9 @@ func Register(r fiber.Router, h *Handler) {
 	r.Put("/site/member-background", h.PutMemberBackground)
 	r.Get("/site/exam-control", h.GetExamControl)
 	r.Put("/site/exam-control", h.PutExamControl)
+	r.Get("/whatsapp", h.WhatsAppStatus)
+	r.Post("/whatsapp/retry", h.WhatsAppRetry)
+	r.Post("/whatsapp/test", h.WhatsAppTest)
 	r.Get("/site/exam-block-config", h.GetExamBlockConfig)
 	r.Put("/site/exam-block-config", h.PutExamBlockConfig)
 	r.Get("/site/welcome-modal", h.ListWelcome)

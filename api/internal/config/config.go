@@ -25,6 +25,11 @@ type Config struct {
 	SMTPPass         string
 	SMTPFromName     string
 	SMTPFromEmail    string
+	WhatsAppProvider string
+	WhatsAppToken    string
+	WhatsAppPhoneID  string
+	WhatsAppTemplate string
+	WhatsAppLang     string
 	UploadsDir       string
 }
 
@@ -61,6 +66,11 @@ func Load() Config {
 		SMTPPass:         getenv("SMTP_PASS", ""),
 		SMTPFromName:     getenv("SMTP_FROM_NAME", "ATOZIKA"),
 		SMTPFromEmail:    getenv("SMTP_FROM_EMAIL", ""),
+		WhatsAppProvider: strings.ToLower(getenv("WHATSAPP_PROVIDER", "")),
+		WhatsAppToken:    getenv("WHATSAPP_TOKEN", ""),
+		WhatsAppPhoneID:  getenv("WHATSAPP_PHONE_NUMBER_ID", ""),
+		WhatsAppTemplate: getenv("WHATSAPP_TEMPLATE", ""),
+		WhatsAppLang:     getenv("WHATSAPP_TEMPLATE_LANG", "id"),
 		UploadsDir:       uploads,
 	}
 	if cfg.NodeEnv == "production" {

@@ -479,6 +479,21 @@ type MaterialAccess struct {
 
 func (MaterialAccess) TableName() string { return "MaterialAccess" }
 
+type WhatsAppDispatch struct {
+	ID          string     `gorm:"column:id;primaryKey" json:"id"`
+	UserID      *string    `gorm:"column:userId" json:"userId"`
+	ParentPhone string     `gorm:"column:parentPhone" json:"parentPhone"`
+	Kind        string     `gorm:"column:kind" json:"kind"`
+	RefID       string     `gorm:"column:refId" json:"refId"`
+	Body        string     `gorm:"column:body" json:"body"`
+	Status      string     `gorm:"column:status" json:"status"`
+	Detail      string     `gorm:"column:detail" json:"detail"`
+	CreatedAt   time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	SentAt      *time.Time `gorm:"column:sentAt" json:"sentAt"`
+}
+
+func (WhatsAppDispatch) TableName() string { return "WhatsAppDispatch" }
+
 type MembershipPackage struct {
 	ID                string            `gorm:"column:id;primaryKey" json:"id"`
 	Name              string            `gorm:"column:name" json:"name"`

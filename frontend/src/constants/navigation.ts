@@ -129,6 +129,7 @@ export const adminMenu: NavSection[] = [
     items: [
       { label: 'Afiliasi', to: '/admin/referrals' },
       { label: 'Manajemen User', to: '/admin/users' },
+      { label: 'WhatsApp Orang Tua', to: '/admin/whatsapp' },
       { label: 'Monitoring Sistem', to: '/admin/system-monitoring' },
     ],
   },

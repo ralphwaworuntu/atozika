@@ -96,6 +96,7 @@ model User {
   examQuotaUsage         ExamQuotaUsage?
   materialCategories     MemberMaterialCategory[]
   materialAccesses       MaterialAccess[]
+  whatsappDispatches     WhatsAppDispatch[]
 }
 
 model MemberArea {
@@ -615,6 +616,23 @@ model PaymentSetting {
   accountHolder String   @default("")
   updatedAt     DateTime @updatedAt
   createdAt     DateTime @default(now())
+}
+
+model WhatsAppDispatch {
+  id          String    @id @default(cuid())
+  userId      String?
+  parentPhone String
+  kind        String
+  refId       String
+  body        String
+  status      String
+  detail      String    @default("")
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([kind, refId])
+  @@index([createdAt])
 }
 
 model SiteSetting {

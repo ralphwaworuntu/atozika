@@ -80,6 +80,7 @@ import { AdminContactsPage } from '@/pages/admin/AdminContactsPage';
 import { AdminCalculatorsPage } from '@/pages/admin/AdminCalculatorsPage';
 import { AdminReportingPage } from '@/pages/admin/AdminReportingPage';
 import { AdminExamControlPage } from '@/pages/admin/AdminExamControlPage';
+import { AdminWhatsAppPage } from '@/pages/admin/AdminWhatsAppPage';
 import { AdminRankingPage } from '@/pages/admin/AdminRankingPage';
 import { AdminWordConverterPage } from '@/pages/admin/AdminWordConverterPage';
 import { AdminKecermatanPage } from '@/pages/admin/AdminKecermatanPage';
@@ -166,6 +167,7 @@ export default function App() {
           <Route path="referrals" element={<AdminReferralsPage />} />
           <Route path="announcements" element={<AdminAnnouncementsPage />} />
           <Route path="exam-control" element={<AdminExamControlPage />} />
+          <Route path="whatsapp" element={<AdminWhatsAppPage />} />
           <Route path="tryouts" element={<AdminTryoutsPage />} />
           <Route path="word-converter" element={<AdminWordConverterPage />} />
           <Route path="practice" element={<AdminPracticePage />} />

@@ -14,6 +14,7 @@ import (
 	"atozika/internal/membership"
 	"atozika/internal/middleware"
 	"atozika/internal/models"
+	"atozika/internal/whatsapp"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -162,6 +163,7 @@ func (h *Handler) submitPractice(c *fiber.Ctx, ujian bool) error {
 	now := time.Now()
 	res := models.PracticeResult{ID: id.New(), UserID: uid, SetID: set.ID, Mode: resultMode(ujian), CreatedAt: now}
 	earned := 0.0
+	correct := 0
 	h.DB.Create(&res)
 	for _, a := range body.Answers {
 		q := qMap[a.QuestionID]
@@ -174,6 +176,9 @@ func (h *Handler) submitPractice(c *fiber.Ctx, ujian bool) error {
 		sel := selectedIDs(a.OptionID, a.OptionIDs)
 		cr, ok := grade(sel, correctIDs)
 		earned += cr
+		if ok {
+			correct++
+		}
 		var opt *string
 		if len(sel) > 0 {
 			opt = &sel[0]
@@ -190,6 +195,9 @@ func (h *Handler) submitPractice(c *fiber.Ctx, ujian bool) error {
 	}
 	score := (earned / float64(total)) * 100
 	h.DB.Model(&res).Updates(map[string]any{"score": score, "completedAt": now})
+	if h.WA != nil {
+		h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "PRACTICE", RefID: res.ID, Title: set.Title, Score: score, Correct: correct, Total: total})
+	}
 	return httpx.Success(c, fiber.Map{"resultId": res.ID, "score": score, "total": total, "earnedCredit": earned})
 }
 
@@ -481,6 +489,9 @@ func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
 	}
 
 	if sess.AttemptID == nil || *sess.AttemptID == "" {
+		if h.WA != nil {
+			h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "CERMAT", RefID: sess.ID, Title: "Tes kecermatan", Score: score, Correct: correct, Total: total})
+		}
 		return httpx.Success(c, fiber.Map{
 			"completed": true,
 			"summary": fiber.Map{
@@ -531,6 +542,9 @@ func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
 	h.DB.Model(&attempt).Updates(map[string]any{
 		"finishedAt": now, "averageScore": averageScore, "totalAnswered": totalCorrect,
 	})
+	if h.WA != nil {
+		h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "CERMAT", RefID: attempt.ID, Title: "Tes kecermatan", Score: averageScore, Correct: totalCorrect, Total: totalQuestions})
+	}
 	return httpx.Success(c, fiber.Map{
 		"completed": true,
 		"summary": fiber.Map{

@@ -12,12 +12,16 @@ import (
 	"atozika/internal/membership"
 	"atozika/internal/middleware"
 	"atozika/internal/models"
+	"atozika/internal/whatsapp"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
-type Handler struct{ DB *gorm.DB }
+type Handler struct {
+	DB *gorm.DB
+	WA *whatsapp.Sender
+}
 
 func shuffle[T any](in []T) []T {
 	out := append([]T(nil), in...)
@@ -314,6 +318,9 @@ func (h *Handler) submitTryout(c *fiber.Ctx, ujian bool) error {
 	dur := t.DurationMinutes * 60
 	now := time.Now()
 	h.DB.Model(&result).Updates(map[string]any{"completedAt": now, "score": score, "durationSeconds": dur})
+	if h.WA != nil {
+		h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "TRYOUT", RefID: result.ID, Title: t.Name, Score: score, Correct: correct, Total: total})
+	}
 	out := fiber.Map{"resultId": result.ID, "score": score, "correct": correct, "earnedCredit": earned, "total": total}
 	if !ujian && isPsiko(t) {
 		var seq []models.Tryout
