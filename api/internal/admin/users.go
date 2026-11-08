@@ -1,7 +1,11 @@
 package admin
 
 import (
+	"bufio"
+	"os"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 
 	"atozika/internal/auth"
@@ -31,8 +35,8 @@ func (h *Handler) rankingData(c *fiber.Ctx) (fiber.Map, error) {
 	var tryouts []models.TryoutResult
 	var practices []models.PracticeResult
 	var cermat []models.CermatAttempt
-	applyDates(h.DB.Preload("User").Preload("Tryout").Where("score IS NOT NULL"), `"createdAt"`, c).Order(`"createdAt" DESC`).Find(&tryouts)
-	applyDates(h.DB.Preload("User").Preload("Set").Where("score IS NOT NULL"), `"createdAt"`, c).Order(`"createdAt" DESC`).Find(&practices)
+	applyDates(h.DB.Preload("User").Preload("Tryout").Where("score IS NOT NULL AND mode = ?", "REGULAR"), `"createdAt"`, c).Order(`"createdAt" DESC`).Find(&tryouts)
+	applyDates(h.DB.Preload("User").Preload("Set").Where("score IS NOT NULL AND mode = ?", "REGULAR"), `"createdAt"`, c).Order(`"createdAt" DESC`).Find(&practices)
 	applyDates(h.DB.Preload("User").Where(`"averageScore" IS NOT NULL`), `"startedAt"`, c).Order(`"startedAt" DESC`).Find(&cermat)
 
 	acc := map[string]*rankAcc{}
@@ -291,15 +295,69 @@ func (h *Handler) SystemMetrics(c *fiber.Ctx) error {
 	if total > 0 {
 		usage = float64(used) / float64(total) * 100
 	}
-	cpus := []fiber.Map{}
-	for i := 0; i < runtime.NumCPU(); i++ {
-		cpus = append(cpus, fiber.Map{"core": i, "model": runtime.GOARCH, "speed": 0, "usage": 0})
-	}
+	cpus := sampleCPU()
 	return httpx.Success(c, fiber.Map{
 		"memory": fiber.Map{"total": total, "used": used, "free": free, "usage": usage},
 		"cpu":    cpus,
 		"uptime": int(time.Since(startedAt).Seconds()),
 	})
+}
+
+func readProcStat() ([][2]uint64, error) {
+	f, err := os.Open("/proc/stat")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var cores [][2]uint64
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		fields := strings.Fields(sc.Text())
+		if len(fields) < 5 || !strings.HasPrefix(fields[0], "cpu") || fields[0] == "cpu" {
+			continue
+		}
+		var idle, total uint64
+		for i, raw := range fields[1:] {
+			n, _ := strconv.ParseUint(raw, 10, 64)
+			total += n
+			if i == 3 {
+				idle = n
+			}
+		}
+		cores = append(cores, [2]uint64{idle, total})
+	}
+	return cores, sc.Err()
+}
+
+func sampleCPU() []fiber.Map {
+	first, err := readProcStat()
+	if err != nil || len(first) == 0 {
+		out := []fiber.Map{}
+		for i := 0; i < runtime.NumCPU(); i++ {
+			out = append(out, fiber.Map{"core": i, "model": runtime.GOARCH, "speed": 0, "usage": 0})
+		}
+		return out
+	}
+	time.Sleep(120 * time.Millisecond)
+	second, err := readProcStat()
+	if err != nil || len(second) != len(first) {
+		out := []fiber.Map{}
+		for i := range first {
+			out = append(out, fiber.Map{"core": i, "model": runtime.GOARCH, "speed": 0, "usage": 0})
+		}
+		return out
+	}
+	out := make([]fiber.Map, 0, len(first))
+	for i := range first {
+		idleDelta := second[i][0] - first[i][0]
+		totalDelta := second[i][1] - first[i][1]
+		usage := 0.0
+		if totalDelta > 0 {
+			usage = (1 - float64(idleDelta)/float64(totalDelta)) * 100
+		}
+		out = append(out, fiber.Map{"core": i, "model": runtime.GOARCH, "speed": 0, "usage": usage})
+	}
+	return out
 }
 
 func (h *Handler) ListReferrals(c *fiber.Ctx) error {

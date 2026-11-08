@@ -35,7 +35,7 @@ export function MaterialsPage() {
       topics.filter((topic) => (filter === 'Semua' || topic.name === filter) && (!term || topic.name.toLowerCase().includes(term))).map(
         (topic) => {
           const realCount = (materials ?? []).filter((item) => topicByName(item.category)?.key === topic.key).length;
-          return { topic, count: realCount || topic.material.count };
+          return { topic, count: realCount };
         },
       ),
     [filter, materials, term, topicByName, topics],

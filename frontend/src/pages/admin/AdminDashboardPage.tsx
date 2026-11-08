@@ -27,7 +27,11 @@ const overviewCards: Array<{ key: OverviewMetricKey; label: string; to: string; 
 ];
 
 export function AdminDashboardPage() {
-  const { data, isLoading } = useQuery({ queryKey: ['admin-overview'], queryFn: () => apiGet<AdminOverview>('/admin/overview') });
+  const { data, isLoading, isError } = useQuery({ queryKey: ['admin-overview'], queryFn: () => apiGet<AdminOverview>('/admin/overview') });
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-600">Gagal memuat ringkasan admin.</p>;
+  }
 
   if (isLoading || !data) {
     return <Skeleton className="h-64" />;

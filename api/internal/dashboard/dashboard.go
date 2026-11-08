@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"encoding/json"
+	"sort"
 
 	"atozika/internal/httpx"
 	"atozika/internal/jsonutil"
@@ -67,11 +68,11 @@ func (h *Handler) Overview(c *fiber.Ctx) error {
 	}
 	var results []models.TryoutResult
 	h.DB.Preload("Tryout").Preload("Tryout.SubCategory").Preload("Tryout.SubCategory.Category").
-		Where(`"userId" = ?`, uid).Order(`"createdAt" DESC`).Limit(40).Find(&results)
+		Where(`"userId" = ? AND mode = ?`, uid, "REGULAR").Order(`"createdAt" DESC`).Limit(40).Find(&results)
 	var slides []models.MemberOverviewSlide
 	h.DB.Order(`"order" ASC, "createdAt" ASC`).Find(&slides)
 	var tryoutCount int64
-	h.DB.Model(&models.TryoutResult{}).Where(`"userId" = ?`, uid).Count(&tryoutCount)
+	h.DB.Model(&models.TryoutResult{}).Where(`"userId" = ? AND mode = ?`, uid, "REGULAR").Count(&tryoutCount)
 	var materialCount int64
 	h.DB.Model(&models.Material{}).Count(&materialCount)
 	var pending int64
@@ -180,6 +181,57 @@ func (h *Handler) ExamControl(c *fiber.Ctx) error {
 		"tryoutsUsed": usage.TryoutsUsed, "examsUsed": usage.ExamsUsed,
 		"startAt": cfg.StartAt, "endAt": cfg.EndAt,
 	})
+}
+
+func (h *Handler) Leaderboard(c *fiber.Ctx) error {
+	uid := middleware.Current(c).ID
+	var results []models.TryoutResult
+	h.DB.Preload("User").Where(`score IS NOT NULL AND mode = ?`, "REGULAR").Find(&results)
+	type acc struct {
+		name  string
+		total float64
+		count int
+	}
+	byUser := map[string]*acc{}
+	for _, r := range results {
+		if r.Score == nil {
+			continue
+		}
+		item, ok := byUser[r.UserID]
+		if !ok {
+			item = &acc{name: r.User.Name}
+			byUser[r.UserID] = item
+		}
+		item.total += *r.Score
+		item.count++
+	}
+	rows := []fiber.Map{}
+	for id, item := range byUser {
+		avg := 0.0
+		if item.count > 0 {
+			avg = item.total / float64(item.count)
+		}
+		rows = append(rows, fiber.Map{
+			"userId": id, "name": item.name, "tryoutCount": item.count, "averageScore": avg, "you": id == uid,
+		})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		ai, _ := rows[i]["averageScore"].(float64)
+		aj, _ := rows[j]["averageScore"].(float64)
+		if ai == aj {
+			ci, _ := rows[i]["tryoutCount"].(int)
+			cj, _ := rows[j]["tryoutCount"].(int)
+			return ci > cj
+		}
+		return ai > aj
+	})
+	for i := range rows {
+		rows[i]["rank"] = i + 1
+	}
+	if len(rows) > 20 {
+		rows = rows[:20]
+	}
+	return httpx.Success(c, rows)
 }
 
 func (h *Handler) CalculatorLegacy(c *fiber.Ctx) error {

@@ -88,10 +88,7 @@ func (h *Handler) Home(c *fiber.Ctx) error {
 		})
 	}
 	if len(stats) == 0 {
-		stats = []models.LandingStat{
-			{Label: "Materi Video", Value: 1200}, {Label: "Soal Try Out", Value: 4500},
-			{Label: "Jumlah Alumni", Value: 724}, {Label: "Modul Interaktif", Value: 35},
-		}
+		stats = []models.LandingStat{}
 	}
 	copy := sitecontent.LoadHome(h.DB)
 	return httpx.Success(c, fiber.Map{

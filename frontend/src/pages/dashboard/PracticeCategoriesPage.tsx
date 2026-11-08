@@ -33,8 +33,8 @@ export function PracticeCategoriesPage() {
       return {
         topic,
         slug: real?.slug,
-        soal: sets.length ? sets.reduce((sum, set) => sum + set.totalQuestions, 0) : topic.practice.soal,
-        paket: sets.length || topic.practice.paket,
+        soal: sets.reduce((sum, set) => sum + set.totalQuestions, 0),
+        paket: sets.length,
       };
     }).filter(({ topic }) => {
       if (filter !== 'Semua' && !topic.practice.groups.includes(filter)) return false;
@@ -68,19 +68,19 @@ export function PracticeCategoriesPage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]">
         <section className="member-card grid grid-cols-2 gap-4 p-4 md:grid-cols-4">
-          <StatItem icon={<FileText className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" value="1.248" label="Total Soal Tersedia" />
-          <StatItem icon={<ClipboardList className="h-5 w-5" />} tone="bg-sky-50 text-sky-600" value="5" label="Kategori Latihan" />
-          <StatItem icon={<Package className="h-5 w-5" />} tone="bg-rose-50 text-rose-600" value="12" label="Paket Soal" />
-          <StatItem icon={<CircleCheck className="h-5 w-5" />} tone="bg-emerald-50 text-emerald-600" value="78%" label="Rata-rata Skor" />
+          <StatItem icon={<FileText className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" value={String(cards.reduce((sum, card) => sum + card.soal, 0))} label="Total Soal Tersedia" />
+          <StatItem icon={<ClipboardList className="h-5 w-5" />} tone="bg-sky-50 text-sky-600" value={String(categories?.length ?? 0)} label="Kategori Latihan" />
+          <StatItem icon={<Package className="h-5 w-5" />} tone="bg-rose-50 text-rose-600" value={String(cards.reduce((sum, card) => sum + card.paket, 0))} label="Paket Soal" />
+          <StatItem icon={<CircleCheck className="h-5 w-5" />} tone="bg-emerald-50 text-emerald-600" value="-" label="Rata-rata Skor" />
         </section>
         <section className="member-card flex flex-col justify-center p-4">
-          <p className="text-[11px] font-medium text-slate-500">Target Mingguan</p>
-          <p className="mt-0.5 text-sm font-extrabold text-member-600">6 dari 10 sesi</p>
+          <p className="text-[11px] font-medium text-slate-500">Paket latihan</p>
+          <p className="mt-0.5 text-sm font-extrabold text-member-600">{cards.reduce((sum, card) => sum + card.paket, 0)} paket tersedia</p>
           <div className="mt-2 flex items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-              <div className="h-full w-[60%] rounded-full bg-member-600" />
+              <div className="h-full rounded-full bg-member-600" style={{ width: cards.some((card) => card.paket) ? '100%' : '0%' }} />
             </div>
-            <span className="text-[11px] font-bold text-slate-600 dark:text-ink-100">60%</span>
+            <span className="text-[11px] font-bold text-slate-600 dark:text-ink-100">{cards.filter((card) => card.paket).length}/{cards.length}</span>
           </div>
         </section>
       </div>

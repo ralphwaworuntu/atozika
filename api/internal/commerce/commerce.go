@@ -106,9 +106,9 @@ func (h *Handler) MembershipStatus(c *fiber.Ctx) error {
 		}
 		cermatRem = v
 	}
-	matIDs := membership.MaterialIDs(trx)
+	matIDs := membership.EntitledMaterialIDs(h.DB, trx)
 	if premium {
-		matIDs = membership.AllMaterialIDs(h.DB, uid)
+		matIDs = membership.AllMaterialIDs(h.DB)
 	}
 	pkgName := trx.Package.Name
 	if premium {
@@ -147,7 +147,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 			return httpx.New(404, "Addon tidak ditemukan")
 		}
 		var membershipTrx models.Transaction
-		if err := h.DB.Where("id = ? AND \"userId\" = ? AND status = ? AND type = ? AND \"expiresAt\" > ?", targetID, uid, "PAID", "MEMBERSHIP", now).First(&membershipTrx).Error; err != nil {
+		if err := membership.ActiveWhere(h.DB).Where(`id = ? AND "userId" = ?`, targetID, uid).First(&membershipTrx).Error; err != nil {
 			return httpx.New(400, "Membership aktif tidak ditemukan untuk addon ini")
 		}
 		trx := models.Transaction{
@@ -202,6 +202,9 @@ func (h *Handler) Confirm(c *fiber.Ctx) error {
 	if desc != "" {
 		updates["description"] = desc
 	}
+	if trx.Status == "REJECTED" {
+		updates["status"] = "PENDING"
+	}
 	h.DB.Model(&trx).Updates(updates)
 	h.DB.First(&trx, "id = ?", trx.ID)
 	return httpx.Success(c, trx)
@@ -241,26 +244,60 @@ func MarkStatus(db *gorm.DB, trxID, status string) (*models.Transaction, error) 
 		return nil, httpx.New(404, "Transaksi tidak ditemukan")
 	}
 	now := time.Now()
+	if trx.Status == status {
+		return &trx, nil
+	}
 	if trx.Type == "ADDON" {
-		if status == "PAID" {
-			if trx.AddonID == nil || trx.TargetTransactionID == nil {
-				return nil, httpx.New(400, "Addon tidak memiliki target membership")
-			}
-			var addon models.AddonPackage
-			db.First(&addon, "id = ?", *trx.AddonID)
-			var target models.Transaction
-			db.First(&target, "id = ?", *trx.TargetTransactionID)
-			db.Model(&trx).Updates(map[string]any{"status": status, "activatedAt": now, "expiresAt": target.ExpiresAt, "updatedAt": now})
-			if addon.TryoutBonus > 0 {
-				db.Model(&models.Transaction{}).Where("id = ?", target.ID).UpdateColumn("tryoutQuota", gorm.Expr(`"tryoutQuota" + ?`, addon.TryoutBonus))
-			}
-			if addon.ModuleBonus > 0 {
-				db.Model(&models.Transaction{}).Where("id = ?", target.ID).UpdateColumn("moduleQuota", gorm.Expr(`"moduleQuota" + ?`, addon.ModuleBonus))
-			}
-		} else {
-			db.Model(&trx).Updates(map[string]any{"status": status, "updatedAt": now})
+		if trx.AddonID == nil || trx.TargetTransactionID == nil {
+			return nil, httpx.New(400, "Addon tidak memiliki target membership")
 		}
-		db.Preload("Addon").First(&trx, "id = ?", trx.ID)
+		var addon models.AddonPackage
+		if err := db.First(&addon, "id = ?", *trx.AddonID).Error; err != nil {
+			return nil, httpx.New(404, "Addon tidak ditemukan")
+		}
+		var target models.Transaction
+		if err := db.First(&target, "id = ?", *trx.TargetTransactionID).Error; err != nil {
+			return nil, httpx.New(404, "Membership target tidak ditemukan")
+		}
+		// Bonus quota is granted when the add-on becomes PAID and withdrawn if it leaves PAID.
+		sign := 0
+		switch {
+		case status == "PAID":
+			sign = 1
+		case trx.Status == "PAID":
+			sign = -1
+		}
+		err := db.Transaction(func(tx *gorm.DB) error {
+			updates := map[string]any{"status": status, "updatedAt": now}
+			if status == "PAID" {
+				updates["activatedAt"] = now
+				updates["expiresAt"] = target.ExpiresAt
+			} else {
+				updates["activatedAt"] = nil
+				updates["expiresAt"] = nil
+			}
+			if err := tx.Model(&trx).Updates(updates).Error; err != nil {
+				return err
+			}
+			// A quota of 0 means unlimited, so bonuses never touch it and never reduce a limited quota to 0.
+			if sign != 0 && addon.TryoutBonus > 0 {
+				if err := tx.Model(&models.Transaction{}).Where(`id = ? AND "tryoutQuota" > 0`, target.ID).
+					UpdateColumn("tryoutQuota", gorm.Expr(`GREATEST("tryoutQuota" + ?, 1)`, sign*addon.TryoutBonus)).Error; err != nil {
+					return err
+				}
+			}
+			if sign != 0 && addon.ModuleBonus > 0 {
+				if err := tx.Model(&models.Transaction{}).Where(`id = ? AND "moduleQuota" > 0`, target.ID).
+					UpdateColumn("moduleQuota", gorm.Expr(`GREATEST("moduleQuota" + ?, 1)`, sign*addon.ModuleBonus)).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		db.Preload("Addon").Preload("Package").First(&trx, "id = ?", trx.ID)
 		return &trx, nil
 	}
 	updates := map[string]any{"status": status, "updatedAt": now}

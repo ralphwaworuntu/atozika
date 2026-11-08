@@ -54,6 +54,13 @@ export function ExamTryoutHistoryPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
+                  Belum ada riwayat tryout ujian.
+                </td>
+              </tr>
+            ) : null}
             {data.map((item) => (
               <tr key={item.id}>
                 <td className="px-4 py-3 font-semibold text-slate-900">{item.tryout.name}</td>

@@ -19,7 +19,7 @@ type ReferralRow = {
 
 export function AdminReferralsPage() {
   const [query, setQuery] = useState('');
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['admin-referrals'],
     queryFn: () => apiGet<ReferralRow[]>('/admin/referrals'),
   });
@@ -35,6 +35,10 @@ export function AdminReferralsPage() {
         .includes(q),
     );
   }, [data, query]);
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-600">Gagal memuat afiliasi.</p>;
+  }
 
   if (isLoading || !data) {
     return <Skeleton className="h-64" />;

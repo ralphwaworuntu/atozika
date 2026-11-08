@@ -41,7 +41,7 @@ type MemberOverviewSlide = {
   ctaLink?: string | null;
   order: number;
 };
-type ContactConfig = { email: string; whatsappPrimary: string; whatsappConsult: string; companyAddress: string };
+type ContactConfig = { email: string; companyEmail?: string; whatsappPrimary: string; whatsappConsult: string; companyAddress: string };
 type WelcomeModalConfig = { id: string; enabled: boolean; imageUrl: string; linkUrl?: string | null; createdAt?: string };
 
 type LandingOverview = {
@@ -108,7 +108,7 @@ const landingSections: LandingResourceConfig[] = [
 
 export function AdminLandingPage() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ['admin-landing'], queryFn: () => apiGet<LandingOverview>('/admin/landing') });
+  const { data, isLoading, isError } = useQuery({ queryKey: ['admin-landing'], queryFn: () => apiGet<LandingOverview>('/admin/landing') });
   const { data: heroSlides } = useQuery({ queryKey: ['admin-hero-slides'], queryFn: () => apiGet<HeroSlide[]>('/admin/site/hero-slides') });
   const { data: packages } = useQuery({ queryKey: ['admin-packages'], queryFn: () => apiGet<PackageOption[]>('/admin/packages') });
   const [heroFile, setHeroFile] = useState<File | null>(null);
@@ -175,7 +175,10 @@ export function AdminLandingPage() {
   const { data: contactConfig } = useQuery({ queryKey: ['admin-contact-config'], queryFn: () => apiGet<ContactConfig>('/admin/site/contact-config') });
   useEffect(() => {
     if (contactConfig) {
-      contactForm.reset(contactConfig);
+      contactForm.reset({
+        ...contactConfig,
+        email: contactConfig.email || contactConfig.companyEmail || '',
+      });
     }
   }, [contactConfig, contactForm]);
   const saveContact = useMutation({
@@ -275,6 +278,10 @@ export function AdminLandingPage() {
     }
     saveWelcome.mutate(formData);
   });
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-600">Gagal memuat pengaturan landing.</p>;
+  }
 
   if (isLoading || !data) {
     return <Skeleton className="h-96" />;

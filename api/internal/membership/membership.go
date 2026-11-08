@@ -108,35 +108,64 @@ func ConsumeCermat(db *gorm.DB, userID string) (*models.Transaction, error) {
 	return trx, nil
 }
 
-func MaterialIDs(trx *models.Transaction) []string {
-	if trx == nil {
-		return nil
-	}
-	ids := make([]string, 0)
-	for _, m := range trx.Package.Materials {
-		ids = append(ids, m.MaterialID)
-	}
+// AllMaterialIDs lists every material; premium members may open all of them.
+func AllMaterialIDs(db *gorm.DB) []string {
+	ids := []string{}
+	db.Model(&models.Material{}).Pluck("id", &ids)
 	return ids
 }
 
-func AllMaterialIDs(db *gorm.DB, userID string) []string {
-	var rows []models.PackageMaterial
-	ActiveWhere(db).Select(`"Transaction".id`).Where(`"userId" = ?`, userID)
-	db.Table(`"PackageMaterial"`).
-		Joins(`JOIN "Transaction" t ON t."packageId" = "PackageMaterial"."packageId"`).
-		Where(`t."userId" = ? AND t.status = 'PAID' AND t.type = 'MEMBERSHIP'`, userID).
-		Find(&rows)
+// EntitledMaterialIDs returns materials granted by the active membership's
+// package plus every paid add-on attached to that membership.
+func EntitledMaterialIDs(db *gorm.DB, trx *models.Transaction) []string {
+	if trx == nil {
+		return []string{}
+	}
+	ids := []string{}
+	db.Model(&models.PackageMaterial{}).Where(`"packageId" = ?`, trx.PackageID).Pluck(`"materialId"`, &ids)
+	addonIDs := []string{}
+	db.Model(&models.AddonPackageMaterial{}).
+		Joins(`JOIN "Transaction" t ON t."addonId" = "AddonPackageMaterial"."addonId"`).
+		Where(`t."targetTransactionId" = ? AND t.type = ? AND t.status = ?`, trx.ID, "ADDON", "PAID").
+		Pluck(`"AddonPackageMaterial"."materialId"`, &addonIDs)
 	seen := map[string]struct{}{}
 	out := []string{}
-	for _, r := range rows {
-		if _, ok := seen[r.MaterialID]; ok {
+	for _, id := range append(ids, addonIDs...) {
+		if _, ok := seen[id]; ok {
 			continue
 		}
-		seen[r.MaterialID] = struct{}{}
-		out = append(out, r.MaterialID)
+		seen[id] = struct{}{}
+		out = append(out, id)
 	}
-	_ = jsonutil.Strings(nil)
 	return out
+}
+
+// ConsumeModule records that a material was opened under the membership and
+// spends one module quota the first time a limited membership opens it.
+func ConsumeModule(db *gorm.DB, trx *models.Transaction, userID, materialID string, newID func() string) error {
+	if trx == nil {
+		return nil
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		ins := tx.Exec(`INSERT INTO "MaterialAccess" (id, "userId", "materialId", "transactionId", "createdAt")
+			VALUES (?, ?, ?, ?, now()) ON CONFLICT ("userId", "materialId", "transactionId") DO NOTHING`,
+			newID(), userID, materialID, trx.ID)
+		if ins.Error != nil {
+			return ins.Error
+		}
+		if ins.RowsAffected == 0 || trx.ModuleQuota == 0 {
+			return nil
+		}
+		res := tx.Model(&models.Transaction{}).Where(`id = ? AND "moduleUsed" < "moduleQuota"`, trx.ID).
+			UpdateColumn("moduleUsed", gorm.Expr(`"moduleUsed" + 1`))
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return httpx.New(403, "Kuota modul Anda telah habis. Silakan perpanjang paket atau beli addon.", map[string]any{"code": "MODULE_QUOTA_EXHAUSTED"})
+		}
+		return nil
+	})
 }
 
 func FreeIDs(raw []byte) []string {

@@ -144,6 +144,7 @@ func main() {
 	dg.Get("/welcome-modal", dashH.WelcomeModal)
 	dg.Get("/member-background", dashH.MemberBackground)
 	dg.Get("/exam-control", dashH.ExamControl)
+	dg.Get("/leaderboard", dashH.Leaderboard)
 	dg.Post("/calculator/:slug", dashH.CalculatorLegacy)
 
 	mountExams := func(g fiber.Router, ujian bool) {
@@ -182,6 +183,7 @@ func main() {
 
 	v1.Get("/materials/categories", protect, member, matH.Categories)
 	v1.Get("/materials", protect, member, matH.List)
+	v1.Post("/materials/:id/open", protect, member, matH.Open)
 	v1.Post("/materials", protect, adminOnly, matH.Create)
 
 	cg := v1.Group("/commerce")

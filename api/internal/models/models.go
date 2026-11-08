@@ -7,43 +7,43 @@ import (
 )
 
 type User struct {
-	ID                     string     `gorm:"column:id;primaryKey" json:"id"`
-	Name                   string     `gorm:"column:name" json:"name"`
-	Email                  string     `gorm:"column:email;uniqueIndex" json:"email"`
-	PasswordHash           string     `gorm:"column:passwordHash" json:"-"`
-	Role                   string     `gorm:"column:role;default:MEMBER" json:"role"`
-	IsActive               bool       `gorm:"column:isActive;default:true" json:"isActive"`
-	IsEmailVerified        bool       `gorm:"column:isEmailVerified;default:false" json:"isEmailVerified"`
-	EmailVerifiedAt        *time.Time `gorm:"column:emailVerifiedAt" json:"emailVerifiedAt"`
-	EmailVerificationToken *string    `gorm:"column:emailVerificationToken" json:"-"`
-	AvatarURL              *string    `gorm:"column:avatarUrl" json:"avatarUrl"`
-	Phone                  *string    `gorm:"column:phone" json:"phone"`
-	NationalID             *string    `gorm:"column:nationalId" json:"nationalId"`
-	Address                *string    `gorm:"column:address" json:"address"`
-	HeightCm               *int       `gorm:"column:heightCm" json:"heightCm"`
-	WeightKg               *int       `gorm:"column:weightKg" json:"weightKg"`
-	ParentName             *string    `gorm:"column:parentName" json:"parentName"`
-	ParentPhone            *string    `gorm:"column:parentPhone" json:"parentPhone"`
-	ParentOccupation       *string    `gorm:"column:parentOccupation" json:"parentOccupation"`
-	ParentAddress          *string    `gorm:"column:parentAddress" json:"parentAddress"`
-	HealthIssues           *string    `gorm:"column:healthIssues" json:"healthIssues"`
-	SessionVersion         int        `gorm:"column:sessionVersion;default:0" json:"sessionVersion"`
-	ReferralCode           string     `gorm:"column:referralCode;uniqueIndex" json:"referralCode"`
-	Bio                    *string    `gorm:"column:bio" json:"bio"`
-	BirthPlace             *string    `gorm:"column:birthPlace" json:"birthPlace"`
-	BirthDate              *time.Time `gorm:"column:birthDate;type:date" json:"birthDate"`
-	Gender                 *string    `gorm:"column:gender" json:"gender"`
-	SchoolName             *string    `gorm:"column:schoolName" json:"schoolName"`
-	SchoolGrade            *string    `gorm:"column:schoolGrade" json:"schoolGrade"`
-	ParentIncome           *string    `gorm:"column:parentIncome" json:"parentIncome"`
-	PrimaryTarget          *string    `gorm:"column:primaryTarget" json:"primaryTarget"`
-	BackupTarget           *string    `gorm:"column:backupTarget" json:"backupTarget"`
-	SurgeryHistory         *string    `gorm:"column:surgeryHistory" json:"surgeryHistory"`
-	EyeCondition           *string    `gorm:"column:eyeCondition" json:"eyeCondition"`
+	ID                     string         `gorm:"column:id;primaryKey" json:"id"`
+	Name                   string         `gorm:"column:name" json:"name"`
+	Email                  string         `gorm:"column:email;uniqueIndex" json:"email"`
+	PasswordHash           string         `gorm:"column:passwordHash" json:"-"`
+	Role                   string         `gorm:"column:role;default:MEMBER" json:"role"`
+	IsActive               bool           `gorm:"column:isActive;default:true" json:"isActive"`
+	IsEmailVerified        bool           `gorm:"column:isEmailVerified;default:false" json:"isEmailVerified"`
+	EmailVerifiedAt        *time.Time     `gorm:"column:emailVerifiedAt" json:"emailVerifiedAt"`
+	EmailVerificationToken *string        `gorm:"column:emailVerificationToken" json:"-"`
+	AvatarURL              *string        `gorm:"column:avatarUrl" json:"avatarUrl"`
+	Phone                  *string        `gorm:"column:phone" json:"phone"`
+	NationalID             *string        `gorm:"column:nationalId" json:"nationalId"`
+	Address                *string        `gorm:"column:address" json:"address"`
+	HeightCm               *int           `gorm:"column:heightCm" json:"heightCm"`
+	WeightKg               *int           `gorm:"column:weightKg" json:"weightKg"`
+	ParentName             *string        `gorm:"column:parentName" json:"parentName"`
+	ParentPhone            *string        `gorm:"column:parentPhone" json:"parentPhone"`
+	ParentOccupation       *string        `gorm:"column:parentOccupation" json:"parentOccupation"`
+	ParentAddress          *string        `gorm:"column:parentAddress" json:"parentAddress"`
+	HealthIssues           *string        `gorm:"column:healthIssues" json:"healthIssues"`
+	SessionVersion         int            `gorm:"column:sessionVersion;default:0" json:"sessionVersion"`
+	ReferralCode           string         `gorm:"column:referralCode;uniqueIndex" json:"referralCode"`
+	Bio                    *string        `gorm:"column:bio" json:"bio"`
+	BirthPlace             *string        `gorm:"column:birthPlace" json:"birthPlace"`
+	BirthDate              *time.Time     `gorm:"column:birthDate;type:date" json:"birthDate"`
+	Gender                 *string        `gorm:"column:gender" json:"gender"`
+	SchoolName             *string        `gorm:"column:schoolName" json:"schoolName"`
+	SchoolGrade            *string        `gorm:"column:schoolGrade" json:"schoolGrade"`
+	ParentIncome           *string        `gorm:"column:parentIncome" json:"parentIncome"`
+	PrimaryTarget          *string        `gorm:"column:primaryTarget" json:"primaryTarget"`
+	BackupTarget           *string        `gorm:"column:backupTarget" json:"backupTarget"`
+	SurgeryHistory         *string        `gorm:"column:surgeryHistory" json:"surgeryHistory"`
+	EyeCondition           *string        `gorm:"column:eyeCondition" json:"eyeCondition"`
 	FullBodyURL            *string        `gorm:"column:fullBodyUrl" json:"fullBodyUrl"`
 	ProfileDocuments       datatypes.JSON `gorm:"column:profileDocuments" json:"profileDocuments"`
 	CreatedAt              time.Time      `gorm:"column:createdAt" json:"createdAt"`
-	UpdatedAt              time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
+	UpdatedAt              time.Time      `gorm:"column:updatedAt" json:"updatedAt"`
 }
 
 func (User) TableName() string { return "User" }
@@ -263,6 +263,7 @@ type TryoutResult struct {
 	CompletedAt     *time.Time     `gorm:"column:completedAt" json:"completedAt"`
 	DurationSeconds *int           `gorm:"column:durationSeconds" json:"durationSeconds"`
 	Score           *float64       `gorm:"column:score" json:"score"`
+	Mode            string         `gorm:"column:mode;default:REGULAR" json:"mode"`
 	CreatedAt       time.Time      `gorm:"column:createdAt" json:"createdAt"`
 	Tryout          Tryout         `gorm:"foreignKey:TryoutID" json:"tryout,omitempty"`
 	User            User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
@@ -376,6 +377,7 @@ type PracticeResult struct {
 	SetID       string      `gorm:"column:setId" json:"setId"`
 	Score       *float64    `gorm:"column:score" json:"score"`
 	CompletedAt *time.Time  `gorm:"column:completedAt" json:"completedAt"`
+	Mode        string      `gorm:"column:mode;default:REGULAR" json:"mode"`
 	CreatedAt   time.Time   `gorm:"column:createdAt" json:"createdAt"`
 	Set         PracticeSet `gorm:"foreignKey:SetID" json:"set,omitempty"`
 	User        User        `gorm:"foreignKey:UserID" json:"user,omitempty"`
@@ -466,6 +468,16 @@ type Material struct {
 }
 
 func (Material) TableName() string { return "Material" }
+
+type MaterialAccess struct {
+	ID            string    `gorm:"column:id;primaryKey" json:"id"`
+	UserID        string    `gorm:"column:userId" json:"userId"`
+	MaterialID    string    `gorm:"column:materialId" json:"materialId"`
+	TransactionID string    `gorm:"column:transactionId" json:"transactionId"`
+	CreatedAt     time.Time `gorm:"column:createdAt" json:"createdAt"`
+}
+
+func (MaterialAccess) TableName() string { return "MaterialAccess" }
 
 type MembershipPackage struct {
 	ID                string            `gorm:"column:id;primaryKey" json:"id"`

@@ -23,11 +23,6 @@ enum TransactionType {
   ADDON
 }
 
-enum NewsKind {
-  NEWS
-  INSIGHT
-}
-
 enum MaterialType {
   PDF
   VIDEO
@@ -100,6 +95,7 @@ model User {
   examBlocks             ExamBlock[]
   examQuotaUsage         ExamQuotaUsage?
   materialCategories     MemberMaterialCategory[]
+  materialAccesses       MaterialAccess[]
 }
 
 model MemberArea {
@@ -172,7 +168,7 @@ model NewsArticle {
   content   String
   coverUrl  String?
   published DateTime @default(now())
-  kind      NewsKind @default(NEWS)
+  kind      String   @default("NEWS")
 }
 
 model LandingStat {
@@ -297,10 +293,13 @@ model TryoutResult {
   completedAt     DateTime?
   durationSeconds Int?
   score           Float?
+  mode            String         @default("REGULAR")
   createdAt       DateTime       @default(now())
   user            User           @relation(fields: [userId], references: [id])
   tryout          Tryout         @relation(fields: [tryoutId], references: [id])
   answers         TryoutAnswer[]
+
+  @@index([userId, mode])
 }
 
 model TryoutAnswer {
@@ -406,10 +405,13 @@ model PracticeResult {
   setId       String
   score       Float?
   completedAt DateTime?
+  mode        String           @default("REGULAR")
   createdAt   DateTime         @default(now())
   user        User             @relation(fields: [userId], references: [id])
   set         PracticeSet      @relation(fields: [setId], references: [id])
   answers     PracticeAnswer[]
+
+  @@index([userId, mode])
 }
 
 model PracticeAnswer {
@@ -502,6 +504,21 @@ model Material {
   createdAt     DateTime               @default(now())
   packageAccess PackageMaterial[]
   addonAccess   AddonPackageMaterial[]
+  accesses      MaterialAccess[]
+}
+
+model MaterialAccess {
+  id            String      @id @default(cuid())
+  userId        String
+  materialId    String
+  transactionId String
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material      Material    @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId, transactionId])
+  @@index([userId])
 }
 
 model MembershipPackage {
@@ -555,6 +572,7 @@ model Transaction {
   addon               AddonPackage?     @relation(fields: [addonId], references: [id])
   targetTransaction   Transaction?      @relation("AddonTarget", fields: [targetTransactionId], references: [id])
   addonTransactions   Transaction[]     @relation("AddonTarget")
+  materialAccesses    MaterialAccess[]
 }
 
 model PackageMaterial {

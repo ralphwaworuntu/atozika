@@ -30,8 +30,8 @@ function getTimeLeft(target: Date): TimeLeft {
 }
 
 export function PromoHighlight({ promo: source }: { promo?: HomeCopy['promo'] }) {
-  if (source && !source.enabled) return null;
   const promo = source ?? homeAnnouncement;
+  const enabled = source ? Boolean(source.enabled) : true;
   const target = useMemo(() => new Date(promo.endsAt), [promo.endsAt]);
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => getTimeLeft(target));
 
@@ -41,6 +41,10 @@ export function PromoHighlight({ promo: source }: { promo?: HomeCopy['promo'] })
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [target]);
+
+  if (!enabled) {
+    return null;
+  }
 
   const remaining = Math.max(0, promo.quotaRemaining);
   const total = Math.max(1, promo.quotaTotal);

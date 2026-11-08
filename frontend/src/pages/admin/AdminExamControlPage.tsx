@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { apiGet, apiPut, apiPatch } from '@/lib/api';
+import { apiGet, apiPut, apiPatch, getApiErrorMessage } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,13 +118,20 @@ export function AdminExamControlPage() {
   }, [blockConfig, blockForm]);
 
   const saveControl = useMutation({
-    mutationFn: (values: ExamControlForm) => apiPut('/admin/site/exam-control', values),
+    mutationFn: (values: ExamControlForm) =>
+      apiPut('/admin/site/exam-control', {
+        ...values,
+        tryoutQuota: Number.isFinite(values.tryoutQuota) ? values.tryoutQuota : 0,
+        examQuota: Number.isFinite(values.examQuota) ? values.examQuota : 0,
+        startAt: values.startAt ? new Date(values.startAt).toISOString() : null,
+        endAt: values.endAt ? new Date(values.endAt).toISOString() : null,
+      }),
     onSuccess: () => {
       toast.success('Kontrol ujian diperbarui');
       queryClient.invalidateQueries({ queryKey: ['admin-exam-control'] });
       queryClient.invalidateQueries({ queryKey: ['exam-control-status'] });
     },
-    onError: () => toast.error('Gagal menyimpan kontrol ujian'),
+    onError: (error) => toast.error(getApiErrorMessage(error, 'Gagal menyimpan kontrol ujian')),
   });
 
   const saveBlockConfig = useMutation({

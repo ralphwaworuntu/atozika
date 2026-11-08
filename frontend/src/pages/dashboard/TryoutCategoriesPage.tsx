@@ -21,21 +21,6 @@ const CATEGORY_CARDS = [
   { key: 'BUMN', label: 'BUMN', subs: 2, packs: 3, tint: 'bg-amber-50', ring: 'bg-amber-200/70' },
 ];
 
-const EXAMPLE_RESULTS = [
-  { id: 'tni', name: 'Tryout TNI - Paket A', meta: '5 Okt 2026 • 100 soal • 120 menit', score: 82, topic: 'TNI' },
-  { id: 'polri', name: 'Tryout POLRI - Paket 1', meta: '1 Okt 2026 • 100 soal • 120 menit', score: 75, topic: 'POLRI' },
-  { id: 'kedinasan', name: 'Tryout Kedinasan - Paket 2', meta: '25 Sep 2026 • 100 soal • 120 menit', score: 68, topic: 'Kedinasan' },
-];
-
-const POPULAR_MATERIALS = [
-  { title: 'TWK - Wawasan Kebangsaan', meta: '45 materi • 1.2k siswa', topic: 'TWK' },
-  { title: 'TIU - Kemampuan Numerik', meta: '38 materi • 980 siswa', topic: 'TIU' },
-  { title: 'TKP - Kepribadian', meta: '32 materi • 870 siswa', topic: 'TKP' },
-  { title: 'Tes Kecermatan', meta: '25 materi • 650 siswa', topic: 'Tes Kecermatan' },
-];
-
-const TARGET_DAYS: Array<'done' | 'empty' | 'today'> = ['done', 'done', 'done', 'done', 'empty', 'today', 'empty'];
-
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
@@ -112,8 +97,8 @@ export function TryoutCategoriesPage() {
         tint: card.tint,
         ring: card.ring,
         icon: topics.find((topic) => topic.key === card.key)?.icon ?? topics[0].icon,
-        subs: real ? real.subIds.size : card.subs,
-        packs: real ? real.packs : card.packs,
+        subs: real ? real.subIds.size : 0,
+        packs: real ? real.packs : 0,
         categoryId: real?.id,
       };
     });
@@ -141,23 +126,14 @@ export function TryoutCategoriesPage() {
   const latest = results[0];
   const announcement = overview?.announcements?.[0];
 
-  const recentRows = results.length
-    ? results.slice(0, 3).map((item) => ({
-        id: item.id,
-        name: item.tryout.name,
-        meta: `${formatShortDate(item.startedAt)} • ${item.tryout.subCategory.category.name}`,
-        score: Math.round(item.score),
-        icon: (topicByName(item.tryout.subCategory.category.name) ?? topicByName(item.tryout.name) ?? topics[1]).icon,
-        href: `/app/latihan/tryout/review/${item.id}`,
-      }))
-    : EXAMPLE_RESULTS.map((item) => ({
-        id: item.id,
-        name: item.name,
-        meta: item.meta,
-        score: item.score,
-        icon: topicByName(item.topic)?.icon ?? topics[0].icon,
-        href: undefined as string | undefined,
-      }));
+  const recentRows = results.slice(0, 3).map((item) => ({
+    id: item.id,
+    name: item.tryout.name,
+    meta: `${formatShortDate(item.startedAt)} • ${item.tryout.subCategory.category.name}`,
+    score: Math.round(item.score),
+    icon: (topicByName(item.tryout.subCategory.category.name) ?? topicByName(item.tryout.name) ?? topics[1]).icon,
+    href: `/app/latihan/tryout/review/${item.id}`,
+  }));
 
   const scrollToCategories = () => categoriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const continueLearning = () => {
@@ -202,23 +178,18 @@ export function TryoutCategoriesPage() {
           icon={<ScrollText className="h-5 w-5" />}
           tone="bg-rose-50 text-rose-500"
           label="Total Tryout"
-          value={`${results.length || 12}x`}
+          value={`${results.length}x`}
           note="Sudah kamu kerjakan"
         />
         <StatCard
           icon={<Trophy className="h-5 w-5" />}
           tone="bg-amber-50 text-amber-500"
           label="Rata-rata Skor"
-          value={(averageScore ?? 78.5).toLocaleString('id-ID', { maximumFractionDigits: 1 })}
-          extra={
-            averageScore === null ? (
-              <span className="whitespace-nowrap rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">↑ 12%</span>
-            ) : undefined
-          }
-          note="Meningkat dari bulan lalu"
+          value={averageScore === null ? '-' : averageScore.toLocaleString('id-ID', { maximumFractionDigits: 1 })}
+          note={averageScore === null ? 'Belum ada skor' : 'Dari tryout yang kamu selesaikan'}
         />
-        <StatCard icon={<BarChart3 className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" label="Peringkat Kelas" value="#124" note="dari 2.431 peserta" />
-        <StatCard icon={<Clock3 className="h-5 w-5" />} tone="bg-violet-50 text-violet-600" label="Total Waktu Belajar" value="36 jam" note="Selama 30 hari terakhir" />
+        <StatCard icon={<BarChart3 className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" label="Sesi Selesai" value={`${results.length}`} note="Riwayat tryout kamu" />
+        <StatCard icon={<Clock3 className="h-5 w-5" />} tone="bg-violet-50 text-violet-600" label="Streak" value={`${streak} hari`} note="Hari latihan beruntun" />
         <section className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.5rem] border border-amber-100 bg-gradient-to-r from-[#FFF4E4] to-[#FFF8EE] p-4 sm:col-span-2 xl:col-span-1 dark:border-amber-500/20 dark:from-amber-950/40 dark:to-ink-800">
           <div className="flex shrink-0 items-center gap-2.5">
             <Flame className="h-9 w-9 shrink-0 fill-orange-500 text-orange-500" />
@@ -291,6 +262,9 @@ export function TryoutCategoriesPage() {
                 <SectionLink onClick={() => navigate('/app/latihan/tryout/riwayat')}>Lihat Riwayat</SectionLink>
               </div>
               <ul className="divide-y divide-slate-100 dark:divide-white/10">
+                {recentRows.length === 0 ? (
+                  <li className="py-6 text-center text-xs font-semibold text-slate-400">Belum ada hasil tryout.</li>
+                ) : null}
                 {recentRows.map((row) => (
                   <li key={row.id} className="flex items-center gap-3 py-2.5">
                     <img src={row.icon} alt="" className="h-8 w-8 shrink-0 rounded-full object-contain mix-blend-multiply" />
@@ -325,13 +299,13 @@ export function TryoutCategoriesPage() {
                 <SectionLink onClick={() => navigate('/app/materi')}>Lihat Semua</SectionLink>
               </div>
               <ul className="divide-y divide-slate-100 dark:divide-white/10">
-                {POPULAR_MATERIALS.map((item) => (
-                  <li key={item.title}>
+                {topics.slice(0, 4).map((topic) => (
+                  <li key={topic.key}>
                     <button type="button" onClick={() => navigate('/app/materi')} className="flex w-full items-center gap-3 py-2 text-left">
-                      <img src={topicByName(item.topic)?.icon ?? topics[4].icon} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain mix-blend-multiply" />
+                      <img src={topic.icon} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain mix-blend-multiply" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{item.title}</p>
-                        <p className="truncate text-[10px] font-medium text-slate-400">{item.meta}</p>
+                        <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{topic.name}</p>
+                        <p className="truncate text-[10px] font-medium text-slate-400">Buka materi kategori ini</p>
                       </div>
                       <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
                     </button>
@@ -359,12 +333,12 @@ export function TryoutCategoriesPage() {
               <div className="flex items-center gap-3">
                 <img src="/covers/cover-study.jpg" alt="" className="h-12 w-16 shrink-0 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{latest?.tryout.name ?? 'Tryout POLRI - Paket 1'}</p>
+                  <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{latest?.tryout.name ?? 'Belum ada tryout'}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                      <div className="h-full w-[60%] rounded-full bg-member-600" />
+                      <div className="h-full rounded-full bg-member-600" style={{ width: latest ? '100%' : '0%' }} />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500">60%</span>
+                    <span className="text-[10px] font-bold text-slate-500">{latest ? 'Selesai' : '0%'}</span>
                   </div>
                 </div>
               </div>
@@ -396,33 +370,30 @@ export function TryoutCategoriesPage() {
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ background: 'conic-gradient(#1d72fe 0% 75%, #e2e8f0 75% 100%)' }}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xs font-extrabold text-slate-900 dark:bg-ink-800 dark:text-ink-50">75%</div>
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ background: `conic-gradient(#1d72fe 0% ${(weekDone.filter(Boolean).length / 7) * 100}%, #e2e8f0 ${(weekDone.filter(Boolean).length / 7) * 100}% 100%)` }}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xs font-extrabold text-slate-900 dark:bg-ink-800 dark:text-ink-50">{Math.round((weekDone.filter(Boolean).length / 7) * 100)}%</div>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-extrabold text-slate-800 dark:text-ink-50">6 dari 8 sesi</p>
+                <p className="text-xs font-extrabold text-slate-800 dark:text-ink-50">{weekDone.filter(Boolean).length} dari 7 hari</p>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                  <div className="h-full w-[75%] rounded-full bg-member-600" />
+                  <div className="h-full rounded-full bg-member-600" style={{ width: `${(weekDone.filter(Boolean).length / 7) * 100}%` }} />
                 </div>
               </div>
             </div>
             <div className="mt-3 grid grid-cols-7 gap-1">
-              {WEEK_LABELS.map((label, index) => {
-                const state = TARGET_DAYS[index];
-                return (
+              {WEEK_LABELS.map((label, index) => (
                   <div key={label} className="flex flex-col items-center gap-1">
                     <span
                       className={cn(
                         'flex h-5 w-5 items-center justify-center rounded-full',
-                        state === 'done' ? 'bg-member-600 text-white' : 'border border-slate-200 bg-white dark:border-white/20 dark:bg-transparent',
+                        weekDone[index] ? 'bg-member-600 text-white' : 'border border-slate-200 bg-white dark:border-white/20 dark:bg-transparent',
                       )}
                     >
-                      {state === 'done' ? <Check className="h-3 w-3" strokeWidth={3} /> : state === 'today' ? <span className="h-1.5 w-1.5 rounded-full bg-slate-500" /> : null}
+                      {weekDone[index] ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                     </span>
                     <span className="text-[10px] font-semibold text-slate-500">{label}</span>
                   </div>
-                );
-              })}
+              ))}
             </div>
           </section>
 
@@ -436,11 +407,11 @@ export function TryoutCategoriesPage() {
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-extrabold text-slate-900 dark:text-ink-50">Pengumuman</p>
                 <p className="text-[10px] font-medium text-slate-500">
-                  {announcement ? formatShortDate(announcement.publishedAt) : '3 Okt 2026'}
+                  {announcement ? formatShortDate(announcement.publishedAt) : '-'}
                 </p>
               </div>
               <p className="mt-1 line-clamp-2 text-[11px] font-medium text-slate-600 dark:text-ink-200">
-                {announcement ? announcement.title : 'Tryout Kedinasan Paket Baru sudah tersedia! Latihan sekarang dan tingkatkan peluang lolosmu.'}
+                {announcement ? announcement.title : 'Belum ada pengumuman.'}
               </p>
             </div>
             <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />

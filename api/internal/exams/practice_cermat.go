@@ -73,6 +73,9 @@ func (h *Handler) PracticeSet(c *fiber.Ctx) error {
 	if _, err := h.ensurePracticeAccess(uid, set); err != nil {
 		return err
 	}
+	if err := ensureWindow(set.OpenAt, set.CloseAt); err != nil {
+		return err
+	}
 	qOut := []fiber.Map{}
 	for _, q := range shuffle(set.Questions) {
 		opts := []fiber.Map{}
@@ -153,8 +156,11 @@ func (h *Handler) submitPractice(c *fiber.Ctx, ujian bool) error {
 	for _, q := range set.Questions {
 		qMap[q.ID] = q
 	}
+	if err := ensureWindow(set.OpenAt, set.CloseAt); err != nil {
+		return err
+	}
 	now := time.Now()
-	res := models.PracticeResult{ID: id.New(), UserID: uid, SetID: set.ID, CreatedAt: now}
+	res := models.PracticeResult{ID: id.New(), UserID: uid, SetID: set.ID, Mode: resultMode(ujian), CreatedAt: now}
 	earned := 0.0
 	h.DB.Create(&res)
 	for _, a := range body.Answers {
@@ -194,20 +200,23 @@ func (h *Handler) PracticeHistory(c *fiber.Ctx) error {
 		Preload("Set.SubSubCategory").
 		Preload("Set.SubSubCategory.SubCategory").
 		Preload("Set.SubSubCategory.SubCategory.Category").
-		Where(`"userId" = ?`, uid).Order(`"createdAt" DESC`).Find(&items)
+		Where(`"userId" = ? AND mode = ?`, uid, requestMode(c)).Order(`"createdAt" DESC`).Find(&items)
 	return httpx.Success(c, items)
 }
 
 func (h *Handler) PracticeReview(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
 	var res models.PracticeResult
-	if err := h.DB.Preload("Set").Preload("Set.Questions").Preload("Set.Questions.Options").
+	if err := h.DB.Preload("Set").Preload("Set.Questions", func(db *gorm.DB) *gorm.DB { return db.Order(`"order" ASC`) }).
+		Preload("Set.Questions.Options").
+		Preload("Set.SubSubCategory").Preload("Set.SubSubCategory.SubCategory").
+		Preload("Set.SubSubCategory.SubCategory.Category").
 		Where("id = ? AND \"userId\" = ?", c.Params("resultId"), uid).First(&res).Error; err != nil {
 		return httpx.New(404, "Result not found")
 	}
 	var answers []models.PracticeAnswer
 	h.DB.Where(`"resultId" = ?`, res.ID).Find(&answers)
-	return httpx.Success(c, fiber.Map{"result": res, "answers": answers, "set": res.Set, "questions": res.Set.Questions})
+	return httpx.Success(c, shapePracticeReview(res, answers))
 }
 
 func (h *Handler) settingInt(key string, fallback int) int {
@@ -369,6 +378,9 @@ func (h *Handler) CermatStart(c *fiber.Ctx) error {
 	if mode != "LETTER" && mode != "IMAGE" {
 		mode = "NUMBER"
 	}
+	if !h.cermatModeEnabled(mode) {
+		return httpx.New(403, "Varian tes kecermatan ini sedang dinonaktifkan admin.")
+	}
 	qCount := h.settingInt("cermat_question_count", 60)
 	dur := h.settingInt("cermat_duration_seconds", 60)
 	total := h.settingInt("cermat_total_sessions", 10)
@@ -387,12 +399,33 @@ func (h *Handler) CermatStart(c *fiber.Ctx) error {
 		}
 		h.DB.Create(&att)
 		attemptID = att.ID
+	} else {
+		var att models.CermatAttempt
+		if err := h.DB.Where("id = ? AND \"userId\" = ?", attemptID, uid).First(&att).Error; err != nil {
+			return httpx.New(404, "Sesi tidak ditemukan")
+		}
+		mode = att.Mode
+		attemptID = att.ID
 	}
 	idx := body.SessionIndex
 	if idx <= 0 {
 		idx = 1
 	}
 	return httpx.Success(c, h.buildCermatSessionPayload(uid, attemptID, mode, idx, qCount, dur, brk, total))
+}
+
+func (h *Handler) cermatModeEnabled(mode string) bool {
+	key := "cermat_mode_number_enabled"
+	if mode == "LETTER" {
+		key = "cermat_mode_letter_enabled"
+	} else if mode == "IMAGE" {
+		key = "cermat_mode_image_enabled"
+	}
+	var s models.SiteSetting
+	if err := h.DB.Where("key = ?", key).First(&s).Error; err != nil {
+		return true
+	}
+	return s.Value != "false"
 }
 
 func cermatBand(score float64) string {
@@ -458,7 +491,7 @@ func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
 	}
 
 	var attempt models.CermatAttempt
-	if err := h.DB.First(&attempt, "id = ?", *sess.AttemptID).Error; err != nil {
+	if err := h.DB.Where("id = ? AND \"userId\" = ?", *sess.AttemptID, uid).First(&attempt).Error; err != nil {
 		return httpx.New(404, "Sesi tidak ditemukan")
 	}
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { BookOpen, Clapperboard, GraduationCap, ListChecks, type LucideIcon } from 'lucide-react';
@@ -34,8 +34,17 @@ function HeroVisual({
   logoSrc: string;
 }) {
   const [failed, setFailed] = useState<Record<string, boolean>>({});
+  const [index, setIndex] = useState(0);
   const visible = slides.filter((slide) => slide.imageUrl && !failed[slide.id]);
-  const current = visible[0];
+  const current = visible[index] ?? visible[0];
+
+  useEffect(() => {
+    if (visible.length < 2) return;
+    const id = window.setInterval(() => {
+      setIndex((prev) => (prev + 1) % visible.length);
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [visible.length]);
 
   if (!current) {
     return (
@@ -52,12 +61,27 @@ function HeroVisual({
   }
 
   return (
-    <img
-      src={slideSrc(current.imageUrl)}
-      alt=""
-      className="max-h-[28rem] w-full max-w-xl rounded-3xl object-contain"
-      onError={() => setFailed((prev) => ({ ...prev, [current.id]: true }))}
-    />
+    <div className="flex w-full max-w-xl flex-col items-center gap-3">
+      <img
+        src={slideSrc(current.imageUrl)}
+        alt=""
+        className="max-h-[28rem] w-full rounded-3xl object-contain"
+        onError={() => setFailed((prev) => ({ ...prev, [current.id]: true }))}
+      />
+      {visible.length > 1 ? (
+        <div className="flex gap-2">
+          {visible.map((slide, i) => (
+            <button
+              key={slide.id}
+              type="button"
+              aria-label={`Slide ${i + 1}`}
+              className={`h-2.5 w-2.5 rounded-full ${i === index ? 'bg-brand-400' : 'bg-ink-200/40'}`}
+              onClick={() => setIndex(i)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -71,11 +95,15 @@ function iconForStat(label: string): LucideIcon {
 }
 
 export function HomePage() {
-  const { data, isLoading } = useQuery({ queryKey: ['home-content'], queryFn: () => apiGet<HomeContent>('/landing/home') });
+  const { data, isLoading, isError } = useQuery({ queryKey: ['home-content'], queryFn: () => apiGet<HomeContent>('/landing/home') });
   const theme = useResolvedTheme();
   const heroLogoSrc = logoSrcForTheme(theme);
   const copy = data?.copy;
   const heroSlides = (data?.hero.slides ?? []).filter((slide) => slide.id !== 'fallback' && slide.imageUrl);
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-400">Gagal memuat beranda. Coba muat ulang halaman.</p>;
+  }
 
   if (isLoading || !data) {
     return (
@@ -206,19 +234,28 @@ export function HomePage() {
 
       <section>
         <SectionHeader eyebrow="Testimoni" title="Cerita dari para alumni" />
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {data.testimonials.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="space-y-3 p-6">
-                <p className="type-body text-ink-200">“{item.message}”</p>
-                <div>
-                  <p className="type-h2 text-ink-50">{item.name}</p>
-                  {item.role && <p className="type-caption text-brand-500">{item.role}</p>}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {data.testimonials.length === 0 ? (
+          <p className="mt-6 text-sm text-ink-200">Belum ada testimoni yang ditampilkan.</p>
+        ) : (
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {data.testimonials.map((item) => (
+              <Card key={item.id}>
+                <CardContent className="space-y-3 p-6">
+                  {item.videoUrl ? (
+                    <video src={item.videoUrl} controls className="w-full rounded-xl" poster={item.avatarUrl ?? undefined} />
+                  ) : item.avatarUrl ? (
+                    <img src={item.avatarUrl} alt="" className="h-14 w-14 rounded-full object-cover" />
+                  ) : null}
+                  <p className="type-body text-ink-200">“{item.message}”</p>
+                  <div>
+                    <p className="type-h2 text-ink-50">{item.name}</p>
+                    {item.role && <p className="type-caption text-brand-500">{item.role}</p>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
 
       {data.videos.length ? (
@@ -229,6 +266,8 @@ export function HomePage() {
               <article key={video.id} className="overflow-hidden rounded-xl border border-brand-400/20 bg-ink-800">
                 {video.embedUrl.startsWith('https://') ? (
                   <iframe title={video.title} src={video.embedUrl} className="aspect-video w-full" allowFullScreen />
+                ) : video.thumbnail ? (
+                  <img src={video.thumbnail} alt="" className="aspect-video w-full object-cover" />
                 ) : null}
                 <div className="space-y-1 p-4">
                   <h3 className="type-h2 text-ink-50">{video.title}</h3>

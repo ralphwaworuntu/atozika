@@ -19,11 +19,12 @@ const faqConfig: LandingResourceConfig = {
 };
 
 export function AdminFaqPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['admin-landing'],
     queryFn: () => apiGet<{ faqs: FaqItem[] }>('/admin/landing'),
   });
 
+  if (isError) return <p className="text-sm font-semibold text-rose-600">Gagal memuat FAQ.</p>;
   if (isLoading || !data) return <Skeleton className="h-64" />;
 
   return (

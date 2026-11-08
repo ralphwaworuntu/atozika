@@ -2,17 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { API_BASE_ORIGIN, apiGet } from '@/lib/api';
 import type { MemberTransaction } from '@/types/exam';
 import { formatCurrency, formatDate } from '@/utils/format';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
+import { QueryState } from '@/components/common/QueryState';
 
 export function TransactionsPage() {
-  const { data, isLoading } = useQuery({ queryKey: ['transactions'], queryFn: () => apiGet<MemberTransaction[]>('/commerce/transactions') });
-
-  if (isLoading || !data) {
-    return <Skeleton className="h-72" />;
-  }
+  const { data, isLoading, isError } = useQuery({ queryKey: ['transactions'], queryFn: () => apiGet<MemberTransaction[]>('/commerce/transactions') });
 
   const formatPackageName = (trx: MemberTransaction) => (trx.type === 'ADDON' ? trx.addon?.name ?? 'Addon' : trx.package.name);
 
@@ -38,6 +34,7 @@ export function TransactionsPage() {
   };
 
   return (
+    <QueryState isLoading={isLoading || !data} isError={isError} error="Gagal memuat transaksi. Coba muat ulang.">
     <section className="page-shell">
       <PageHeader title="Riwayat Transaksi" />
       <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-white shadow-sm">
@@ -55,7 +52,7 @@ export function TransactionsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {data.map((trx) => (
+            {(data ?? []).map((trx) => (
               <tr key={trx.id}>
                 <td className="px-4 py-3 font-semibold text-slate-900">{trx.code}</td>
                 <td className="px-4 py-3 text-slate-600">
@@ -99,9 +96,17 @@ export function TransactionsPage() {
                 </td>
               </tr>
             ))}
+            {(data ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
+                  Belum ada transaksi.
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
     </section>
+    </QueryState>
   );
 }

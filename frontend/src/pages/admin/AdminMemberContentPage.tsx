@@ -65,6 +65,7 @@ export function AdminMemberContentPage() {
     onError: () => toast.error('Gagal menyimpan tampilan member'),
   });
 
+  if (query.isError) return <p className="text-sm font-semibold text-rose-600">Gagal memuat tampilan member.</p>;
   if (query.isLoading || !draft) return <Skeleton className="h-96" />;
 
   const patch = (recipe: (current: MemberCopy) => void) => {

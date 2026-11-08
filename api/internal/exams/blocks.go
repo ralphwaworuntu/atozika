@@ -12,6 +12,7 @@ import (
 	"atozika/internal/models"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 func (h *Handler) settingBool(key string, fallback bool) bool {
@@ -134,27 +135,29 @@ func (h *Handler) assertExamControl(userID, kind string) error {
 		return httpx.New(403, "Jendela ujian sudah ditutup.")
 	}
 	trx, _ := membership.GetActive(h.DB, userID)
-	if !cfg.TargetAll {
-		if trx == nil || !jsonutil.Contains(jsonutil.Strings(cfg.TargetPackageIDs), trx.PackageID) {
-			return httpx.New(403, "Paket Anda tidak termasuk kontrol ujian.")
+	if trx == nil {
+		return httpx.New(403, "Membership tidak aktif atau belum divalidasi admin.", map[string]any{"code": "MEMBERSHIP_REQUIRED"})
+	}
+	if !cfg.TargetAll && !jsonutil.Contains(jsonutil.Strings(cfg.TargetPackageIDs), trx.PackageID) {
+		return httpx.New(403, "Paket Anda tidak termasuk kontrol ujian.")
+	}
+	usage := models.ExamQuotaUsage{ID: id.New(), UserID: userID, CreatedAt: now, UpdatedAt: now}
+	h.DB.Where(`"userId" = ?`, userID).Attrs(usage).FirstOrCreate(&usage)
+	if kind == "TRYOUT" && cfg.TryoutQuota > 0 {
+		res := h.DB.Model(&models.ExamQuotaUsage{}).
+			Where(`"userId" = ? AND "tryoutsUsed" < ?`, userID, cfg.TryoutQuota).
+			UpdateColumn("tryoutsUsed", gorm.Expr(`"tryoutsUsed" + 1`))
+		if res.RowsAffected == 0 {
+			return httpx.New(403, "Kuota ujian tryout habis.")
 		}
 	}
-	var usage models.ExamQuotaUsage
-	if err := h.DB.Where(`"userId" = ?`, userID).First(&usage).Error; err != nil {
-		usage = models.ExamQuotaUsage{ID: id.New(), UserID: userID, CreatedAt: now, UpdatedAt: now}
-		h.DB.Create(&usage)
-	}
-	if kind == "TRYOUT" && cfg.TryoutQuota > 0 && usage.TryoutsUsed >= cfg.TryoutQuota {
-		return httpx.New(403, "Kuota ujian tryout habis.")
-	}
-	if kind == "EXAM" && cfg.ExamQuota > 0 && usage.ExamsUsed >= cfg.ExamQuota {
-		return httpx.New(403, "Kuota ujian soal habis.")
-	}
-	if kind == "TRYOUT" && cfg.TryoutQuota > 0 {
-		h.DB.Model(&usage).UpdateColumn("tryoutsUsed", usage.TryoutsUsed+1)
-	}
 	if kind == "EXAM" && cfg.ExamQuota > 0 {
-		h.DB.Model(&usage).UpdateColumn("examsUsed", usage.ExamsUsed+1)
+		res := h.DB.Model(&models.ExamQuotaUsage{}).
+			Where(`"userId" = ? AND "examsUsed" < ?`, userID, cfg.ExamQuota).
+			UpdateColumn("examsUsed", gorm.Expr(`"examsUsed" + 1`))
+		if res.RowsAffected == 0 {
+			return httpx.New(403, "Kuota ujian soal habis.")
+		}
 	}
 	return nil
 }

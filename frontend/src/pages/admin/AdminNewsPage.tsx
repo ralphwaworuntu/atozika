@@ -25,7 +25,19 @@ const newsConfig: LandingResourceConfig = {
     { name: 'slug', label: 'Slug' },
     { name: 'excerpt', label: 'Ringkasan', type: 'textarea' },
     { name: 'content', label: 'Konten', type: 'textarea' },
-    { name: 'kind', label: 'Kategori', placeholder: 'EDUKASI, KUOTA, ALUMNI, atau NEWS', defaultValue: 'EDUKASI' },
+    {
+      name: 'kind',
+      label: 'Kategori',
+      type: 'select',
+      defaultValue: 'EDUKASI',
+      options: [
+        { value: 'EDUKASI', label: 'Edukasi & Strategi' },
+        { value: 'KUOTA', label: 'Kuota & Formasi' },
+        { value: 'ALUMNI', label: 'Alumni' },
+        { value: 'NEWS', label: 'Berita umum' },
+        { value: 'INSIGHT', label: 'Insight / testimoni' },
+      ],
+    },
   ],
   uploadField: {
     name: 'coverImage',
@@ -37,10 +49,14 @@ const newsConfig: LandingResourceConfig = {
 };
 
 export function AdminNewsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['admin-landing'],
     queryFn: () => apiGet<{ news: LandingNews[] }>('/admin/landing'),
   });
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-600">Gagal memuat berita. Coba muat ulang.</p>;
+  }
 
   if (isLoading || !data) {
     return <Skeleton className="h-64" />;

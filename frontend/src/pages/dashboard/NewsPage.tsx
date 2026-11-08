@@ -109,7 +109,7 @@ export function NewsPage() {
     : SECTIONS.map((section) => ({ id: section.id, label: FILTERS.find((item) => item.id === section.id)?.label ?? section.title, title: section.title }));
   const filters = [{ id: 'semua' as const, label: 'Semua' }, ...sections.map((section) => ({ id: section.id, label: section.label }))];
   const [filter, setFilter] = useState<string>('semua');
-  const { data: remoteNews } = useQuery({
+  const { data: remoteNews, isError } = useQuery({
     queryKey: ['member-news'],
     queryFn: () => apiGet<RemoteNews[]>('/dashboard/news'),
   });
@@ -152,6 +152,7 @@ export function NewsPage() {
         ))}
       </nav>
 
+      {isError ? <p className="text-sm font-semibold text-rose-600">Gagal memuat berita.</p> : null}
       {visible.map((section) => {
         const sectionArticles = articles.filter((article) => article.topic === section.id);
         return (

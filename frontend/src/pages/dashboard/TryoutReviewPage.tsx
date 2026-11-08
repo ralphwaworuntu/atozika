@@ -43,10 +43,6 @@ export function TryoutReviewPage() {
     );
   }
 
-  if (isLoading || !data) {
-    return <Skeleton className="h-[420px]" />;
-  }
-
   if (isError) {
     if (isAxiosError(error) && error.response?.status === 403) {
       return <MembershipRequired status={membership.data} />;
@@ -63,6 +59,10 @@ export function TryoutReviewPage() {
         </button>
       </section>
     );
+  }
+
+  if (isLoading || !data) {
+    return <Skeleton className="h-[420px]" />;
   }
 
   if (data.tryout.isPsikoSession && packageReviewQuery.isLoading) {

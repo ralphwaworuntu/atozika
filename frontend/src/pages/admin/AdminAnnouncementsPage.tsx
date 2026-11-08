@@ -47,7 +47,7 @@ const announcementSection: LandingResourceConfig = {
 export function AdminAnnouncementsPage() {
   const { accessToken } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
-  const { data, isLoading } = useQuery({ queryKey: ['admin-landing'], queryFn: () => apiGet<LandingOverview>('/admin/landing') });
+  const { data, isLoading, isError } = useQuery({ queryKey: ['admin-landing'], queryFn: () => apiGet<LandingOverview>('/admin/landing') });
   const { data: packages } = useQuery({ queryKey: ['admin-packages'], queryFn: () => apiGet<PackageOption[]>('/admin/packages') });
 
   const handleExport = async () => {
@@ -71,6 +71,10 @@ export function AdminAnnouncementsPage() {
       setIsExporting(false);
     }
   };
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-600">Gagal memuat pengumuman. Coba muat ulang.</p>;
+  }
 
   if (isLoading || !data) {
     return <Skeleton className="h-80" />;

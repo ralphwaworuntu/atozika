@@ -563,7 +563,7 @@ export function CermatPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]">
         <section className="member-card grid grid-cols-2 gap-4 p-4 md:grid-cols-4">
           <StatItem icon={<ScanEye className="h-5 w-5" />} tone="bg-violet-50 text-violet-600" value={String(CERMAT_CARDS.length)} label="Jenis Tes" />
-          <StatItem icon={<FileText className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" value="200" label="Total Soal" />
+          <StatItem icon={<FileText className="h-5 w-5" />} tone="bg-blue-50 text-blue-600" value={String((cermatConfig.questionCount ?? 0) * (cermatConfig.totalSessions ?? 0))} label="Total Soal" />
           <StatItem icon={<Clock3 className="h-5 w-5" />} tone="bg-rose-50 text-rose-600" value={`± ${cermatConfig.durationSeconds} detik`} label="Durasi per soal" />
           <StatItem icon={<Zap className="h-5 w-5" />} tone="bg-amber-50 text-amber-500" value={`${cermatConfig.breakSeconds} detik`} label="Jeda antar sesi" />
         </section>

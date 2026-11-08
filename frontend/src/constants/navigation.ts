@@ -13,6 +13,8 @@ export const publicNavLinks = [
   { label: 'Home', href: '/' },
   { label: 'Paket Bimbel', href: '/paket-bimbel' },
   { label: 'Tentang Kami', href: '/profil' },
+  { label: 'Galeri', href: '/galeri' },
+  { label: 'Testimoni', href: '/testimoni' },
   { label: 'Hubungi Kami', href: '/hubungi-kami' },
 ];
 

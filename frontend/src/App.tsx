@@ -83,6 +83,7 @@ import { AdminExamControlPage } from '@/pages/admin/AdminExamControlPage';
 import { AdminRankingPage } from '@/pages/admin/AdminRankingPage';
 import { AdminWordConverterPage } from '@/pages/admin/AdminWordConverterPage';
 import { AdminKecermatanPage } from '@/pages/admin/AdminKecermatanPage';
+import { AdminNotFoundPage } from '@/pages/admin/AdminNotFoundPage';
 
 export default function App() {
   return (
@@ -179,6 +180,7 @@ export default function App() {
           <Route path="contacts" element={<AdminContactsPage />} />
           <Route path="calculators" element={<AdminCalculatorsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
+          <Route path="*" element={<AdminNotFoundPage />} />
         </Route>
       </Route>
 

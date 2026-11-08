@@ -36,6 +36,7 @@ export function AdminBerandaPage() {
     onError: () => toast.error('Gagal menyimpan beranda'),
   });
 
+  if (query.isError) return <p className="text-sm font-semibold text-rose-600">Gagal memuat konten beranda.</p>;
   if (query.isLoading || !draft) return <Skeleton className="h-96" />;
 
   const patch = (recipe: (current: HomeCopy) => void) => {

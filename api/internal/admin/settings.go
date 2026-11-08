@@ -17,8 +17,10 @@ import (
 )
 
 func (h *Handler) GetContactConfig(c *fiber.Ctx) error {
+	email := h.setting("company_email")
 	return httpx.Success(c, fiber.Map{
-		"companyEmail":    h.setting("company_email"),
+		"email":           email,
+		"companyEmail":    email,
 		"whatsappPrimary": h.setting("whatsapp_primary"),
 		"whatsappConsult": h.setting("whatsapp_consult"),
 		"companyAddress":  h.setting("company_address"),
@@ -31,7 +33,7 @@ func (h *Handler) PutContactConfig(c *fiber.Ctx) error {
 		return httpx.New(400, "Invalid body")
 	}
 	keys := map[string]string{
-		"companyEmail": "company_email", "whatsappPrimary": "whatsapp_primary",
+		"email": "company_email", "companyEmail": "company_email", "whatsappPrimary": "whatsapp_primary",
 		"whatsappConsult": "whatsapp_consult", "companyAddress": "company_address",
 		"company_email": "company_email", "whatsapp_primary": "whatsapp_primary",
 		"whatsapp_consult": "whatsapp_consult", "company_address": "company_address",
@@ -62,10 +64,16 @@ func (h *Handler) PutMemberBackground(c *fiber.Ctx) error {
 	if img != "" {
 		h.upsertSetting("member_area_background_image", img)
 	}
+	if c.FormValue("removeImage") == "true" || c.FormValue("removeImage") == "1" {
+		h.upsertSetting("member_area_background_image", "")
+	}
 	var body map[string]any
 	_ = c.BodyParser(&body)
 	if v, ok := body["enabled"].(bool); ok {
 		h.upsertSetting("member_area_background_enabled", strconv.FormatBool(v))
+	}
+	if v, ok := body["removeImage"].(bool); ok && v {
+		h.upsertSetting("member_area_background_image", "")
 	}
 	return h.GetMemberBackground(c)
 }
@@ -78,10 +86,55 @@ func (h *Handler) GetExamControl(c *fiber.Ctx) error {
 	return httpx.Success(c, cfg)
 }
 
+func parseFlexibleTime(raw *string) (*time.Time, error) {
+	if raw == nil || *raw == "" {
+		return nil, nil
+	}
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02T15:04", "2006-01-02T15:04:05", "2006-01-02"} {
+		if t, err := time.ParseInLocation(layout, *raw, time.Local); err == nil {
+			return &t, nil
+		}
+	}
+	return nil, httpx.New(400, "Format tanggal tidak valid")
+}
+
 func (h *Handler) PutExamControl(c *fiber.Ctx) error {
-	var body models.ExamControlConfig
-	if err := c.BodyParser(&body); err != nil {
+	var in struct {
+		Enabled          bool     `json:"enabled"`
+		TargetAll        bool     `json:"targetAll"`
+		TargetPackageIDs []string `json:"targetPackageIds"`
+		TryoutQuota      int      `json:"tryoutQuota"`
+		ExamQuota        int      `json:"examQuota"`
+		StartAt          *string  `json:"startAt"`
+		EndAt            *string  `json:"endAt"`
+	}
+	if err := c.BodyParser(&in); err != nil {
 		return httpx.New(400, "Invalid body")
+	}
+	if in.TryoutQuota < 0 || in.ExamQuota < 0 {
+		return httpx.New(400, "Kuota tidak boleh negatif")
+	}
+	startAt, err := parseFlexibleTime(in.StartAt)
+	if err != nil {
+		return err
+	}
+	endAt, err := parseFlexibleTime(in.EndAt)
+	if err != nil {
+		return err
+	}
+	if startAt != nil && endAt != nil && !endAt.After(*startAt) {
+		return httpx.New(400, "Jadwal berakhir harus setelah jadwal mulai")
+	}
+	if in.TargetPackageIDs == nil {
+		in.TargetPackageIDs = []string{}
+	}
+	if in.Enabled && !in.TargetAll && len(in.TargetPackageIDs) == 0 {
+		return httpx.New(400, "Pilih minimal satu paket atau berikan akses ke semua member")
+	}
+	pkgJSON, _ := json.Marshal(in.TargetPackageIDs)
+	body := models.ExamControlConfig{
+		Enabled: in.Enabled, TargetAll: in.TargetAll, TargetPackageIDs: pkgJSON,
+		TryoutQuota: in.TryoutQuota, ExamQuota: in.ExamQuota, StartAt: startAt, EndAt: endAt,
 	}
 	var cfg models.ExamControlConfig
 	now := time.Now()
@@ -106,8 +159,7 @@ func (h *Handler) GetExamBlockConfig(c *fiber.Ctx) error {
 		"tryoutEnabled":   h.setting("exam_block_tryout_enabled") != "false",
 		"practiceEnabled": h.setting("exam_block_practice_enabled") != "false",
 		"cermatEnabled":   h.setting("exam_block_cermat_enabled") != "false",
-		"ujianTryout":     h.setting("exam_block_ujian_tryout_enabled") != "false",
-		"ujianPractice":   h.setting("exam_block_ujian_practice_enabled") != "false",
+		"examEnabled":     h.setting("exam_block_exam_enabled") != "false",
 	})
 }
 
@@ -118,8 +170,7 @@ func (h *Handler) PutExamBlockConfig(c *fiber.Ctx) error {
 	}
 	mapping := map[string]string{
 		"tryoutEnabled": "exam_block_tryout_enabled", "practiceEnabled": "exam_block_practice_enabled",
-		"cermatEnabled": "exam_block_cermat_enabled", "ujianTryout": "exam_block_ujian_tryout_enabled",
-		"ujianPractice": "exam_block_ujian_practice_enabled",
+		"cermatEnabled": "exam_block_cermat_enabled", "examEnabled": "exam_block_exam_enabled",
 	}
 	for k, sk := range mapping {
 		if v, ok := body[k]; ok {

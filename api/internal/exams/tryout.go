@@ -163,44 +163,40 @@ func (h *Handler) startTryout(c *fiber.Ctx, ujian bool) error {
 			target = *next
 		}
 	}
+	if err := ensureWindow(target.OpenAt, target.CloseAt); err != nil {
+		return err
+	}
+	mode := resultMode(ujian)
+	var mem *models.Transaction
+	if !ujian {
+		var err error
+		mem, err = h.ensureAccess(uid, target.IsFree, target.FreeForNewMembers, target.FreePackageIDs)
+		if err != nil {
+			return err
+		}
+	}
+	var recent models.TryoutResult
+	threshold := time.Now().Add(-2 * time.Minute)
+	if err := h.DB.Where(`"userId" = ? AND "tryoutId" = ? AND mode = ? AND "completedAt" IS NULL AND "startedAt" >= ?`, uid, target.ID, mode, threshold).
+		Order(`"startedAt" DESC`).First(&recent).Error; err == nil {
+		out := fiber.Map{"resultId": recent.ID, "durationMinutes": target.DurationMinutes}
+		if !ujian {
+			out["startedSlug"] = target.Slug
+			out["sessionOrder"] = target.SessionOrder
+		}
+		return httpx.Success(c, out)
+	}
 	if ujian {
 		if err := h.assertExamControl(uid, "TRYOUT"); err != nil {
 			return err
 		}
-	} else {
-		mem, err := h.ensureAccess(uid, target.IsFree, target.FreeForNewMembers, target.FreePackageIDs)
-		if err != nil {
+	} else if mem != nil {
+		if _, err := membership.ConsumeTryout(h.DB, uid); err != nil {
 			return err
-		}
-		var recent models.TryoutResult
-		threshold := time.Now().Add(-2 * time.Minute)
-		if err := h.DB.Where(`"userId" = ? AND "tryoutId" = ? AND "completedAt" IS NULL AND "startedAt" >= ?`, uid, target.ID, threshold).
-			Order(`"startedAt" DESC`).First(&recent).Error; err == nil {
-			return httpx.Success(c, fiber.Map{"resultId": recent.ID, "durationMinutes": target.DurationMinutes, "startedSlug": target.Slug, "sessionOrder": target.SessionOrder})
-		}
-		now := time.Now()
-		if target.OpenAt != nil && now.Before(*target.OpenAt) {
-			return httpx.New(403, "Tryout belum dibuka sesuai jadwal.")
-		}
-		if target.CloseAt != nil && now.After(*target.CloseAt) {
-			return httpx.New(403, "Tryout telah ditutup.")
-		}
-		if mem != nil {
-			if _, err := membership.ConsumeTryout(h.DB, uid); err != nil {
-				return err
-			}
 		}
 	}
 	now := time.Now()
-	if ujian {
-		if target.OpenAt != nil && now.Before(*target.OpenAt) {
-			return httpx.New(403, "Tryout belum dibuka sesuai jadwal.")
-		}
-		if target.CloseAt != nil && now.After(*target.CloseAt) {
-			return httpx.New(403, "Tryout telah ditutup.")
-		}
-	}
-	res := models.TryoutResult{ID: id.New(), UserID: uid, TryoutID: target.ID, StartedAt: now, CreatedAt: now}
+	res := models.TryoutResult{ID: id.New(), UserID: uid, TryoutID: target.ID, Mode: mode, StartedAt: now, CreatedAt: now}
 	h.DB.Create(&res)
 	out := fiber.Map{"resultId": res.ID, "durationMinutes": target.DurationMinutes}
 	if !ujian {
@@ -272,6 +268,9 @@ func (h *Handler) submitTryout(c *fiber.Ctx, ujian bool) error {
 	var result models.TryoutResult
 	if err := h.DB.First(&result, "id = ? AND \"userId\" = ?", body.ResultID, uid).Error; err != nil {
 		return httpx.New(404, "Result not found")
+	}
+	if result.TryoutID != t.ID {
+		return httpx.New(400, "Hasil tryout tidak sesuai dengan paket yang dikirim.")
 	}
 	qMap := map[string]models.TryoutQuestion{}
 	for _, q := range t.Questions {
@@ -353,7 +352,7 @@ func (h *Handler) TryoutHistory(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
 	var items []models.TryoutResult
 	h.DB.Preload("Tryout").Preload("Tryout.SubCategory").Preload("Tryout.SubCategory.Category").
-		Where(`"userId" = ?`, uid).Order(`"createdAt" DESC`).Find(&items)
+		Where(`"userId" = ? AND mode = ?`, uid, requestMode(c)).Order(`"createdAt" DESC`).Find(&items)
 	return httpx.Success(c, items)
 }
 
@@ -420,7 +419,7 @@ func buildTryoutReviewQuestions(questions []models.TryoutQuestion, answers []mod
 			"id": q.ID, "order": q.Order, "prompt": q.Prompt, "imageUrl": q.ImageURL,
 			"explanation": q.Explanation, "explanationImageUrl": q.ExplanationImageURL,
 			"multipleCorrect": q.MultipleCorrect || questionHasMultipleCorrect(q.Options),
-			"options": opts, "userOptionId": userOptionID, "userOptionIds": sel,
+			"options":         opts, "userOptionId": userOptionID, "userOptionIds": sel,
 			"isCorrect": ok, "credit": credit, "gradeStatus": status,
 		})
 	}
@@ -475,10 +474,10 @@ func (h *Handler) TryoutReview(c *fiber.Ctx) error {
 				"category": fiber.Map{"id": t.SubCategory.Category.ID, "name": t.SubCategory.Category.Name},
 			},
 		},
-		"score":            score,
-		"completedAt":      completedAt,
-		"durationSeconds":  durationSeconds,
-		"questions":        buildTryoutReviewQuestions(t.Questions, result.Answers),
+		"score":           score,
+		"completedAt":     completedAt,
+		"durationSeconds": durationSeconds,
+		"questions":       buildTryoutReviewQuestions(t.Questions, result.Answers),
 	})
 }
 

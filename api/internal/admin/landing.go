@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"atozika/internal/models"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/datatypes"
 )
 
 func (h *Handler) Landing(c *fiber.Ctx) error {
@@ -146,30 +148,131 @@ func (h *Handler) DeleteVideo(c *fiber.Ctx) error {
 	return noContent(c)
 }
 
-func (h *Handler) CreateAnnouncement(c *fiber.Ctx) error {
-	title := c.FormValue("title")
-	body := c.FormValue("body")
-	if title == "" {
-		var payload models.Announcement
-		if err := c.BodyParser(&payload); err == nil {
-			title, body = payload.Title, payload.Body
+// announcementInput reads announcement fields from multipart or JSON bodies,
+// reporting only the fields the client actually sent.
+func announcementInput(c *fiber.Ctx) (map[string]any, error) {
+	out := map[string]any{}
+	if strings.HasPrefix(string(c.Request().Header.ContentType()), "multipart/") {
+		form, err := c.MultipartForm()
+		if err != nil {
+			return nil, httpx.New(400, "Invalid body")
+		}
+		get := func(k string) (string, bool) {
+			v, ok := form.Value[k]
+			if !ok || len(v) == 0 {
+				return "", false
+			}
+			return v[0], true
+		}
+		if v, ok := get("title"); ok {
+			out["title"] = strings.TrimSpace(v)
+		}
+		if v, ok := get("body"); ok {
+			out["body"] = v
+		}
+		if v, ok := get("targetAll"); ok {
+			out["targetAll"] = asBool(strings.ToLower(strings.TrimSpace(v)))
+		}
+		if v, ok := get("targetPackageIds"); ok {
+			ids, err := parseIDList(v)
+			if err != nil {
+				return nil, err
+			}
+			out["targetPackageIds"] = ids
+		}
+		return out, nil
+	}
+	var body struct {
+		Title            *string  `json:"title"`
+		Body             *string  `json:"body"`
+		TargetAll        *bool    `json:"targetAll"`
+		TargetPackageIDs []string `json:"targetPackageIds"`
+	}
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&body); err != nil {
+			return nil, httpx.New(400, "Invalid body")
 		}
 	}
+	if body.Title != nil {
+		out["title"] = strings.TrimSpace(*body.Title)
+	}
+	if body.Body != nil {
+		out["body"] = *body.Body
+	}
+	if body.TargetAll != nil {
+		out["targetAll"] = *body.TargetAll
+	}
+	if body.TargetPackageIDs != nil {
+		out["targetPackageIds"] = body.TargetPackageIDs
+	}
+	return out, nil
+}
+
+func parseIDList(raw string) ([]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return []string{}, nil
+	}
+	var ids []string
+	if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+		return nil, httpx.New(400, "Daftar paket tidak valid")
+	}
+	return ids, nil
+}
+
+func (h *Handler) announcementTargets(in map[string]any, item *models.Announcement) error {
+	if v, ok := in["targetAll"].(bool); ok {
+		item.TargetAll = v
+	}
+	if ids, ok := in["targetPackageIds"].([]string); ok {
+		if len(ids) > 0 {
+			var n int64
+			h.DB.Model(&models.MembershipPackage{}).Where("id IN ?", ids).Count(&n)
+			if int(n) != len(ids) {
+				return httpx.New(400, "Paket target tidak ditemukan")
+			}
+		}
+		b, _ := json.Marshal(ids)
+		item.TargetPackageIDs = datatypes.JSON(b)
+	}
+	if !item.TargetAll {
+		var ids []string
+		_ = json.Unmarshal(item.TargetPackageIDs, &ids)
+		if len(ids) == 0 {
+			return httpx.New(400, "Pilih minimal satu paket target atau kirim ke semua member")
+		}
+	}
+	return nil
+}
+
+func (h *Handler) CreateAnnouncement(c *fiber.Ctx) error {
+	in, err := announcementInput(c)
+	if err != nil {
+		return err
+	}
+	title, _ := in["title"].(string)
 	if title == "" {
 		return httpx.New(400, "Judul wajib diisi")
+	}
+	body, _ := in["body"].(string)
+	item := models.Announcement{
+		ID: id.New(), Title: title, Body: body, PublishedAt: time.Now(), TargetAll: true,
+		TargetPackageIDs: datatypes.JSON("[]"),
+	}
+	if err := h.announcementTargets(in, &item); err != nil {
+		return err
 	}
 	img, err := h.saveImage(c, "image", "content")
 	if err != nil {
 		return err
 	}
-	item := models.Announcement{
-		ID: id.New(), Title: title, Body: body, PublishedAt: time.Now(), TargetAll: true,
-		ImageURL: ptr(img), CreatedByID: nil,
-	}
+	item.ImageURL = ptr(img)
 	if cur := middleware.Current(c); cur != nil {
 		item.CreatedByID = &cur.ID
 	}
-	h.DB.Create(&item)
+	if err := h.DB.Create(&item).Error; err != nil {
+		return err
+	}
 	return httpx.Created(c, item)
 }
 func (h *Handler) UpdateAnnouncement(c *fiber.Ctx) error {
@@ -177,29 +280,32 @@ func (h *Handler) UpdateAnnouncement(c *fiber.Ctx) error {
 	if err := h.DB.First(&item, "id = ?", c.Params("id")).Error; err != nil {
 		return httpx.New(404, "Tidak ditemukan")
 	}
-	updates := map[string]any{}
-	if v := c.FormValue("title"); v != "" {
-		updates["title"] = v
+	in, err := announcementInput(c)
+	if err != nil {
+		return err
 	}
-	if v := c.FormValue("body"); v != "" {
-		updates["body"] = v
+	if v, ok := in["title"].(string); ok {
+		if v == "" {
+			return httpx.New(400, "Judul wajib diisi")
+		}
+		item.Title = v
+	}
+	if v, ok := in["body"].(string); ok {
+		item.Body = v
+	}
+	if err := h.announcementTargets(in, &item); err != nil {
+		return err
 	}
 	img, err := h.saveImage(c, "image", "content")
 	if err != nil {
 		return err
 	}
 	if img != "" {
-		updates["imageUrl"] = img
+		item.ImageURL = &img
 	}
-	if len(updates) == 0 {
-		var body map[string]any
-		_ = c.BodyParser(&body)
-		updates = body
+	if err := h.DB.Model(&item).Select("title", "body", "targetAll", "targetPackageIds", "imageUrl").Updates(&item).Error; err != nil {
+		return err
 	}
-	if len(updates) == 0 {
-		return httpx.New(400, "No data provided")
-	}
-	h.DB.Model(&item).Updates(updates)
 	h.DB.First(&item, "id = ?", item.ID)
 	return httpx.Success(c, item)
 }
@@ -263,14 +369,17 @@ func (h *Handler) CreateNews(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	normalized, err := normalizeNewsKind(kind)
+	if err != nil {
+		return err
+	}
 	item := models.NewsArticle{
 		ID: id.New(), Title: title, Slug: slug, Excerpt: excerpt, Content: content,
-		CoverURL: ptr(cover), Published: time.Now(), Kind: kind,
+		CoverURL: ptr(cover), Published: time.Now(), Kind: normalized,
 	}
-	if item.Kind == "" {
-		item.Kind = "NEWS"
+	if err := h.DB.Create(&item).Error; err != nil {
+		return err
 	}
-	h.DB.Create(&item)
 	return httpx.Created(c, item)
 }
 func (h *Handler) UpdateNews(c *fiber.Ctx) error {
@@ -279,9 +388,17 @@ func (h *Handler) UpdateNews(c *fiber.Ctx) error {
 		return httpx.New(404, "Tidak ditemukan")
 	}
 	updates := map[string]any{}
-	for _, k := range []string{"title", "slug", "excerpt", "content", "kind"} {
-		if v := c.FormValue(k); v != "" {
-			updates[k] = v
+	if form, err := c.MultipartForm(); err == nil && form != nil {
+		for _, k := range []string{"title", "slug", "excerpt", "content", "kind"} {
+			if v, ok := form.Value[k]; ok && len(v) > 0 {
+				updates[k] = v[0]
+			}
+		}
+	} else {
+		for _, k := range []string{"title", "slug", "excerpt", "content", "kind"} {
+			if v := c.FormValue(k); v != "" {
+				updates[k] = v
+			}
 		}
 	}
 	cover, err := h.saveImage(c, "coverImage", "content")
@@ -296,7 +413,16 @@ func (h *Handler) UpdateNews(c *fiber.Ctx) error {
 		_ = c.BodyParser(&body)
 		updates = body
 	}
-	h.DB.Model(&item).Updates(updates)
+	if raw, ok := updates["kind"].(string); ok {
+		normalized, err := normalizeNewsKind(raw)
+		if err != nil {
+			return err
+		}
+		updates["kind"] = normalized
+	}
+	if err := h.DB.Model(&item).Updates(updates).Error; err != nil {
+		return err
+	}
 	h.DB.First(&item, "id = ?", item.ID)
 	return httpx.Success(c, item)
 }
@@ -341,43 +467,142 @@ func (h *Handler) ReportingSummary(c *fiber.Ctx) error {
 	})
 }
 
-func (h *Handler) ReportingMembers(c *fiber.Ctx) error {
-	sort := "DESC"
+func reportingSort(c *fiber.Ctx) string {
 	if c.Query("sort") == "asc" {
-		sort = "ASC"
+		return "ASC"
+	}
+	return "DESC"
+}
+
+func (h *Handler) reportingUsers(c *fiber.Ctx, membersOnly bool) []models.User {
+	q := h.DB.Where("email <> ?", hiddenAdminEmail)
+	if membersOnly {
+		q = q.Where("role = ?", "MEMBER")
 	}
 	var users []models.User
-	applyDates(h.DB.Where("role = ?", "MEMBER"), `"createdAt"`, c).Order(`"createdAt" ` + sort).Find(&users)
+	applyDates(q, `"createdAt"`, c).Order(`"createdAt" ` + reportingSort(c)).Find(&users)
+	return users
+}
+
+func (h *Handler) memberActivity(u models.User) fiber.Map {
+	item := fiber.Map{
+		"id": u.ID, "name": u.Name, "email": u.Email, "joinedAt": u.CreatedAt, "createdAt": u.CreatedAt,
+		"membership": nil, "latestTryout": nil, "latestPractice": nil, "latestCermat": nil,
+	}
+	var trx models.Transaction
+	if h.DB.Preload("Package").Where(`"userId" = ? AND type = ? AND status = ?`, u.ID, "MEMBERSHIP", "PAID").
+		Order(`"activatedAt" DESC NULLS LAST`).Limit(1).Find(&trx).RowsAffected > 0 {
+		item["membership"] = fiber.Map{"packageName": trx.Package.Name, "activatedAt": trx.ActivatedAt, "expiresAt": trx.ExpiresAt}
+	}
+	var tr models.TryoutResult
+	if h.DB.Where(`"userId" = ? AND "completedAt" IS NOT NULL`, u.ID).Order(`"completedAt" DESC`).Limit(1).Find(&tr).RowsAffected > 0 {
+		item["latestTryout"] = fiber.Map{"score": tr.Score, "createdAt": tr.CompletedAt}
+	}
+	var pr models.PracticeResult
+	if h.DB.Where(`"userId" = ? AND "completedAt" IS NOT NULL`, u.ID).Order(`"completedAt" DESC`).Limit(1).Find(&pr).RowsAffected > 0 {
+		item["latestPractice"] = fiber.Map{"score": pr.Score, "createdAt": pr.CompletedAt}
+	}
+	var cs models.CermatSession
+	if h.DB.Where(`"userId" = ? AND "finishedAt" IS NOT NULL`, u.ID).Order(`"finishedAt" DESC`).Limit(1).Find(&cs).RowsAffected > 0 {
+		item["latestCermat"] = fiber.Map{"correctCount": cs.CorrectCount, "totalQuestions": cs.TotalQuestions, "createdAt": cs.FinishedAt}
+	}
+	return item
+}
+
+func (h *Handler) userRow(u models.User) fiber.Map {
+	var area models.MemberArea
+	var memberArea any
+	if h.DB.Where(`"userId" = ?`, u.ID).Limit(1).Find(&area).RowsAffected > 0 {
+		memberArea = fiber.Map{"slug": area.Slug}
+	}
+	return fiber.Map{
+		"id": u.ID, "name": u.Name, "email": u.Email, "role": u.Role, "isActive": u.IsActive,
+		"createdAt": u.CreatedAt, "phone": u.Phone, "memberArea": memberArea,
+	}
+}
+
+func (h *Handler) ReportingMembers(c *fiber.Ctx) error {
 	out := []fiber.Map{}
-	for _, u := range users {
-		var trx models.Transaction
-		h.DB.Preload("Package").Where(`"userId" = ? AND type = ? AND status = ?`, u.ID, "MEMBERSHIP", "PAID").
-			Order(`"activatedAt" DESC`).First(&trx)
-		item := fiber.Map{"id": u.ID, "name": u.Name, "email": u.Email, "createdAt": u.CreatedAt}
-		if trx.ID != "" {
-			item["membership"] = fiber.Map{"packageName": trx.Package.Name, "activatedAt": trx.ActivatedAt, "expiresAt": trx.ExpiresAt}
-		}
-		out = append(out, item)
+	for _, u := range h.reportingUsers(c, true) {
+		out = append(out, h.memberActivity(u))
 	}
 	return httpx.Success(c, out)
 }
 
 func (h *Handler) ReportingUsers(c *fiber.Ctx) error {
-	return h.ReportingMembers(c)
+	out := []fiber.Map{}
+	for _, u := range h.reportingUsers(c, false) {
+		out = append(out, h.userRow(u))
+	}
+	return httpx.Success(c, out)
+}
+
+func formatOptTime(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format(time.RFC3339)
+}
+
+func formatOptScore(v any) string {
+	switch s := v.(type) {
+	case *float64:
+		if s == nil {
+			return ""
+		}
+		return strconv.FormatFloat(*s, 'f', 2, 64)
+	case int:
+		return strconv.Itoa(s)
+	}
+	return ""
 }
 
 func (h *Handler) ReportingExport(c *fiber.Ctx) error {
-	var users []models.User
-	h.DB.Where("role = ?", "MEMBER").Where("email <> ?", hiddenAdminEmail).Order(`"createdAt" DESC`).Find(&users)
 	rows := []map[string]any{}
-	for _, u := range users {
-		phone := ""
-		if u.Phone != nil {
-			phone = *u.Phone
+	if c.Query("type") == "users" {
+		for _, u := range h.reportingUsers(c, false) {
+			r := h.userRow(u)
+			phone, area := "", ""
+			if u.Phone != nil {
+				phone = *u.Phone
+			}
+			if m, ok := r["memberArea"].(fiber.Map); ok {
+				area, _ = m["slug"].(string)
+			}
+			rows = append(rows, map[string]any{
+				"id": u.ID, "name": u.Name, "email": u.Email, "role": u.Role,
+				"status": map[bool]string{true: "AKTIF", false: "NONAKTIF"}[u.IsActive],
+				"phone":  phone, "memberArea": area, "createdAt": u.CreatedAt.Format(time.RFC3339),
+			})
 		}
-		rows = append(rows, map[string]any{"id": u.ID, "name": u.Name, "email": u.Email, "phone": phone, "createdAt": u.CreatedAt.Format(time.RFC3339)})
+		return csvAttachment(c, "laporan-user.csv", examcsv.ToRows(
+			[]string{"id", "name", "email", "role", "status", "phone", "memberArea", "createdAt"}, rows))
 	}
-	return csvAttachment(c, "laporan-member.csv", examcsv.ToRows([]string{"id", "name", "email", "phone", "createdAt"}, rows))
+	for _, u := range h.reportingUsers(c, true) {
+		a := h.memberActivity(u)
+		row := map[string]any{
+			"id": u.ID, "name": u.Name, "email": u.Email, "joinedAt": u.CreatedAt.Format(time.RFC3339),
+			"package": "", "expiresAt": "", "latestTryoutScore": "", "latestPracticeScore": "", "latestCermat": "",
+		}
+		if m, ok := a["membership"].(fiber.Map); ok {
+			row["package"] = m["packageName"]
+			if exp, ok := m["expiresAt"].(*time.Time); ok {
+				row["expiresAt"] = formatOptTime(exp)
+			}
+		}
+		if m, ok := a["latestTryout"].(fiber.Map); ok {
+			row["latestTryoutScore"] = formatOptScore(m["score"])
+		}
+		if m, ok := a["latestPractice"].(fiber.Map); ok {
+			row["latestPracticeScore"] = formatOptScore(m["score"])
+		}
+		if m, ok := a["latestCermat"].(fiber.Map); ok {
+			row["latestCermat"] = formatOptScore(m["correctCount"]) + "/" + formatOptScore(m["totalQuestions"])
+		}
+		rows = append(rows, row)
+	}
+	return csvAttachment(c, "laporan-member.csv", examcsv.ToRows(
+		[]string{"id", "name", "email", "joinedAt", "package", "expiresAt", "latestTryoutScore", "latestPracticeScore", "latestCermat"}, rows))
 }
 
 func (h *Handler) ListMaterials(c *fiber.Ctx) error {
@@ -429,9 +654,24 @@ func (h *Handler) DeleteMaterial(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ContactMessages(c *fiber.Ctx) error {
-	var items []models.ContactMessage
-	h.DB.Order(`"createdAt" DESC`).Find(&items)
-	return httpx.Success(c, items)
+	page := c.QueryInt("page", 1)
+	if page < 1 {
+		page = 1
+	}
+	limit := c.QueryInt("limit", 20)
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	var total int64
+	if err := h.DB.Model(&models.ContactMessage{}).Count(&total).Error; err != nil {
+		return err
+	}
+	items := []models.ContactMessage{}
+	if err := h.DB.Order(`"createdAt" DESC`).Offset((page - 1) * limit).Limit(limit).Find(&items).Error; err != nil {
+		return err
+	}
+	pages := int((total + int64(limit) - 1) / int64(limit))
+	return httpx.Success(c, fiber.Map{"items": items, "total": total, "page": page, "limit": limit, "pages": pages})
 }
 
 func (h *Handler) ExportCalculators(c *fiber.Ctx) error {
@@ -442,6 +682,18 @@ func (h *Handler) ExportCalculators(c *fiber.Ctx) error {
 		rows = append(rows, map[string]any{"id": it.ID, "title": it.Title, "slug": it.Slug, "category": it.Category, "type": it.Type})
 	}
 	return csvAttachment(c, "kalkulator.csv", examcsv.ToRows([]string{"id", "title", "slug", "category", "type"}, rows))
+}
+
+func normalizeNewsKind(kind string) (string, error) {
+	k := strings.ToUpper(strings.TrimSpace(kind))
+	switch k {
+	case "":
+		return "EDUKASI", nil
+	case "EDUKASI", "KUOTA", "ALUMNI", "NEWS", "INSIGHT":
+		return k, nil
+	default:
+		return "", httpx.New(400, "Kategori berita harus EDUKASI, KUOTA, ALUMNI, NEWS, atau INSIGHT")
+	}
 }
 
 func optionCSVFields(opts []models.TryoutOption) map[string]any {

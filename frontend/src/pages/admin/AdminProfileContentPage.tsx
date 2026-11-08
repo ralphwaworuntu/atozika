@@ -27,6 +27,7 @@ export function AdminProfileContentPage() {
     onError: () => toast.error('Gagal menyimpan profil'),
   });
 
+  if (query.isError) return <p className="text-sm font-semibold text-rose-600">Gagal memuat konten profil.</p>;
   if (query.isLoading || !draft) return <Skeleton className="h-96" />;
 
   return (

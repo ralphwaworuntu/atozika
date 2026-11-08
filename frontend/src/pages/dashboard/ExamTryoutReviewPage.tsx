@@ -42,10 +42,6 @@ export function ExamTryoutReviewPage() {
     );
   }
 
-  if (isLoading || !data) {
-    return <Skeleton className="h-[420px]" />;
-  }
-
   if (isError) {
     return (
       <section className="space-y-4">
@@ -55,6 +51,10 @@ export function ExamTryoutReviewPage() {
         </Button>
       </section>
     );
+  }
+
+  if (isLoading || !data) {
+    return <Skeleton className="h-[420px]" />;
   }
 
   return (

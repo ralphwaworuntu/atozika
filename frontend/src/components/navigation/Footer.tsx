@@ -39,7 +39,7 @@ export function Footer() {
           <div className="min-w-0">
             <h4 className="type-h2 uppercase tracking-command text-brand-400">Menu</h4>
             <ul className="mt-3 space-y-2 text-sm text-ink-200">
-              {publicNavLinks.slice(0, 4).map((link) => (
+              {publicNavLinks.map((link) => (
                 <li key={link.href}>
                   <Link to={link.href} className="transition hover:text-brand-300">
                     {link.label}

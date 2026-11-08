@@ -33,8 +33,8 @@ export type HomeContent = {
   stats: Array<{ label: string; value: number }>;
   reasons: string[];
   packages: HomePackage[];
-  testimonials: Array<{ id: string; name: string; message: string; role?: string }>;
-  videos: Array<{ id: string; title: string; embedUrl: string; description?: string | null }>;
+  testimonials: Array<{ id: string; name: string; message: string; role?: string; avatarUrl?: string | null; videoUrl?: string | null }>;
+  videos: Array<{ id: string; title: string; embedUrl: string; description?: string | null; thumbnail?: string | null }>;
   contact: ContactConfig;
   copy?: import('@/types/siteContent').HomeCopy;
 };

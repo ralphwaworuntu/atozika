@@ -26,11 +26,15 @@ type ContactMessageResponse = {
 
 export function AdminContactsPage() {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useQuery<ContactMessageResponse>({
+  const { data, isLoading, isError } = useQuery<ContactMessageResponse>({
     queryKey: ['admin-contact-messages', page],
     queryFn: () => apiGet<ContactMessageResponse>('/admin/contacts/messages', { params: { page } }),
     placeholderData: keepPreviousData,
   });
+
+  if (isError) {
+    return <p className="text-sm font-semibold text-rose-600">Gagal memuat pesan. Coba muat ulang.</p>;
+  }
 
   if (isLoading || !data) {
     return <Skeleton className="h-96" />;

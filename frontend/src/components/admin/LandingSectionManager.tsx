@@ -13,9 +13,10 @@ import type { PackageOption } from '@/types/landing';
 export type FieldConfig = {
   name: string;
   label: string;
-  type?: 'text' | 'number' | 'textarea' | 'url' | 'boolean' | 'packages';
+  type?: 'text' | 'number' | 'textarea' | 'url' | 'boolean' | 'packages' | 'select';
   placeholder?: string;
   defaultValue?: string | number;
+  options?: Array<{ value: string; label: string }>;
 };
 
 export type LandingItem = { id: string } & Record<string, string | number | boolean | string[] | null | undefined>;
@@ -193,12 +194,21 @@ export function LandingSectionManager({
             const isTextarea = field.type === 'textarea';
             const isPackages = field.type === 'packages';
             const isBoolean = field.type === 'boolean';
+            const isSelect = field.type === 'select';
             const disablePackages = isPackages && targetAll;
             return (
               <div key={field.name} className={isTextarea || isPackages ? 'md:col-span-2' : ''}>
                 <p className="admin-field-label">{field.label}</p>
                 {isTextarea ? (
                   <Textarea className="mt-1" placeholder={field.placeholder} {...form.register(fieldName)} />
+                ) : isSelect ? (
+                  <select className="mt-1 flex h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm" {...form.register(fieldName)}>
+                    {(field.options ?? []).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 ) : isPackages ? (
                   <PackageSelector
                     fieldName={fieldName}
