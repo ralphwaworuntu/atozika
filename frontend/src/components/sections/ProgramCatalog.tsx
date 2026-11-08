@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { useContactConfig } from '@/hooks/useContactConfig';
 import { programCatalog } from '@/constants/programs';
+import type { HomeCopy } from '@/types/siteContent';
 
 function formatRupiah(value: number) {
   return `Rp ${value.toLocaleString('id-ID')}`;
 }
 
-export function ProgramCatalog() {
+export function ProgramCatalog({ catalog }: { catalog?: HomeCopy['programs'] }) {
+  const programs = catalog?.tiers?.length ? catalog : programCatalog;
   const { data: contact } = useContactConfig();
   const whatsappNumber = (contact?.whatsappConsult ?? contact?.whatsappPrimary ?? '6281234567890').replace(/[^0-9]/g, '');
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
@@ -20,13 +22,13 @@ export function ProgramCatalog() {
     <section aria-labelledby="program-catalog-title">
       <div className="text-center">
         <h2 id="program-catalog-title" className="type-hero text-ink-50">
-          {programCatalog.title}
+          {programs.title}
         </h2>
-        <p className="type-body mx-auto mt-3 max-w-2xl text-ink-200">{programCatalog.subtitle}</p>
+        <p className="type-body mx-auto mt-3 max-w-2xl text-ink-200">{programs.subtitle}</p>
       </div>
 
       <div className="mt-10 grid items-stretch gap-5 lg:grid-cols-3 lg:gap-6">
-        {programCatalog.tiers.map((pkg) => {
+        {programs.tiers.map((pkg) => {
           const href = pkg.ctaHref === 'whatsapp' ? whatsappHref : pkg.ctaHref;
 
           return (

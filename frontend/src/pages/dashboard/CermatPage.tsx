@@ -16,7 +16,7 @@ import { CermatExamOverlay } from '@/components/dashboard/CermatExamOverlay';
 import { ArrowRight, BarChart3, Clock3, FileText, ScanEye, Zap } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { LearningPageHeader, StatItem, type LearningLayout } from '@/components/dashboard/member/LearningPageHeader';
-import { DEFAULT_CERMAT_CONFIG, type CermatConfig, type CermatMode } from '@/types/cermat';
+import { CERMAT_MODE_LABELS, DEFAULT_CERMAT_CONFIG, type CermatConfig, type CermatMode } from '@/types/cermat';
 
 type CermatCard = {
   key: string;
@@ -151,6 +151,7 @@ export function CermatPage() {
   const [pendingMode, setPendingMode] = useState<CermatMode | null>(null);
   const [pendingNext, setPendingNext] = useState<CermatSession | null>(null);
   const [breakLeft, setBreakLeft] = useState(0);
+  const [breakTotal, setBreakTotal] = useState(0);
   const [isBreaking, setIsBreaking] = useState(false);
   const [pendingSession, setPendingSession] = useState<CermatSession | null>(null);
   const [countdownOpen, setCountdownOpen] = useState(false);
@@ -224,6 +225,7 @@ export function CermatPage() {
         setAnswers({});
         setPendingNext(null);
         setBreakLeft(0);
+        setBreakTotal(0);
         setIsBreaking(false);
         endTimeRef.current = null;
         exitFullscreen();
@@ -251,6 +253,7 @@ export function CermatPage() {
           setCurrentIndex(0);
           setIsBreaking(false);
           setBreakLeft(0);
+          setBreakTotal(0);
           autoSubmitRef.current = '';
           endTimeRef.current = Date.now() + (next.timerSeconds ?? 60) * 1000;
           setTimeLeft(next.timerSeconds ?? 60);
@@ -258,6 +261,7 @@ export function CermatPage() {
         }
         setIsBreaking(true);
         setBreakLeft(pause);
+        setBreakTotal(pause);
         return;
       }
     },
@@ -372,6 +376,7 @@ export function CermatPage() {
     setCurrentIndex(0);
     setIsBreaking(false);
     setBreakLeft(0);
+    setBreakTotal(0);
     autoSubmitRef.current = '';
     endTimeRef.current = Date.now() + (next.timerSeconds ?? 60) * 1000;
     setTimeLeft(next.timerSeconds ?? 60);
@@ -405,6 +410,7 @@ export function CermatPage() {
       setPendingSession(null);
       setPendingNext(null);
       setBreakLeft(0);
+      setBreakTotal(0);
       setIsBreaking(false);
       endTimeRef.current = null;
       exitFullscreen();
@@ -635,6 +641,7 @@ export function CermatPage() {
           modeLabels={MODE_LABELS}
           isBreaking={isBreaking && Boolean(pendingNext)}
           breakSecondsLeft={isBreaking ? breakLeft : null}
+          breakSecondsTotal={isBreaking ? breakTotal : null}
           nextSessionIndex={pendingNext?.sessionIndex ?? null}
           onAnswer={handleAdvance}
           onFinish={handleFinishSession}
@@ -646,8 +653,14 @@ export function CermatPage() {
         open={countdownOpen}
         resetKey={countdownToken}
         variant="focus"
-        title="Mulai Tes Kecermatan"
-        subtitle="Fokus dan pastikan koneksi stabil."
+        kind="cermat"
+        eyebrow="Persiapan Tes Kecermatan"
+        title="Fokus. Tes segera dimulai."
+        subtitle={
+          pendingSession
+            ? `${CERMAT_MODE_LABELS[pendingSession.mode]} • ${pendingSession.totalSessions} sesi • ${pendingSession.questions.length} soal per sesi`
+            : 'Jawab secepat dan setepat mungkin. Pastikan koneksi stabil.'
+        }
         warning="Tes akan dihentikan jika Anda berpindah tab atau meninggalkan halaman."
         onComplete={() => {
           if (!pendingSession) {
@@ -661,6 +674,7 @@ export function CermatPage() {
           setCurrentIndex(0);
           setPendingNext(null);
           setBreakLeft(0);
+          setBreakTotal(0);
           setIsBreaking(false);
           endTimeRef.current = Date.now() + (pendingSession.timerSeconds ?? 60) * 1000;
           setTimeLeft(pendingSession.timerSeconds ?? 60);

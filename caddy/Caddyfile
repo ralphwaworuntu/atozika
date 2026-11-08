@@ -1,0 +1,12 @@
+{
+	email {$ACME_EMAIL}
+}
+
+www.{$SITE_ADDRESS} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}
+
+{$SITE_ADDRESS} {
+	encode gzip
+	reverse_proxy web:80
+}

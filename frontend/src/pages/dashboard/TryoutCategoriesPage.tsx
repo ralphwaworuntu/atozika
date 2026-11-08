@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { cn } from '@/utils/cn';
 import { consecutiveStreak } from '@/lib/memberHome';
-import { LEARNING_TOPICS, topicByName } from '@/constants/learningCatalog';
+import { useLearningTopics } from '@/hooks/useMemberChrome';
 
 const WEEK_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
@@ -77,6 +77,7 @@ function SectionLink({ children, onClick }: { children: ReactNode; onClick: () =
 
 export function TryoutCategoriesPage() {
   const navigate = useNavigate();
+  const { topics, topicByName } = useLearningTopics();
   const membership = useMembershipStatus();
   const hasActiveMembership = Boolean(membership.data?.isActive);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -110,7 +111,7 @@ export function TryoutCategoriesPage() {
         label: card.label,
         tint: card.tint,
         ring: card.ring,
-        icon: LEARNING_TOPICS.find((topic) => topic.key === card.key)?.icon ?? LEARNING_TOPICS[0].icon,
+        icon: topics.find((topic) => topic.key === card.key)?.icon ?? topics[0].icon,
         subs: real ? real.subIds.size : card.subs,
         packs: real ? real.packs : card.packs,
         categoryId: real?.id,
@@ -124,13 +125,13 @@ export function TryoutCategoriesPage() {
         label: category.name,
         tint: 'bg-sky-50',
         ring: 'bg-sky-200/70',
-        icon: topicByName(category.name)?.icon ?? LEARNING_TOPICS[4].icon,
+        icon: topicByName(category.name)?.icon ?? topics[4].icon,
         subs: category.subIds.size,
         packs: category.packs,
         categoryId: category.id as string | undefined,
       }));
     return [...cards, ...extras];
-  }, [realCategories, showAllCategories]);
+  }, [realCategories, showAllCategories, topicByName, topics]);
 
   const results = overview?.tryoutResults ?? [];
   const activityDates = results.map((item) => item.startedAt);
@@ -146,7 +147,7 @@ export function TryoutCategoriesPage() {
         name: item.tryout.name,
         meta: `${formatShortDate(item.startedAt)} • ${item.tryout.subCategory.category.name}`,
         score: Math.round(item.score),
-        icon: (topicByName(item.tryout.subCategory.category.name) ?? topicByName(item.tryout.name) ?? LEARNING_TOPICS[1]).icon,
+        icon: (topicByName(item.tryout.subCategory.category.name) ?? topicByName(item.tryout.name) ?? topics[1]).icon,
         href: `/app/latihan/tryout/review/${item.id}`,
       }))
     : EXAMPLE_RESULTS.map((item) => ({
@@ -154,7 +155,7 @@ export function TryoutCategoriesPage() {
         name: item.name,
         meta: item.meta,
         score: item.score,
-        icon: topicByName(item.topic)?.icon ?? LEARNING_TOPICS[0].icon,
+        icon: topicByName(item.topic)?.icon ?? topics[0].icon,
         href: undefined as string | undefined,
       }));
 
@@ -257,11 +258,11 @@ export function TryoutCategoriesPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {categoryCards.map((card) => (
-                <article key={card.key} className={cn('relative flex min-h-[5.5rem] items-center gap-2.5 rounded-2xl border border-slate-100 p-3 pb-9 dark:border-white/10 dark:bg-white/5', card.tint)}>
+                <article key={card.key} className={cn('flex items-center gap-2.5 rounded-2xl border border-slate-100 p-3 dark:border-white/10 dark:bg-white/5', card.tint)}>
                   <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full', card.ring)}>
                     <img src={card.icon} alt="" className="h-9 w-9 object-contain mix-blend-multiply" />
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-extrabold leading-tight text-slate-900 dark:text-ink-50">{card.label}</h3>
                     <p className="mt-0.5 text-[10px] font-medium leading-snug text-slate-500">
                       {card.subs} sub kategori • {card.packs} paket
@@ -274,7 +275,7 @@ export function TryoutCategoriesPage() {
                       if (card.categoryId) navigate(`/app/latihan/tryout/kategori/${card.categoryId}`);
                       else toast.message(`Tryout ${card.label} segera tersedia.`);
                     }}
-                    className="absolute bottom-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:bg-ink-800 dark:text-ink-50"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:bg-ink-800 dark:text-ink-50"
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
@@ -327,7 +328,7 @@ export function TryoutCategoriesPage() {
                 {POPULAR_MATERIALS.map((item) => (
                   <li key={item.title}>
                     <button type="button" onClick={() => navigate('/app/materi')} className="flex w-full items-center gap-3 py-2 text-left">
-                      <img src={topicByName(item.topic)?.icon ?? LEARNING_TOPICS[4].icon} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain mix-blend-multiply" />
+                      <img src={topicByName(item.topic)?.icon ?? topics[4].icon} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain mix-blend-multiply" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-extrabold text-slate-800 dark:text-ink-50">{item.title}</p>
                         <p className="truncate text-[10px] font-medium text-slate-400">{item.meta}</p>

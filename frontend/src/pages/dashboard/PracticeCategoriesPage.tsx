@@ -8,10 +8,8 @@ import type { PracticeCategory } from '@/types/exam';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { cn } from '@/utils/cn';
-import { LEARNING_TOPICS, topicByName } from '@/constants/learningCatalog';
+import { useLearningTopics } from '@/hooks/useMemberChrome';
 import { FilterPills, LearningPageHeader, StatItem, type LearningLayout } from '@/components/dashboard/member/LearningPageHeader';
-
-const FILTERS = ['Semua', 'TNI', 'POLRI', 'Kedinasan', 'BUMN', 'Umum'] as const;
 
 export function PracticeCategoriesPage() {
   const navigate = useNavigate();
@@ -20,6 +18,8 @@ export function PracticeCategoriesPage() {
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState<LearningLayout>('grid');
   const [filter, setFilter] = useState<string>('Semua');
+  const { topics, topicByName } = useLearningTopics();
+  const filters = ['Semua', ...new Set(topics.flatMap((topic) => topic.practice.groups))];
   const { data: categories, isLoading } = useQuery({
     queryKey: ['practice-categories'],
     queryFn: () => apiGet<PracticeCategory[]>('/exams/practice/categories'),
@@ -27,7 +27,7 @@ export function PracticeCategoriesPage() {
 
   const cards = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return LEARNING_TOPICS.map((topic) => {
+    return topics.map((topic) => {
       const real = categories?.find((category) => topicByName(category.name)?.key === topic.key);
       const sets = real?.subCategories.flatMap((sub) => sub.subSubs.flatMap((subSub) => subSub.sets)) ?? [];
       return {
@@ -40,7 +40,7 @@ export function PracticeCategoriesPage() {
       if (filter !== 'Semua' && !topic.practice.groups.includes(filter)) return false;
       return !term || topic.name.toLowerCase().includes(term);
     });
-  }, [categories, filter, query]);
+  }, [categories, filter, query, topicByName, topics]);
 
   if (membership.isLoading || isLoading) {
     return <Skeleton className="h-72" />;
@@ -85,7 +85,7 @@ export function PracticeCategoriesPage() {
         </section>
       </div>
 
-      <FilterPills items={FILTERS} value={filter} onChange={setFilter} />
+      <FilterPills items={filters} value={filter} onChange={setFilter} />
 
       {cards.length === 0 ? (
         <div className="member-card p-8 text-center text-sm font-semibold text-slate-400">Kategori latihan tidak ditemukan.</div>
@@ -100,12 +100,14 @@ export function PracticeCategoriesPage() {
                 layout === 'list' && 'flex items-center',
               )}
             >
-              <div className={cn('p-4 pb-3', layout === 'list' && 'w-56 shrink-0')}>
-                <img src={topic.icon} alt="" className="h-14 w-14 rounded-full object-contain mix-blend-multiply" />
-                <h3 className="mt-3 text-base font-extrabold text-slate-900 dark:text-ink-50">{topic.name}</h3>
-                <p className="text-[11px] font-medium text-slate-500 dark:text-ink-200">
-                  {soal} soal <span className="mx-1">•</span> {paket} paket
-                </p>
+              <div className={cn('flex items-center gap-3 p-4 pb-3', layout === 'list' && 'w-64 shrink-0')}>
+                <img src={topic.icon} alt="" className="h-11 w-11 shrink-0 rounded-xl bg-white/70 object-cover" />
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-extrabold leading-tight text-slate-900 dark:text-ink-50">{topic.name}</h3>
+                  <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-ink-200">
+                    {soal} soal <span className="mx-1">•</span> {paket} paket
+                  </p>
+                </div>
               </div>
               <div className={cn('space-y-3 bg-white/70 p-4 pt-3 dark:bg-transparent', layout === 'list' && 'flex flex-1 items-center gap-4 space-y-0')}>
                 <p className="min-h-[2.25rem] flex-1 text-xs font-medium text-slate-600 dark:text-ink-200">{topic.practice.description}</p>

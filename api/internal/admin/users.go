@@ -215,7 +215,12 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	h.DB.Model(&user).Update("passwordHash", hash)
+	h.DB.Model(&user).Updates(map[string]any{
+		"passwordHash":   hash,
+		"sessionVersion": gorm.Expr(`"sessionVersion" + 1`),
+		"updatedAt":      time.Now(),
+	})
+	h.DB.Where(`"userId" = ?`, user.ID).Delete(&models.RefreshToken{})
 	return httpx.Success(c, fiber.Map{"userId": user.ID, "tempPassword": temp})
 }
 
@@ -295,6 +300,33 @@ func (h *Handler) SystemMetrics(c *fiber.Ctx) error {
 		"cpu":    cpus,
 		"uptime": int(time.Since(startedAt).Seconds()),
 	})
+}
+
+func (h *Handler) ListReferrals(c *fiber.Ctx) error {
+	type item struct {
+		ID            string    `json:"id"`
+		Status        string    `json:"status"`
+		CreatedAt     time.Time `json:"createdAt"`
+		ReferrerName  string    `json:"referrerName"`
+		ReferrerEmail string    `json:"referrerEmail"`
+		ReferralCode  string    `json:"referralCode"`
+		ReferredName  string    `json:"referredName"`
+		ReferredEmail string    `json:"referredEmail"`
+	}
+	items := []item{}
+	err := h.DB.Raw(`
+		SELECT r.id, r.status, r."createdAt",
+		       u.name AS "referrerName", u.email AS "referrerEmail", u."referralCode",
+		       d.name AS "referredName", d.email AS "referredEmail"
+		FROM "Referral" r
+		JOIN "User" u ON u.id = r."referrerId"
+		JOIN "User" d ON d.id = r."referredUserId"
+		ORDER BY r."createdAt" DESC
+	`).Scan(&items).Error
+	if err != nil {
+		return httpx.New(500, "Gagal memuat afiliasi")
+	}
+	return httpx.Success(c, items)
 }
 
 func (h *Handler) ListBlocks(c *fiber.Ctx) error {

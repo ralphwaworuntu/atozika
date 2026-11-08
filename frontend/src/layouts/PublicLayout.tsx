@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/navigation/Navbar';
 import { Footer } from '@/components/navigation/Footer';
@@ -5,8 +6,13 @@ import { FloatingWhatsapp } from '@/components/sections/FloatingWhatsapp';
 import { cn } from '@/utils/cn';
 
 export function PublicLayout() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const isHome = pathname === '/';
+
+  useEffect(() => {
+    if (hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname, hash]);
 
   return (
     <div className="theme-ink min-h-screen overflow-x-hidden bg-[var(--app-bg)] text-[var(--app-fg)]">

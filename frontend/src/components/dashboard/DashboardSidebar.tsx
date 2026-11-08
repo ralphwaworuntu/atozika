@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -8,6 +8,7 @@ import {
   Calculator,
   ClipboardList,
   CreditCard,
+  Crown,
   Eye,
   FileText,
   FolderOpen,
@@ -20,13 +21,12 @@ import {
   Package,
   Receipt,
   ScanLine,
-  Settings,
   Users,
 } from 'lucide-react';
-import { dashboardMenu, isDashboardPathActive } from '@/constants/navigation';
+import { isDashboardPathActive } from '@/constants/navigation';
+import { applyMemberMenu, useMemberChrome } from '@/hooks/useMemberChrome';
 import { SidebarToggleButton } from '@/components/dashboard/SidebarToggleButton';
 import { AtozikaMascot } from '@/components/dashboard/member/AtozikaMascot';
-import { AccountSettingsModal } from '@/components/dashboard/AccountSettingsModal';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/hooks/useAuth';
 import { useExamControlStatus } from '@/hooks/useExamControl';
@@ -112,7 +112,6 @@ export function DashboardSidebarPanel({
   showMobileToggle = false,
 }: DashboardSidebarPanelProps) {
   const { user, logout } = useAuth();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const examStatusQuery = useExamControlStatus();
   const membership = useMembershipStatus();
   const examEnabled = examStatusQuery.data?.enabled && examStatusQuery.data?.allowed;
@@ -123,6 +122,10 @@ export function DashboardSidebarPanel({
   const showCermatOnly = restrictFeatures && allowCermat && !allowTryout && !allowPractice;
   const isActive = Boolean(membership.data?.isActive);
   const packageName = membership.data?.packageName ?? 'Member';
+  const isPremium =
+    Boolean(membership.data?.isPremium) || /premium/i.test(packageName);
+  const chrome = useMemberChrome();
+  const dashboardMenu = applyMemberMenu(chrome.data?.member.menu);
 
   const examSection = [
     { label: 'Tryout', to: '/app/ujian/tryout' },
@@ -162,17 +165,17 @@ export function DashboardSidebarPanel({
           }
           if (restrictFeatures && section.title === 'Latihan') {
             items = items.filter((item) => {
-              if (item.label.includes('Tryout')) return allowTryout;
-              if (item.label.includes('Latihan Soal')) return allowPractice;
-              if (item.label.includes('Tes Kecermatan')) return allowCermat;
+              if (item.to.includes('/tryout')) return allowTryout;
+              if (item.to.includes('latihan-soal')) return allowPractice;
+              if (item.to.includes('kecermatan')) return allowCermat;
               return true;
             });
           }
           if (restrictFeatures && section.title === 'Riwayat') {
             items = items.filter((item) => {
-              if (item.label.includes('Tryout')) return allowTryout;
-              if (item.label.includes('Latihan')) return allowPractice;
-              if (item.label.includes('Kecermatan')) return allowCermat;
+              if (item.to.includes('/tryout')) return allowTryout;
+              if (item.to.includes('latihan-soal')) return allowPractice;
+              if (item.to.includes('kecermatan')) return allowCermat;
               return true;
             });
           }
@@ -208,35 +211,48 @@ export function DashboardSidebarPanel({
       </nav>
 
       <div className="shrink-0 space-y-4 px-4 pb-4 pt-2">
-        <div className="relative overflow-hidden rounded-3xl border border-blue-200/60 bg-gradient-to-b from-[#E7F2FF] to-[#D9EAFF] p-4 shadow-sm dark:from-blue-500/15 dark:to-blue-900/20 dark:border-blue-500/20">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-400/20 text-sm">👑</span>
-            <span className="text-sm font-bold text-blue-950 dark:text-blue-100">ATOZIKA PRO</span>
+        {!membership.isLoading && !isPremium ? (
+          <div className="relative overflow-hidden rounded-3xl border border-blue-200/60 bg-gradient-to-b from-[#E7F2FF] to-[#D9EAFF] p-4 shadow-sm dark:from-blue-500/15 dark:to-blue-900/20 dark:border-blue-500/20">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-400/20 text-sm">👑</span>
+              <span className="text-sm font-bold text-blue-950 dark:text-blue-100">ATOZIKA PRO</span>
+            </div>
+            <p className="mb-3 text-[11px] font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+              {isActive
+                ? `Paket aktif: ${packageName}`
+                : 'Buka semua tryout, materi, dan laporan orang tua.'}
+            </p>
+            <Link
+              to="/app/paket-membership"
+              onClick={onNavigate}
+              className="flex w-full items-center justify-center rounded-xl bg-member-600 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-member-700 active:scale-[0.98]"
+            >
+              {isActive ? 'Kelola Paket' : 'Upgrade'}
+            </Link>
           </div>
-          <p className="mb-3 text-[11px] font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-            {isActive
-              ? `Paket aktif: ${packageName}`
-              : 'Buka semua tryout, materi, dan laporan orang tua.'}
-          </p>
-          <Link
-            to="/app/paket-membership"
-            onClick={onNavigate}
-            className="flex w-full items-center justify-center rounded-xl bg-member-600 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-member-700 active:scale-[0.98]"
-          >
-            {isActive ? 'Kelola Paket' : 'Upgrade'}
-          </Link>
-        </div>
+        ) : null}
 
         <div className="flex items-center justify-between border-t border-slate-200/80 px-1 pt-3 dark:border-blue-500/15">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="relative h-9 w-9 overflow-hidden rounded-full bg-amber-100 ring-2 ring-blue-500/30">
-              {user?.avatarUrl ? (
-                <img src={getAssetUrl(user.avatarUrl)} alt={user?.name} className="h-full w-full object-cover" />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-amber-800">
-                  {parseNameInitials(user?.name)}
+            <div className="relative h-9 w-9 shrink-0">
+              <div className="h-full w-full overflow-hidden rounded-full bg-amber-100 ring-2 ring-blue-500/30">
+                {user?.avatarUrl ? (
+                  <img src={getAssetUrl(user.avatarUrl)} alt={user?.name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-amber-800">
+                    {parseNameInitials(user?.name)}
+                  </span>
+                )}
+              </div>
+              {isPremium ? (
+                <span
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow-sm ring-2 ring-[#F4F7FC] dark:ring-[#070b12]"
+                  title="Premium"
+                  aria-label="Member premium"
+                >
+                  <Crown className="h-3 w-3 fill-current" strokeWidth={2.2} />
                 </span>
-              )}
+              ) : null}
             </div>
             <div className="min-w-0">
               <h4 className="truncate text-xs font-bold leading-tight text-slate-900 dark:text-ink-50">{user?.name}</h4>
@@ -248,14 +264,6 @@ export function DashboardSidebarPanel({
           <div className="flex shrink-0">
             <button
               type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200/50 hover:text-slate-700 dark:hover:bg-white/10"
-              aria-label="Pengaturan"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
               onClick={logout}
               className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200/50 hover:text-slate-700 dark:hover:bg-white/10"
               aria-label="Keluar"
@@ -265,7 +273,6 @@ export function DashboardSidebarPanel({
           </div>
         </div>
       </div>
-      <AccountSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

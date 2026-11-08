@@ -190,7 +190,11 @@ func (h *Handler) submitPractice(c *fiber.Ctx, ujian bool) error {
 func (h *Handler) PracticeHistory(c *fiber.Ctx) error {
 	uid := middleware.Current(c).ID
 	var items []models.PracticeResult
-	h.DB.Preload("Set").Where(`"userId" = ?`, uid).Order(`"createdAt" DESC`).Find(&items)
+	h.DB.Preload("Set").
+		Preload("Set.SubSubCategory").
+		Preload("Set.SubSubCategory.SubCategory").
+		Preload("Set.SubSubCategory.SubCategory.Category").
+		Where(`"userId" = ?`, uid).Order(`"createdAt" DESC`).Find(&items)
 	return httpx.Success(c, items)
 }
 
@@ -539,6 +543,7 @@ func shapeCermatAttempt(att models.CermatAttempt) fiber.Map {
 		"id": att.ID, "mode": att.Mode, "totalSessions": att.TotalSessions,
 		"sessionCount": len(sessions), "averageScore": averageScore,
 		"totalCorrect": totalCorrect, "totalQuestions": totalQuestions,
+		"questionCount": att.QuestionCount, "durationSeconds": att.DurationSeconds,
 		"finishedAt": att.FinishedAt, "startedAt": att.StartedAt, "sessions": sessionOut,
 	}
 }

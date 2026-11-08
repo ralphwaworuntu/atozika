@@ -28,6 +28,7 @@ type Handler struct {
 
 func Register(r fiber.Router, h *Handler) {
 	r.Get("/overview", h.Overview)
+	r.Get("/referrals", h.ListReferrals)
 	r.Get("/reporting/summary", h.ReportingSummary)
 	r.Get("/reporting/members", h.ReportingMembers)
 	r.Get("/reporting/users", h.ReportingUsers)
@@ -35,6 +36,16 @@ func Register(r fiber.Router, h *Handler) {
 	r.Get("/ranking", h.Ranking)
 	r.Get("/ranking/export", h.RankingExport)
 	r.Get("/landing", h.Landing)
+	r.Get("/site/home-content", h.GetHomeContent)
+	r.Put("/site/home-content", h.PutHomeContent)
+	r.Get("/site/profile-content", h.GetProfileContent)
+	r.Put("/site/profile-content", h.PutProfileContent)
+	r.Get("/site/member-content", h.GetMemberContent)
+	r.Put("/site/member-content", h.PutMemberContent)
+	r.Get("/site/boards", h.GetBoards)
+	r.Put("/site/boards", h.PutBoards)
+	r.Get("/site/fitness", h.GetFitness)
+	r.Put("/site/fitness", h.PutFitness)
 
 	r.Post("/landing/stats", h.CreateStat)
 	r.Put("/landing/stats/:id", h.UpdateStat)

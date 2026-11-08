@@ -11,12 +11,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useExamControlStatus } from '@/hooks/useExamControl';
-import { isDocumentFullscreen, useFullscreenExam } from '@/hooks/useFullscreenExam';
+import { enterExamFullscreen, isDocumentFullscreen, useFullscreenExam } from '@/hooks/useFullscreenExam';
 import { useExamBlocks } from '@/hooks/useExamBlocks';
 import { useExamBlockConfig } from '@/hooks/useExamBlockConfig';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { ExamCountdownModal } from '@/components/dashboard/ExamCountdownModal';
-import { ExamFullscreenGateModal } from '@/components/dashboard/ExamFullscreenGateModal';
 import { ConfirmFinishModal } from '@/components/dashboard/ConfirmFinishModal';
 import { ExamTakingOverlay, ExamQuestionPanel } from '@/components/dashboard/ExamTakingOverlay';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -57,7 +56,6 @@ export function ExamTryoutPage() {
   const [countdownToken, setCountdownToken] = useState(0);
   const [pendingTryout, setPendingTryout] = useState<Tryout | null>(null);
   const returnToRef = useRef<string | null>(null);
-  const [fullscreenGateOpen, setFullscreenGateOpen] = useState(false);
   const [nowTs, setNowTs] = useState(() => Date.now());
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
@@ -106,7 +104,7 @@ export function ExamTryoutPage() {
   const selectedSubCategory =
     selectedCategory?.subCategories.find((subCategory) => subCategory.id === resolvedSubCategoryId) ?? null;
 
-  const { request: requestFullscreen, exit: exitFullscreen, setViolationHandler, isSupported: fullscreenSupported } =
+  const { exit: exitFullscreen, setViolationHandler, isSupported: fullscreenSupported } =
     useFullscreenExam({
       active: Boolean(session) && examBlockEnabled,
     });
@@ -267,15 +265,10 @@ export function ExamTryoutPage() {
       countdownStartRef.current = false;
       setPendingTryout(item);
       skipCountdownRef.current = false;
-      // Urutan: layar penuh → hitung mundur → mulai soal
-      if (fullscreenSupported) {
-        setFullscreenGateOpen(true);
-        return;
-      }
       setCountdownToken((prev) => prev + 1);
       setCountdownOpen(true);
     },
-    [fullscreenSupported, tryoutBlock],
+    [tryoutBlock],
   );
 
   useEffect(() => {
@@ -318,7 +311,7 @@ export function ExamTryoutPage() {
     navigate(fallback);
   }, [exitFullscreen, navigate]);
 
-  const handleCountdownComplete = useCallback(() => {
+  const handleCountdownComplete = useCallback(async () => {
     if (!pendingTryout) {
       setCountdownOpen(false);
       return;
@@ -327,9 +320,7 @@ export function ExamTryoutPage() {
       return;
     }
     if (fullscreenSupported && !isDocumentFullscreen()) {
-      setCountdownOpen(false);
-      setFullscreenGateOpen(true);
-      return;
+      await enterExamFullscreen();
     }
     countdownStartRef.current = true;
     startMutation.mutate(pendingTryout, {
@@ -340,31 +331,6 @@ export function ExamTryoutPage() {
       },
     });
   }, [fullscreenSupported, pendingTryout, startMutation]);
-
-  const handleFullscreenGate = useCallback(async () => {
-    if (!pendingTryout) {
-      setFullscreenGateOpen(false);
-      return;
-    }
-    if (fullscreenSupported) {
-      try {
-        await requestFullscreen();
-        if (!isDocumentFullscreen()) {
-          throw new Error('Fullscreen tidak aktif');
-        }
-      } catch {
-        toast.error('Mode layar penuh wajib diizinkan untuk memulai tryout.');
-        setPendingTryout(null);
-        const fallback = returnToRef.current ?? `/app/ujian/tryout/detail/${pendingTryout.slug}`;
-        navigate(fallback);
-        return;
-      }
-    }
-    setFullscreenGateOpen(false);
-    skipCountdownRef.current = false;
-    setCountdownToken((prev) => prev + 1);
-    setCountdownOpen(true);
-  }, [fullscreenSupported, navigate, pendingTryout, requestFullscreen]);
 
   const handleJumpToQuestion = useCallback((index: number) => {
     setCurrentQuestionIndex(index);
@@ -596,6 +562,7 @@ export function ExamTryoutPage() {
         submitPending={submitMutation.isPending}
         finishLabel="Akhiri Tryout"
         cancelLabel="Batalkan"
+        showCancel={false}
       >
         {currentQuestion ? (
           <ExamQuestionPanel
@@ -641,35 +608,29 @@ export function ExamTryoutPage() {
     <ExamCountdownModal
       open={countdownOpen}
       resetKey={countdownToken}
-      title="Mulai Tryout"
-      subtitle="Setelah hitung mundur selesai, tryout dimulai dalam mode layar penuh."
+      kind="tryout"
+      eyebrow="Persiapan Simulasi CAT"
+      title={pendingTryout?.name ?? 'Tryout segera dimulai.'}
+      subtitle={
+        pendingTryout
+          ? `${pendingTryout.subCategory.category.name} • ${pendingTryout.totalQuestions} soal • ${pendingTryout.durationMinutes} menit`
+          : 'Setelah hitung mundur selesai, tryout dimulai dalam mode layar penuh.'
+      }
       warning={
         examBlockEnabled
           ? 'Ujian Akan Di Blokir Saat Anda Meninggalkan Halaman Ujian - Harap Tetap berada di Halaman Ujian Ini dan Kerjakan seluruh soal sampai selesai'
           : null
       }
-      onComplete={handleCountdownComplete}
+      onComplete={() => {
+        void handleCountdownComplete();
+      }}
       onCancel={handleCountdownCancel}
     />
-      {fullscreenGateOpen && (
-        <ExamFullscreenGateModal
-          open={fullscreenGateOpen}
-          eyebrow="Persiapan Tryout"
-          loading={startMutation.isPending}
-          onConfirm={handleFullscreenGate}
-          onCancel={() => {
-            const fallback = returnToRef.current ?? '/app/ujian/tryout';
-            setFullscreenGateOpen(false);
-            setPendingTryout(null);
-            navigate(fallback);
-          }}
-        />
-      )}
       <ConfirmFinishModal
         open={finishConfirmOpen}
-        title="Akhiri tryout sekarang?"
-        description="Soal yang belum dijawab akan dianggap salah. Pastikan kamu yakin sebelum menyelesaikan sesi ini."
-        confirmText="Ya, akhiri sekarang"
+        title="Kumpulkan jawaban?"
+        description="Jawaban yang sudah dipilih akan dikumpulkan. Soal yang belum dijawab akan dianggap salah."
+        confirmText="Ya, selesai"
         cancelText="Lanjutkan tryout"
         loading={submitMutation.isPending}
         onConfirm={handleConfirmFinish}

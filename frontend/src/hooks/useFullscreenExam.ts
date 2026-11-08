@@ -38,6 +38,20 @@ function supportsFullscreenApi(): boolean {
   return !isIosDevice;
 }
 
+export async function enterExamFullscreen(): Promise<boolean> {
+  if (!supportsFullscreenApi()) return false;
+  if (isDocumentFullscreen()) return true;
+  try {
+    await requestElementFullscreen(document.documentElement as HTMLElementWithWebkit);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 50);
+    });
+    return isDocumentFullscreen();
+  } catch {
+    return false;
+  }
+}
+
 async function requestElementFullscreen(element: HTMLElementWithWebkit): Promise<void> {
   if (element.requestFullscreen) {
     await element.requestFullscreen();

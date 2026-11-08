@@ -27,8 +27,10 @@ func GetActive(db *gorm.DB, userID string) (*models.Transaction, error) {
 
 func IsPremium(db *gorm.DB, userID string) bool {
 	var n int64
-	ActiveWhere(db).Joins(`JOIN "MembershipPackage" p ON p.id = "Transaction"."packageId"`).
-		Where(`"Transaction"."userId" = ? AND p."accessAllPackages" = true`, userID).Count(&n)
+	ActiveWhere(db.Model(&models.Transaction{})).
+		Joins(`JOIN "MembershipPackage" p ON p.id = "Transaction"."packageId"`).
+		Where(`"Transaction"."userId" = ? AND p."accessAllPackages" = true`, userID).
+		Count(&n)
 	return n > 0
 }
 

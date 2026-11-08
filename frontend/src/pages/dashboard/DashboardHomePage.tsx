@@ -20,6 +20,8 @@ import {
   greetingForHour,
   lastSevenDays,
 } from '@/lib/memberHome';
+import { useMemberChrome } from '@/hooks/useMemberChrome';
+import { getAssetUrl } from '@/lib/media';
 
 const skillTiles = [
   {
@@ -52,12 +54,24 @@ const skillTiles = [
   },
 ] as const;
 
+const TILE_TONES = ['bg-violet-100 text-violet-600', 'bg-rose-100 text-rose-600', 'bg-emerald-100 text-emerald-600', 'bg-amber-100 text-amber-600'];
+
+function iconForTile(to: string) {
+  if (to.includes('latihan-soal')) return BookOpen;
+  if (to.includes('kecermatan')) return Eye;
+  if (to.includes('materi')) return FolderOpen;
+  if (to.includes('tryout')) return ClipboardList;
+  return BookOpen;
+}
+
 export function DashboardHomePage() {
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-overview'],
     queryFn: () => apiGet<DashboardOverview>('/dashboard/overview'),
   });
   const membership = useMembershipStatus();
+  const chrome = useMemberChrome();
+  const memberCopy = chrome.data?.member;
   const { user } = useAuth();
   const [pillarOpen, setPillarOpen] = useState(false);
 
@@ -66,7 +80,13 @@ export function DashboardHomePage() {
   }
 
   const firstName = firstNameOf(user?.name);
-  const greeting = greetingForHour();
+  const greeting = greetingForHour(new Date().getHours(), {
+    morning: memberCopy?.greetingMorning,
+    afternoon: memberCopy?.greetingAfternoon,
+    evening: memberCopy?.greetingEvening,
+    night: memberCopy?.greetingNight,
+  });
+  const tiles = memberCopy?.skillTiles?.length ? memberCopy.skillTiles : skillTiles;
   const isActive = Boolean(membership.data?.isActive ?? user?.membership?.isActive);
   const packageName = membership.data?.packageName ?? user?.membership?.packageName ?? 'Member';
   const latest = data.tryoutResults[0];
@@ -80,7 +100,7 @@ export function DashboardHomePage() {
       : 0;
   const pillars = pillarScores(data.tryoutResults);
   const ctaHref = !isActive ? '/app/paket-membership' : latest ? `/app/latihan/tryout/review/${latest.id}` : '/app/latihan/tryout';
-  const ctaLabel = !isActive ? 'Aktifkan Membership' : latest ? 'Lanjut Belajar' : 'Mulai Tryout';
+  const ctaLabel = !isActive ? memberCopy?.ctaInactive || 'Aktifkan Membership' : latest ? memberCopy?.ctaReview || 'Lanjut Belajar' : memberCopy?.ctaStart || 'Mulai Tryout';
 
   return (
     <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
@@ -89,7 +109,7 @@ export function DashboardHomePage() {
           <HeroBooks />
           <div className="relative z-10 max-w-[min(24rem,calc(100%-8.5rem))] space-y-3 sm:max-w-sm">
             <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold text-slate-700 shadow-sm dark:bg-white/10 dark:text-ink-50">
-              {isActive ? packageName : 'Membership belum aktif'}
+              {isActive ? packageName : memberCopy?.inactiveBadge || 'Membership belum aktif'}
             </span>
             <h2 className="text-2xl font-extrabold leading-snug tracking-tight text-slate-900 sm:text-3xl dark:text-ink-50">
               {greeting},
@@ -97,9 +117,7 @@ export function DashboardHomePage() {
               <span className="text-member-600">{firstName}!</span> 👋
             </h2>
             <p className="text-xs font-medium text-slate-600 sm:text-sm dark:text-ink-200">
-              Satu sesi lagi lebih dekat
-              <br />
-              ke kelulusan kamu.
+              {memberCopy?.subtitle || 'Satu sesi lagi lebih dekat ke kelulusan kamu.'}
             </p>
             <div className="flex w-full flex-col gap-2 sm:w-56">
               <Link
@@ -114,7 +132,7 @@ export function DashboardHomePage() {
                   to="/app/konfirmasi-pembayaran"
                   className="inline-flex w-full items-center justify-center rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 dark:border-amber-400/40 dark:bg-ink-900 dark:text-amber-100"
                 >
-                  Konfirmasi Pembayaran
+                  {memberCopy?.ctaPayment || 'Konfirmasi Pembayaran'}
                 </Link>
               ) : null}
             </div>
@@ -138,7 +156,7 @@ export function DashboardHomePage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">Lanjut Belajar</h3>
+            <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">{memberCopy?.continueTitle || 'Lanjut Belajar'}</h3>
             <Link to="/app/latihan/tryout" className="text-xs font-bold text-member-600 hover:text-member-700">
               See All
             </Link>
@@ -181,17 +199,39 @@ export function DashboardHomePage() {
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">Build Your Skills</h3>
+          {data.slides?.length ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {data.slides.map((slide) => {
+                const card = (
+                  <article className="member-card overflow-hidden">
+                    <img src={getAssetUrl(slide.imageUrl)} alt="" className="aspect-[16/8] w-full object-cover" />
+                    <div className="space-y-1 p-4">
+                      {slide.title ? <h3 className="text-sm font-extrabold text-slate-800 dark:text-ink-50">{slide.title}</h3> : null}
+                      {slide.subtitle ? <p className="text-xs font-semibold text-slate-400">{slide.subtitle}</p> : null}
+                      {slide.ctaLabel ? <p className="text-xs font-bold text-member-600">{slide.ctaLabel}</p> : null}
+                    </div>
+                  </article>
+                );
+                if (!slide.ctaLink) return <div key={slide.id}>{card}</div>;
+                if (slide.ctaLink.startsWith('http')) {
+                  return <a key={slide.id} href={slide.ctaLink} target="_blank" rel="noreferrer">{card}</a>;
+                }
+                return <Link key={slide.id} to={slide.ctaLink}>{card}</Link>;
+              })}
+            </div>
+          ) : null}
+
+          <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">{memberCopy?.skillsTitle || 'Build Your Skills'}</h3>
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-            {skillTiles.map((tile) => {
-              const Icon = tile.icon;
+            {tiles.map((tile, index) => {
+              const Icon = iconForTile(tile.to);
               return (
                 <Link
-                  key={tile.to}
+                  key={`${tile.to}-${tile.label}`}
                   to={tile.to}
                   className="member-card group flex flex-col justify-between p-3.5 transition hover:shadow-md"
                 >
-                  <span className={cn('mb-3 flex h-10 w-10 items-center justify-center rounded-xl transition group-hover:scale-105', tile.tone)}>
+                  <span className={cn('mb-3 flex h-10 w-10 items-center justify-center rounded-xl transition group-hover:scale-105', TILE_TONES[index % TILE_TONES.length])}>
                     <Icon className="h-5 w-5" strokeWidth={2.2} />
                   </span>
                   <p className="text-sm font-bold text-slate-800 dark:text-ink-50">{tile.label}</p>
@@ -210,8 +250,8 @@ export function DashboardHomePage() {
           onClick={() => setPillarOpen(true)}
           className="member-card flex w-full flex-col p-5 text-left transition hover:shadow-md"
         >
-          <h4 className="text-sm font-extrabold text-slate-800 dark:text-ink-50">4 Pilar</h4>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-400">Rata-rata skor tryout tiap pilar. Klik untuk detail.</p>
+          <h4 className="text-sm font-extrabold text-slate-800 dark:text-ink-50">{memberCopy?.pillarTitle || '4 Pilar'}</h4>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-400">{memberCopy?.pillarDescription || 'Rata-rata skor tryout tiap pilar. Klik untuk detail.'}</p>
           <PillarRadar scores={pillars} />
         </button>
         <PillarDetailModal open={pillarOpen} onOpenChange={setPillarOpen} pillars={pillars} />

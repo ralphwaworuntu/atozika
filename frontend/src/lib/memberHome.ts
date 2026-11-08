@@ -2,11 +2,14 @@ import { dashboardMenu } from '@/constants/navigation';
 
 export const memberSearchItems = dashboardMenu.flatMap((section) => section.items);
 
-export function greetingForHour(hour = new Date().getHours()) {
-  if (hour < 11) return 'Selamat Pagi';
-  if (hour < 15) return 'Selamat Siang';
-  if (hour < 18) return 'Selamat Sore';
-  return 'Selamat Malam';
+export function greetingForHour(
+  hour = new Date().getHours(),
+  labels?: { morning?: string; afternoon?: string; evening?: string; night?: string },
+) {
+  if (hour < 11) return labels?.morning || 'Selamat Pagi';
+  if (hour < 15) return labels?.afternoon || 'Selamat Siang';
+  if (hour < 18) return labels?.evening || 'Selamat Sore';
+  return labels?.night || 'Selamat Malam';
 }
 
 export function firstNameOf(name?: string | null) {

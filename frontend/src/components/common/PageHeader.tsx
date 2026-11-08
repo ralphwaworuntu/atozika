@@ -29,7 +29,15 @@ export function PageHeader({
     >
       <div className="min-w-0 flex-1">
         {eyebrow && <p className="eyebrow-label">{eyebrow}</p>}
-        <h1 className={cn('type-h1 text-slate-900 dark:text-ink-50', eyebrow && 'mt-2')}>{title}</h1>
+        <h1
+          className={cn(
+            'text-slate-900 dark:text-ink-50',
+            variant === 'panel' ? 'text-xl font-extrabold tracking-tight sm:text-2xl' : 'type-h1',
+            eyebrow && 'mt-2',
+          )}
+        >
+          {title}
+        </h1>
         {description && (
           <p className="type-body mt-2 max-w-2xl text-slate-600 dark:text-ink-200">{description}</p>
         )}

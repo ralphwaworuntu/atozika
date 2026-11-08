@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CermatIcon } from '@/components/dashboard/CermatIcon';
 import { BrandMark } from '@/components/common/BrandMark';
@@ -21,6 +22,7 @@ type CermatExamOverlayProps = {
   allAnswered: boolean;
   modeLabels: Record<CermatMode, { reference: string; prompt: string; button: string }>;
   breakSecondsLeft?: number | null;
+  breakSecondsTotal?: number | null;
   nextSessionIndex?: number | null;
   isBreaking?: boolean;
   onAnswer: (value?: string | null) => void;
@@ -213,7 +215,7 @@ function ImageExamContent({
   currentIndex,
   timeLeft,
   answeredCount,
-  totalQuestions,
+  totalQuestions: _totalQuestions,
   baseSet,
   sequence,
   questionOrder,
@@ -407,29 +409,103 @@ function TextExamContent({
 }
 
 function SessionBreakPanel({
+  mode,
   nextSessionIndex,
   totalSessions,
   secondsLeft,
+  totalSeconds,
   onContinue,
 }: {
+  mode: CermatMode;
   nextSessionIndex: number;
   totalSessions: number;
   secondsLeft: number;
+  totalSeconds: number;
   onContinue: () => void;
 }) {
+  const safeTotalSeconds = Math.max(1, totalSeconds);
+  const radius = 63;
+  const circumference = 2 * Math.PI * radius;
+  const countdownProgress = Math.min(1, Math.max(0, secondsLeft / safeTotalSeconds));
+  const completedSessions = Math.max(0, nextSessionIndex - 1);
+  const sessionProgress = Math.min(100, (completedSessions / Math.max(1, totalSessions)) * 100);
+
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center gap-5 rounded-3xl border border-slate-100 bg-white px-6 py-10 text-center shadow-sm sm:px-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-brand-500">Jeda Antar Sesi</p>
-      <h2 className="text-2xl font-extrabold text-slate-900">Sesi {nextSessionIndex} siap</h2>
-      <p className="text-sm text-slate-500">
-        Tetap di halaman tes. Bersiap untuk sesi {nextSessionIndex} dari {totalSessions}.
-      </p>
-      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-brand-50 to-brand-100 text-5xl font-bold text-brand-700 ring-8 ring-brand-100/80">
-        {secondsLeft}
-      </div>
-      <Button type="button" className="min-w-[10rem] bg-brand-600 hover:bg-brand-500" onClick={onContinue}>
-        Mulai Sesi {nextSessionIndex}
-      </Button>
+    <div className="relative mx-auto grid w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 bg-[#0a1424] text-white shadow-[0_30px_90px_rgba(0,0,0,0.48)] sm:rounded-[32px] lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
+      <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-emerald-400/15 blur-3xl" />
+
+      <section className="relative px-5 pb-5 pt-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+        <BrandMark variant="icon" size="sm" tone="ink" className="mb-6" />
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-emerald-200">
+          <Check className="h-3.5 w-3.5" />
+          Sesi {completedSessions} selesai
+        </span>
+        <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+          Tarik napas.
+          <br />
+          <span className="text-emerald-300">Sesi {nextSessionIndex}</span> segera dimulai.
+        </h2>
+        <p className="mt-3 max-w-lg text-sm font-medium leading-relaxed text-slate-300">
+          Gunakan jeda singkat ini untuk kembali fokus. Tetap berada di layar penuh sampai seluruh rangkaian tes selesai.
+        </p>
+
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Progres rangkaian</p>
+              <p className="mt-1 truncate text-sm font-extrabold text-white">{CERMAT_MODE_LABELS[mode]}</p>
+            </div>
+            <p className="shrink-0 text-sm font-extrabold tabular-nums text-emerald-300">
+              {completedSessions}/{totalSessions} sesi
+            </p>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-[width] duration-500"
+              style={{ width: `${sessionProgress}%` }}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="relative flex flex-col items-center justify-center border-t border-white/10 bg-white/[0.025] px-5 py-6 sm:px-8 sm:py-8 lg:border-l lg:border-t-0">
+        <p className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.22em] text-emerald-300">
+          <Sparkles className="h-3.5 w-3.5" />
+          Jeda antar sesi
+        </p>
+        <div className="relative mt-3 flex h-44 w-44 items-center justify-center sm:h-48 sm:w-48">
+          <div aria-hidden="true" className="absolute inset-6 rounded-full bg-emerald-400/15 blur-2xl" />
+          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 160 160" aria-hidden="true">
+            <circle cx="80" cy="80" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+            <circle
+              cx="80"
+              cy="80"
+              r={radius}
+              fill="none"
+              stroke="#34d399"
+              strokeWidth="7"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - countdownProgress)}
+              className="transition-[stroke-dashoffset] duration-700 ease-linear"
+            />
+          </svg>
+          <div className="relative flex h-32 w-32 flex-col items-center justify-center rounded-full border border-white/10 bg-[#0d1929]">
+            <span className="text-6xl font-extrabold leading-none tracking-tight tabular-nums">{secondsLeft}</span>
+            <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">detik</span>
+          </div>
+        </div>
+        <p className="mt-3 text-center text-[11px] font-medium text-slate-400">
+          Sesi berikutnya dimulai otomatis saat waktu habis.
+        </p>
+        <Button
+          type="button"
+          className="mt-5 h-10 w-full max-w-xs rounded-full bg-emerald-500 text-xs font-extrabold text-emerald-950 hover:bg-emerald-400"
+          onClick={onContinue}
+        >
+          Mulai Sesi {nextSessionIndex} Sekarang <ArrowRight className="ml-1 h-4 w-4" />
+        </Button>
+      </section>
     </div>
   );
 }
@@ -449,6 +525,7 @@ export function CermatExamOverlay({
   allAnswered,
   modeLabels,
   breakSecondsLeft = null,
+  breakSecondsTotal = null,
   nextSessionIndex = null,
   isBreaking = false,
   onAnswer,
@@ -463,38 +540,40 @@ export function CermatExamOverlay({
   const showBreak =
     isBreaking && typeof breakSecondsLeft === 'number' && typeof nextSessionIndex === 'number';
   const answeredCount = Object.values(answers).filter((value) => typeof value === 'string' && value.length > 0).length;
-  const headerSessionIndex = showBreak ? nextSessionIndex : sessionIndex;
-
   return createPortal(
     <div
       className={cn(
         'fixed inset-0 z-[9999] flex h-[100dvh] w-screen flex-col overflow-hidden',
-        showBreak || isImage ? 'bg-slate-50' : 'bg-[#070b12]',
+        showBreak ? 'bg-[#050b16]' : isImage ? 'bg-slate-50' : 'bg-[#070b12]',
       )}
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <CermatExamHeader
-        mode={mode}
-        sessionIndex={headerSessionIndex}
-        totalSessions={totalSessions}
-        currentIndex={currentIndex}
-        totalQuestions={totalQuestions}
-        timeLeft={showBreak ? breakSecondsLeft : timeLeft}
-      />
+      {!showBreak ? (
+        <CermatExamHeader
+          mode={mode}
+          sessionIndex={sessionIndex}
+          totalSessions={totalSessions}
+          currentIndex={currentIndex}
+          totalQuestions={totalQuestions}
+          timeLeft={timeLeft}
+        />
+      ) : null}
 
       <main
         className={cn(
           'flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 sm:py-5',
-          isImage && 'lg:flex-col lg:overflow-hidden lg:py-4',
+          isImage && !showBreak && 'lg:flex-col lg:overflow-hidden lg:py-4',
           !isImage && !showBreak && 'text-white',
-          showBreak && 'items-center justify-center',
+          showBreak && 'items-center justify-center sm:py-6',
         )}
       >
         {showBreak ? (
           <SessionBreakPanel
+            mode={mode}
             nextSessionIndex={nextSessionIndex}
             totalSessions={totalSessions}
             secondsLeft={breakSecondsLeft}
+            totalSeconds={breakSecondsTotal ?? Math.max(1, breakSecondsLeft)}
             onContinue={() => onContinueBreak?.()}
           />
         ) : (

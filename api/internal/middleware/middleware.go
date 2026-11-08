@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -49,30 +50,28 @@ func Auth(db *gorm.DB, cfg config.Config) fiber.Handler {
 		}
 		raw := strings.TrimPrefix(header, "Bearer ")
 		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(raw, claims, func(t *jwt.Token) (any, error) {
-			return []byte(cfg.JWTAccessSecret), nil
-		})
-		if err != nil || !token.Valid {
+		token, err := jwt.ParseWithClaims(raw, claims, HMACSecret(cfg.JWTAccessSecret))
+		if err != nil || !token.Valid || claims.Subject == "" {
 			return httpx.New(401, "Invalid or expired token")
 		}
 		var account models.User
-		if err := db.Select(`id, "isActive", "sessionVersion"`).First(&account, "id = ?", claims.Subject).Error; err != nil {
+		if err := db.Select(`id, email, role, name, "referralCode", "isActive", "isEmailVerified", "sessionVersion"`).First(&account, "id = ?", claims.Subject).Error; err != nil {
 			return httpx.New(403, "Akun Anda dinonaktifkan atau tidak ditemukan.")
 		}
-		if !account.IsActive {
+		if !account.IsActive || !account.IsEmailVerified {
 			return httpx.New(403, "Akun Anda dinonaktifkan atau tidak ditemukan.")
 		}
-		if claims.SessionVersion != account.SessionVersion && !membership.IsPremium(db, claims.Subject) {
-			return httpx.New(401, "Sesi Anda telah berakhir karena login di perangkat lain.")
+		if claims.SessionVersion != account.SessionVersion {
+			return httpx.New(401, "Sesi Anda telah berakhir. Silakan masuk lagi.")
 		}
 		c.Locals("user", &UserCtx{
-			ID:              claims.Subject,
-			Email:           claims.Email,
-			Role:            claims.Role,
-			Name:            claims.Name,
-			ReferralCode:    claims.ReferralCode,
-			IsEmailVerified: claims.IsEmailVerified,
-			SessionVersion:  claims.SessionVersion,
+			ID:              account.ID,
+			Email:           account.Email,
+			Role:            account.Role,
+			Name:            account.Name,
+			ReferralCode:    account.ReferralCode,
+			IsEmailVerified: account.IsEmailVerified,
+			SessionVersion:  account.SessionVersion,
 		})
 		return c.Next()
 	}
@@ -113,13 +112,22 @@ func AuthRateLimit(rdb *redis.Client) fiber.Handler {
 		if n == 1 {
 			_ = rdb.Expire(ctx, key, 15*time.Minute).Err()
 		}
-		if n > 30 {
+		if n > 10 {
 			return c.Status(429).JSON(fiber.Map{
 				"status":  "error",
 				"message": "Too many requests, please try again later.",
 			})
 		}
 		return c.Next()
+	}
+}
+
+func HMACSecret(secret string) jwt.Keyfunc {
+	return func(t *jwt.Token) (any, error) {
+		if t.Method != jwt.SigningMethodHS256 {
+			return nil, fmt.Errorf("unexpected signing method")
+		}
+		return []byte(secret), nil
 	}
 }
 

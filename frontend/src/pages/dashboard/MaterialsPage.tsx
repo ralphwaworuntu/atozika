@@ -8,23 +8,16 @@ import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { MembershipRequired } from '@/components/dashboard/MembershipRequired';
 import { cn } from '@/utils/cn';
 import { MATERIAL_TYPE_LABELS } from '@/constants/materials';
-import { LEARNING_TOPICS, topicByName } from '@/constants/learningCatalog';
+import { useLearningTopics } from '@/hooks/useMemberChrome';
 import { FilterPills, LearningPageHeader, type LearningLayout } from '@/components/dashboard/member/LearningPageHeader';
-
-const FILTERS = ['Semua', ...LEARNING_TOPICS.map((topic) => topic.name)] as const;
-
-const EXAMPLE_LATEST = [
-  { title: 'Pancasila dan UUD 1945', meta: 'TWK • 12 halaman', topic: 'TWK' },
-  { title: 'Deret Angka', meta: 'TIU • 8 halaman', topic: 'TIU' },
-  { title: 'Manajemen Waktu', meta: 'TKP • 10 halaman', topic: 'TKP' },
-  { title: 'Psikotes Gambar', meta: 'Kecermatan • 6 halaman', topic: 'Tes Kecermatan' },
-];
 
 export function MaterialsPage() {
   const membership = useMembershipStatus();
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState<LearningLayout>('grid');
   const [filter, setFilter] = useState<string>('Semua');
+  const { topics, topicByName } = useLearningTopics();
+  const filters = ['Semua', ...topics.map((topic) => topic.name)];
   const [showAll, setShowAll] = useState(false);
   const categorySectionRef = useRef<HTMLElement>(null);
   const latestSectionRef = useRef<HTMLElement>(null);
@@ -39,13 +32,13 @@ export function MaterialsPage() {
 
   const categoryCards = useMemo(
     () =>
-      LEARNING_TOPICS.filter((topic) => (filter === 'Semua' || topic.name === filter) && (!term || topic.name.toLowerCase().includes(term))).map(
+      topics.filter((topic) => (filter === 'Semua' || topic.name === filter) && (!term || topic.name.toLowerCase().includes(term))).map(
         (topic) => {
           const realCount = (materials ?? []).filter((item) => topicByName(item.category)?.key === topic.key).length;
           return { topic, count: realCount || topic.material.count };
         },
       ),
-    [filter, materials, term],
+    [filter, materials, term, topicByName, topics],
   );
 
   const latest = useMemo(() => {
@@ -59,17 +52,8 @@ export function MaterialsPage() {
         icon: topicByName(item.category)?.icon ?? '/illustrations/icon-twk.jpg',
         href: item.fileUrl as string | undefined,
       }));
-    if (real.length) return real;
-    return EXAMPLE_LATEST.filter((item) => filter === 'Semua' || item.topic === filter)
-      .filter((item) => !term || item.title.toLowerCase().includes(term))
-      .map((item) => ({
-        key: item.title,
-        title: item.title,
-        meta: item.meta,
-        icon: topicByName(item.topic)?.icon ?? LEARNING_TOPICS[0].icon,
-        href: undefined as string | undefined,
-      }));
-  }, [filter, materials, term]);
+    return real;
+  }, [filter, materials, term, topicByName]);
 
   if (membership.isLoading) {
     return <Skeleton className="h-72" />;
@@ -93,7 +77,7 @@ export function MaterialsPage() {
         onLayoutChange={setLayout}
       />
 
-      <FilterPills items={FILTERS} value={filter} onChange={setFilter} />
+      <FilterPills items={filters} value={filter} onChange={setFilter} />
 
       <section className="flex flex-col items-start gap-4 rounded-2xl border border-amber-100 bg-gradient-to-r from-[#FFF3E2] via-[#FDEBD5] to-[#FBE4C8] p-4 sm:flex-row sm:items-center dark:border-amber-500/20 dark:from-amber-950/40 dark:via-ink-800 dark:to-amber-950/30">
         <img src="/covers/cover-study.jpg" alt="" className="h-20 w-36 shrink-0 rounded-xl object-cover mix-blend-multiply dark:mix-blend-normal" />
@@ -128,10 +112,10 @@ export function MaterialsPage() {
                 className={cn('rounded-2xl border border-slate-100 bg-gradient-to-br p-3 dark:border-white/10 dark:from-white/5 dark:to-white/5', topic.tint)}
               >
                 <div className="flex items-center gap-3">
-                  <img src={topic.icon} alt="" className="h-12 w-12 shrink-0 rounded-full object-contain mix-blend-multiply" />
+                  <img src={topic.icon} alt="" className="h-11 w-11 shrink-0 rounded-xl bg-white/70 object-cover" />
                   <div className="min-w-0">
-                    <h3 className="truncate text-sm font-extrabold text-slate-900 dark:text-ink-50">{topic.name}</h3>
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-ink-200">{count} materi</p>
+                    <h3 className="truncate text-sm font-extrabold leading-tight text-slate-900 dark:text-ink-50">{topic.name}</h3>
+                    <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-ink-200">{count} materi</p>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2">

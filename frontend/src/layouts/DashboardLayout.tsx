@@ -1,4 +1,5 @@
-import { Outlet } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
 import { getAssetUrl } from '@/lib/media';
@@ -13,6 +14,8 @@ type MemberBackgroundConfig = {
 };
 
 export function DashboardLayout() {
+  const { pathname, hash } = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
   const { data: background } = useQuery({
     queryKey: ['member-background'],
     queryFn: () => apiGet<MemberBackgroundConfig>('/dashboard/member-background'),
@@ -28,13 +31,19 @@ export function DashboardLayout() {
       }
     : undefined;
 
+  useEffect(() => {
+    if (hash) return;
+    mainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname, hash]);
+
   return (
     <div className="member-shell flex h-[100dvh] overflow-hidden font-member" style={backgroundStyle}>
       <DashboardSidebar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <DashboardTopbar />
         <WelcomeModal />
-        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-5 lg:px-6 lg:pb-6">
+        <main ref={mainRef} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-5 lg:px-6 lg:pb-6">
           <div className="mx-auto w-full max-w-6xl min-w-0 xl:max-w-none">
             <Outlet />
           </div>

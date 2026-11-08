@@ -36,6 +36,7 @@ export type HomeContent = {
   testimonials: Array<{ id: string; name: string; message: string; role?: string }>;
   videos: Array<{ id: string; title: string; embedUrl: string; description?: string | null }>;
   contact: ContactConfig;
+  copy?: import('@/types/siteContent').HomeCopy;
 };
 
 export type ProfileContent = {

@@ -61,6 +61,12 @@ import { ReferralPage } from '@/pages/dashboard/ReferralPage';
 import { PaymentConfirmationPage } from '@/pages/dashboard/PaymentConfirmationPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminLandingPage } from '@/pages/admin/AdminLandingPage';
+import { AdminBerandaPage } from '@/pages/admin/AdminBerandaPage';
+import { AdminProfileContentPage } from '@/pages/admin/AdminProfileContentPage';
+import { AdminFaqPage } from '@/pages/admin/AdminFaqPage';
+import { AdminMemberContentPage } from '@/pages/admin/AdminMemberContentPage';
+import { AdminNewsPage } from '@/pages/admin/AdminNewsPage';
+import { AdminReferralsPage } from '@/pages/admin/AdminReferralsPage';
 import { AdminAnnouncementsPage } from '@/pages/admin/AdminAnnouncementsPage';
 import { AdminTryoutsPage } from '@/pages/admin/AdminTryoutsPage';
 import { AdminPracticePage } from '@/pages/admin/AdminPracticePage';
@@ -151,6 +157,12 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
           <Route path="landing" element={<AdminLandingPage />} />
+          <Route path="beranda" element={<AdminBerandaPage />} />
+          <Route path="profil" element={<AdminProfileContentPage />} />
+          <Route path="faq" element={<AdminFaqPage />} />
+          <Route path="tampilan" element={<AdminMemberContentPage />} />
+          <Route path="news" element={<AdminNewsPage />} />
+          <Route path="referrals" element={<AdminReferralsPage />} />
           <Route path="announcements" element={<AdminAnnouncementsPage />} />
           <Route path="exam-control" element={<AdminExamControlPage />} />
           <Route path="tryouts" element={<AdminTryoutsPage />} />

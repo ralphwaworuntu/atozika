@@ -27,6 +27,9 @@ type Handler struct {
 	Upload string
 }
 
+// dummyPasswordHash keeps login time similar when the email does not exist.
+const dummyPasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+
 type registerBody struct {
 	Name            string `json:"name"`
 	Email           string `json:"email"`
@@ -94,11 +97,14 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 			})
 		}
 	}
-	return httpx.Created(c, fiber.Map{
-		"email":             user.Email,
-		"verificationToken": token,
-		"message":           "Registrasi berhasil. Silakan verifikasi email Anda terlebih dahulu.",
-	})
+	payload := fiber.Map{
+		"email":   user.Email,
+		"message": "Registrasi berhasil. Silakan verifikasi email Anda terlebih dahulu.",
+	}
+	if h.Cfg.NodeEnv != "production" {
+		payload["verificationToken"] = token
+	}
+	return httpx.Created(c, payload)
 }
 
 func (h *Handler) Login(c *fiber.Ctx) error {
@@ -111,6 +117,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 	var user models.User
 	if err := h.DB.Where("email = ?", strings.ToLower(body.Email)).First(&user).Error; err != nil {
+		bcrypt.CompareHashAndPassword([]byte(dummyPasswordHash), []byte(body.Password))
 		return httpx.New(401, "Invalid credentials")
 	}
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(body.Password)) != nil {
@@ -163,15 +170,22 @@ func (h *Handler) Resend(c *fiber.Ctx) error {
 		return httpx.New(400, "Invalid body")
 	}
 	var user models.User
-	if err := h.DB.Where("email = ?", strings.ToLower(body.Email)).First(&user).Error; err != nil {
-		return httpx.New(404, "User not found")
-	}
-	if user.IsEmailVerified {
+	if err := h.DB.Where("email = ?", strings.ToLower(body.Email)).First(&user).Error; err != nil || user.IsEmailVerified {
+		if h.Cfg.NodeEnv == "production" {
+			return httpx.Success(c, fiber.Map{"message": "Jika email terdaftar dan belum diverifikasi, instruksi baru akan dikirim."})
+		}
+		if err != nil {
+			return httpx.New(404, "User not found")
+		}
 		return httpx.New(400, "Email sudah diverifikasi")
 	}
 	token := randomToken(40)
 	h.DB.Model(&user).Updates(map[string]any{"emailVerificationToken": token, "updatedAt": time.Now()})
-	return httpx.Success(c, fiber.Map{"email": user.Email, "verificationToken": token})
+	payload := fiber.Map{"email": user.Email, "message": "Token verifikasi diperbarui."}
+	if h.Cfg.NodeEnv != "production" {
+		payload["verificationToken"] = token
+	}
+	return httpx.Success(c, payload)
 }
 
 func (h *Handler) Refresh(c *fiber.Ctx) error {
@@ -182,10 +196,12 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 		return httpx.New(400, "Invalid body")
 	}
 	claims := &middleware.Claims{}
-	token, err := jwt.ParseWithClaims(body.RefreshToken, claims, func(t *jwt.Token) (any, error) {
-		return []byte(h.Cfg.JWTRefreshSecret), nil
-	})
-	if err != nil || !token.Valid {
+	token, err := jwt.ParseWithClaims(body.RefreshToken, claims, middleware.HMACSecret(h.Cfg.JWTRefreshSecret))
+	if err != nil || !token.Valid || claims.Subject == "" {
+		return httpx.New(401, "Invalid refresh token")
+	}
+	var account models.User
+	if err := h.DB.Select(`id, "isActive", "sessionVersion"`).First(&account, "id = ?", claims.Subject).Error; err != nil || !account.IsActive || claims.SessionVersion != account.SessionVersion {
 		return httpx.New(401, "Invalid refresh token")
 	}
 	var tokens []models.RefreshToken
@@ -539,6 +555,13 @@ func intPtr(n int) *int {
 }
 
 func IssueImpersonation(db *gorm.DB, cfg config.Config, userID string) (fiber.Map, error) {
+	var user models.User
+	if err := db.Select(`id, role, "isActive"`).First(&user, "id = ?", userID).Error; err != nil {
+		return nil, httpx.New(404, "User tidak ditemukan")
+	}
+	if user.Role == "ADMIN" || !user.IsActive {
+		return nil, httpx.New(403, "Akun admin tidak dapat ditiru.")
+	}
 	h := &Handler{DB: db, Cfg: cfg}
 	return h.createSession(userID, false)
 }

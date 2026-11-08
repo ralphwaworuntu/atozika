@@ -104,38 +104,6 @@ const landingSections: LandingResourceConfig[] = [
       { name: 'description', label: 'Deskripsi', type: 'textarea' },
     ],
   },
-  {
-    key: 'faqs',
-    title: 'FAQ',
-    endpoint: 'faq',
-    primaryField: 'question',
-    fields: [
-      { name: 'question', label: 'Pertanyaan' },
-      { name: 'answer', label: 'Jawaban', type: 'textarea' },
-      { name: 'order', label: 'Urutan', type: 'number', defaultValue: 0 },
-    ],
-  },
-  {
-    key: 'news',
-    title: 'Artikel / Berita',
-    endpoint: 'news',
-    primaryField: 'title',
-    secondaryField: 'slug',
-    fields: [
-      { name: 'title', label: 'Judul' },
-      { name: 'slug', label: 'Slug' },
-      { name: 'excerpt', label: 'Ringkasan', type: 'textarea' },
-      { name: 'content', label: 'Konten', type: 'textarea' },
-      { name: 'kind', label: 'Tipe (NEWS/INSIGHT)', placeholder: 'NEWS', defaultValue: 'NEWS' },
-    ],
-    uploadField: {
-      name: 'coverImage',
-      label: 'Cover Artikel (Opsional)',
-      previewKey: 'coverUrl',
-      helper: 'JPG/PNG/WEBP maksimal 4MB. Kosongkan jika tanpa cover.',
-      accept: 'image/*',
-    },
-  },
 ];
 
 export function AdminLandingPage() {
@@ -318,7 +286,7 @@ export function AdminLandingPage() {
         variant="panel"
         eyebrow="Admin"
         title="Konten Landing Page"
-        description="Kelola kontak, hero, galeri, FAQ, dan konten publik yang tampil di situs."
+        description="Kelola kontak, slider, galeri, testimoni, video, dan latar member. Teks beranda ada di menu Beranda."
       />
       <Card>
         <CardContent className="space-y-4 p-6">

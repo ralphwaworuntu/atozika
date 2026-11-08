@@ -4,49 +4,64 @@ import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
+  Activity,
   BarChart3,
   BookOpen,
   Calculator,
   ClipboardList,
+  CreditCard,
+  Eye,
+  FileText,
   FolderOpen,
+  History,
   LayoutDashboard,
+  Building2,
+  HelpCircle,
+  LayoutTemplate,
   Mail,
+  Palette,
+  PanelsTopLeft,
   Megaphone,
-  Package,
+  Newspaper,
   ShieldCheck,
   Trophy,
   UserCog,
   Users,
-  LayoutTemplate,
   BadgeCheck,
-  FileText,
-  Eye,
 } from 'lucide-react';
 import { adminMenu } from '@/constants/navigation';
-import { BrandMark } from '@/components/common/BrandMark';
+import { AtozikaMascot } from '@/components/dashboard/member/AtozikaMascot';
 import { SidebarToggleButton } from '@/components/dashboard/SidebarToggleButton';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminSidebarStore } from '@/store/adminSidebar';
+import { parseNameInitials } from '@/utils/format';
 
 const menuIcons: Record<string, LucideIcon> = {
   '/admin': LayoutDashboard,
-  '/admin/landing': LayoutTemplate,
   '/admin/announcements': Megaphone,
-  '/admin/reporting': BarChart3,
-  '/admin/ranking': Trophy,
-  '/admin/contacts': Mail,
-  '/admin/exam-control': ShieldCheck,
+  '/admin/news': Newspaper,
+  '/admin/calculators': Calculator,
+  '/admin/materials': FolderOpen,
   '/admin/tryouts': ClipboardList,
-  '/admin/word-converter': FileText,
   '/admin/practice': BookOpen,
   '/admin/kecermatan': Eye,
-  '/admin/materials': FolderOpen,
-  '/admin/calculators': Calculator,
-  '/admin/commerce': Package,
+  '/admin/exam-control': ShieldCheck,
+  '/admin/word-converter': FileText,
+  '/admin/monitoring': History,
+  '/admin/reporting': BarChart3,
+  '/admin/ranking': Trophy,
+  '/admin/commerce': CreditCard,
   '/admin/activation': BadgeCheck,
-  '/admin/monitoring': Users,
+  '/admin/contacts': Mail,
+  '/admin/referrals': Users,
   '/admin/users': UserCog,
+  '/admin/system-monitoring': Activity,
+  '/admin/landing': LayoutTemplate,
+  '/admin/beranda': PanelsTopLeft,
+  '/admin/profil': Building2,
+  '/admin/faq': HelpCircle,
+  '/admin/tampilan': Palette,
 };
 
 type AdminSidebarNavLinkProps = {
@@ -66,28 +81,15 @@ function AdminSidebarNavLink({ to, label, end, onNavigate }: AdminSidebarNavLink
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          'group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all',
+          'group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition',
           isActive
-            ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+            ? 'bg-blue-100/70 font-bold text-member-600 dark:bg-blue-500/20 dark:text-blue-300'
+            : 'font-semibold text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-ink-50',
         )
       }
     >
-      {({ isActive }) => (
-        <>
-          <span
-            className={cn(
-              'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
-              isActive
-                ? 'bg-white/15 text-white'
-                : 'bg-slate-100 text-slate-500 group-hover:bg-brand-50 group-hover:text-brand-600',
-            )}
-          >
-            <Icon className="h-4 w-4" />
-          </span>
-          <span className="truncate">{label}</span>
-        </>
-      )}
+      <Icon className="h-5 w-5 shrink-0 stroke-[2]" />
+      <span className="truncate">{label}</span>
     </NavLink>
   );
 }
@@ -95,8 +97,8 @@ function AdminSidebarNavLink({ to, label, end, onNavigate }: AdminSidebarNavLink
 function AdminSidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{title}</p>
-      <div className="space-y-0.5">{children}</div>
+      <p className="mb-1.5 px-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{title}</p>
+      <div className="space-y-1">{children}</div>
     </div>
   );
 }
@@ -120,36 +122,28 @@ function AdminSidebarPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-slate-100 px-3 py-3.5 sm:px-4">
-        <div className="flex items-center gap-2">
-          <BrandMark
-            size="sm"
-            variant="compact"
-            showTagline={false}
-            framed
-            className="min-w-0 flex-1"
-          />
-          {showDesktopToggle && onToggleDesktop ? (
-            <SidebarToggleButton
-              onClick={onToggleDesktop}
-              className="hidden shrink-0 lg:inline-flex"
-              ariaLabel="Sembunyikan sidebar"
-            />
-          ) : null}
-          {showMobileToggle && onToggleMobile ? (
-            <SidebarToggleButton
-              onClick={onToggleMobile}
-              className="shrink-0 lg:hidden"
-              ariaLabel="Tutup menu"
-            />
-          ) : null}
+      <div className="relative shrink-0 px-3 pb-2 pt-4">
+        <div className="flex items-center justify-center">
+          <AtozikaMascot size="lg" />
+          <span className="sr-only">ATOZIKA Admin</span>
         </div>
-        <span className="mt-2.5 inline-flex rounded-full bg-slate-900 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-          {user?.name ?? 'Administrator'}
-        </span>
+        {showDesktopToggle && onToggleDesktop ? (
+          <SidebarToggleButton
+            onClick={onToggleDesktop}
+            className="absolute right-3 top-1/2 hidden -translate-y-1/2 border-blue-200 bg-white text-member-600 shadow-sm hover:border-member-400 hover:bg-member-50 lg:inline-flex"
+            ariaLabel="Sembunyikan sidebar"
+          />
+        ) : null}
+        {showMobileToggle && onToggleMobile ? (
+          <SidebarToggleButton
+            onClick={onToggleMobile}
+            className="absolute right-3 top-1/2 -translate-y-1/2 border-blue-200 bg-white text-member-600 lg:hidden"
+            ariaLabel="Tutup menu"
+          />
+        ) : null}
       </div>
 
-      <nav className="sidebar-nav min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
+      <nav className="sidebar-nav no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-4">
         {adminMenu.map((section) => (
           <AdminSidebarSection key={section.title} title={section.title}>
             {section.items.map((item) => (
@@ -159,10 +153,15 @@ function AdminSidebarPanel({
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-slate-100 px-4 py-4">
-        <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-          <p className="truncate text-xs font-semibold text-slate-800">{user?.name ?? 'Administrator'}</p>
-          <p className="truncate text-[11px] text-slate-500">{user?.email}</p>
+      <div className="shrink-0 border-t border-slate-200/80 px-4 py-4 dark:border-blue-500/15">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800 ring-2 ring-blue-500/30">
+            {parseNameInitials(user?.name)}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-bold text-slate-900 dark:text-ink-50">{user?.name ?? 'Administrator'}</p>
+            <p className="truncate text-[10px] font-medium text-slate-400">{user?.email ?? 'Admin'}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -189,11 +188,11 @@ export function AdminSidebar() {
     <>
       <aside
         className={cn(
-          'relative z-10 hidden h-full shrink-0 flex-col border-r border-slate-200/80 bg-white/95 shadow-[4px_0_24px_-12px_rgba(15,23,42,0.12)] backdrop-blur-sm transition-[width] duration-300 ease-in-out dark:border-brand-400/15 dark:bg-ink-800/95 lg:flex',
-          isOpen ? 'w-[17.5rem]' : 'w-0 overflow-hidden border-r-0 shadow-none',
+          'relative z-10 hidden h-full shrink-0 flex-col border-r border-slate-200/70 bg-[#F4F7FC] transition-[width] duration-300 ease-in-out dark:border-blue-500/15 dark:bg-[#070b12] lg:flex',
+          isOpen ? 'w-[16.5rem]' : 'w-0 overflow-hidden border-r-0',
         )}
       >
-        <div className="flex h-full min-h-0 min-w-[17.5rem] flex-col">
+        <div className="flex h-full min-h-0 min-w-[16.5rem] flex-col">
           <AdminSidebarPanel showDesktopToggle onToggleDesktop={toggle} />
         </div>
       </aside>
@@ -209,7 +208,7 @@ export function AdminSidebar() {
               onClick={() => setMobileOpen(false)}
             />
             <aside
-              className="fixed inset-y-0 left-0 z-[70] flex h-[100dvh] max-h-[100dvh] w-[min(18rem,92vw)] flex-col overflow-hidden border-r border-slate-200 bg-white shadow-xl dark:border-brand-400/15 dark:bg-ink-800 lg:hidden"
+              className="fixed inset-y-0 left-0 z-[70] flex h-[100dvh] max-h-[100dvh] w-[min(18rem,92vw)] flex-col overflow-hidden border-r border-slate-200/70 bg-[#F4F7FC] shadow-xl dark:border-blue-500/15 dark:bg-[#070b12] lg:hidden"
               style={{
                 paddingTop: 'env(safe-area-inset-top)',
                 paddingBottom: 'env(safe-area-inset-bottom)',

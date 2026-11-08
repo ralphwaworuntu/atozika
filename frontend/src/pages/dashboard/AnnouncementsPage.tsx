@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Clock3, Dumbbell, FileText, GraduationCap, Megaphone, Shield } from 'lucide-react';
+import { apiGet } from '@/lib/api';
+import { useMemberChrome } from '@/hooks/useMemberChrome';
+import type { Announcement } from '@/types/dashboard';
+import { formatDate } from '@/utils/format';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/utils/cn';
 
 type Category = 'Akademik' | 'Jasmani' | 'Administrasi' | 'Urgent';
-
-const FILTERS: Array<'Semua' | Category> = ['Semua', 'Akademik', 'Jasmani', 'Administrasi', 'Urgent'];
 
 const TONE: Record<Category, string> = {
   Akademik: 'bg-violet-100 text-violet-600',
@@ -13,51 +17,6 @@ const TONE: Record<Category, string> = {
   Urgent: 'bg-rose-100 text-rose-600',
 };
 
-const FEED: Array<{ id: string; category: Category; title: string; body: string; date: string; banner?: boolean }> = [
-  {
-    id: 'banner-1',
-    category: 'Urgent',
-    title: 'Pengumuman resmi manajemen bimbel',
-    body: 'Seluruh informasi jadwal, kelas, dan pendaftaran di halaman ini diterbitkan langsung oleh manajemen ATOZIKA.',
-    date: '25 Sep 2026',
-    banner: true,
-  },
-  {
-    id: 'feed-1',
-    category: 'Akademik',
-    title: 'Tryout Akbar POLRI gelombang September',
-    body: 'Simulasi CAT penuh dibuka Sabtu, 27 September 2026, pukul 08.00–11.30 WITA.',
-    date: '24 Sep 2026',
-  },
-  {
-    id: 'feed-2',
-    category: 'Jasmani',
-    title: 'Sesi jasmani lapangan Oepoi',
-    body: 'Lari, push-up, sit-up, dan pull-up. Hadir 15 menit lebih awal dengan pakaian olahraga.',
-    date: '23 Sep 2026',
-  },
-  {
-    id: 'feed-3',
-    category: 'Administrasi',
-    title: 'Kelengkapan berkas pendaftaran',
-    body: 'Unggah KTP, ijazah, dan pas foto sebelum batas unggah yang tercantum di info kedinasan.',
-    date: '22 Sep 2026',
-  },
-];
-
-const SCHEDULES: Array<{ id: string; category: Category; kind: string; title: string; time: string }> = [
-  { id: 's1', category: 'Akademik', kind: 'Tryout Akbar', title: 'Simulasi CAT POLRI', time: 'Sabtu, 27 Sep 2026 • 08.00–11.30 WITA' },
-  { id: 's2', category: 'Akademik', kind: 'Jam Kelas', title: 'Kelas TWK & TIU', time: 'Senin & Rabu • 19.00–20.30 WITA' },
-  { id: 's3', category: 'Jasmani', kind: 'Sesi Jasmani', title: 'Tes fisik baku stadion', time: 'Minggu, 28 Sep 2026 • 06.00–08.00 WITA' },
-  { id: 's4', category: 'Akademik', kind: 'Jam Kelas', title: 'Bahasa Inggris kedinasan', time: 'Jumat • 16.00–17.30 WITA' },
-];
-
-const OPENINGS: Array<{ id: string; category: Category; agency: string; title: string; window: string }> = [
-  { id: 'o1', category: 'Administrasi', agency: 'POLRI', title: 'Pendaftaran Bintara & Akpol', window: 'Dibuka 1–20 Oktober 2026' },
-  { id: 'o2', category: 'Administrasi', agency: 'TNI', title: 'Pendaftaran Taruna & Bintara', window: 'Dibuka 5–25 Oktober 2026' },
-  { id: 'o3', category: 'Urgent', agency: 'Kedinasan', title: 'Pendaftaran IPDN, STAN, dan sekolah kedinasan', window: 'Pantau portal resmi mulai 1 November 2026' },
-];
-
 const SCHEDULE_ICON = {
   'Tryout Akbar': GraduationCap,
   'Jam Kelas': Clock3,
@@ -65,12 +24,26 @@ const SCHEDULE_ICON = {
 } as const;
 
 export function AnnouncementsPage() {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Semua');
-  const match = (category: Category) => filter === 'Semua' || filter === category;
-  const banner = FEED.find((item) => item.banner);
-  const feed = useMemo(() => FEED.filter((item) => !item.banner && match(item.category)), [filter]);
-  const schedules = useMemo(() => SCHEDULES.filter((item) => match(item.category)), [filter]);
-  const openings = useMemo(() => OPENINGS.filter((item) => match(item.category)), [filter]);
+  const chrome = useMemberChrome();
+  const announcements = useQuery({
+    queryKey: ['member-announcements'],
+    queryFn: () => apiGet<Announcement[]>('/dashboard/announcements'),
+  });
+  const [filter, setFilter] = useState<string>('Semua');
+  const schedules = useMemo(
+    () => (chrome.data?.boards.schedules ?? []).filter((item) => filter === 'Semua' || item.category === filter),
+    [chrome.data?.boards.schedules, filter],
+  );
+  const openings = useMemo(
+    () => (chrome.data?.boards.openings ?? []).filter((item) => filter === 'Semua' || item.category === filter),
+    [chrome.data?.boards.openings, filter],
+  );
+  if (chrome.isLoading || announcements.isLoading) {
+    return <Skeleton className="h-96" />;
+  }
+  const feed = announcements.data ?? [];
+  const banner = feed[0];
+  const filters = ['Semua', ...new Set([...(chrome.data?.boards.schedules ?? []).map((item) => item.category), ...(chrome.data?.boards.openings ?? []).map((item) => item.category)])];
 
   return (
     <div className="space-y-6">
@@ -81,12 +54,12 @@ export function AnnouncementsPage() {
             Notifikasi resmi manajemen
           </span>
           <h2 className="text-2xl font-extrabold leading-snug tracking-tight text-slate-900 sm:text-3xl dark:text-ink-50">
-            {banner?.title ?? 'Pengumuman'}
+            {banner?.title ?? 'Pengumuman resmi'}
             <br />
             <span className="text-member-600">ATOZIKA</span>
           </h2>
-          <p className="text-xs font-medium text-slate-600 sm:text-sm dark:text-ink-200">{banner?.body}</p>
-          <p className="text-[11px] font-semibold text-slate-500 dark:text-ink-200">{banner?.date}</p>
+          <p className="text-xs font-medium text-slate-600 sm:text-sm dark:text-ink-200">{banner?.body ?? 'Pengumuman dari admin akan tampil di sini.'}</p>
+          {banner ? <p className="text-[11px] font-semibold text-slate-500 dark:text-ink-200">{formatDate(banner.publishedAt)}</p> : null}
         </div>
       </section>
 
@@ -94,7 +67,7 @@ export function AnnouncementsPage() {
         className="inline-flex max-w-full flex-wrap rounded-full border border-slate-200/70 bg-slate-100/80 p-1 dark:border-white/10 dark:bg-white/5"
         aria-label="Filter kategori pengumuman"
       >
-        {FILTERS.map((item) => (
+        {filters.map((item) => (
           <button
             key={item}
             type="button"
@@ -114,21 +87,19 @@ export function AnnouncementsPage() {
       <section className="space-y-3">
         <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">Feed Resmi</h3>
         <div className="space-y-3">
-          {feed.map((item) => (
+          {feed.slice(1).map((item) => (
             <article key={item.id} className="member-card flex items-center gap-4 p-4 transition hover:shadow-md sm:p-5">
-              <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', TONE[item.category])}>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
                 <Megaphone className="h-5 w-5" strokeWidth={2.2} />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-slate-400">
-                  {item.category} • {item.date}
-                </p>
+                <p className="text-[11px] font-semibold text-slate-400">{formatDate(item.publishedAt)}</p>
                 <h4 className="truncate text-sm font-bold text-slate-800 sm:text-base dark:text-ink-50">{item.title}</h4>
                 <p className="mt-0.5 text-xs font-semibold text-slate-400">{item.body}</p>
               </div>
             </article>
           ))}
-          {feed.length === 0 ? <p className="text-[11px] font-semibold text-slate-400">Tidak ada pengumuman pada kategori ini.</p> : null}
+          {feed.length === 0 ? <p className="text-[11px] font-semibold text-slate-400">Belum ada pengumuman.</p> : null}
         </div>
       </section>
 
@@ -141,7 +112,7 @@ export function AnnouncementsPage() {
             const Icon = SCHEDULE_ICON[item.kind as keyof typeof SCHEDULE_ICON] ?? Clock3;
             return (
               <article key={item.id} className="member-card flex flex-col justify-between p-3.5 transition hover:shadow-md">
-                <span className={cn('mb-3 flex h-10 w-10 items-center justify-center rounded-xl', TONE[item.category])}>
+                <span className={cn('mb-3 flex h-10 w-10 items-center justify-center rounded-xl', TONE[item.category as Category] ?? TONE.Akademik)}>
                   <Icon className="h-5 w-5" strokeWidth={2.2} />
                 </span>
                 <p className="text-[11px] font-semibold text-slate-400">{item.kind}</p>
@@ -159,7 +130,7 @@ export function AnnouncementsPage() {
         <div className="grid gap-3.5 sm:grid-cols-3">
           {openings.map((item) => (
             <article key={item.id} className="member-card flex flex-col justify-between p-3.5 transition hover:shadow-md">
-              <span className={cn('mb-3 flex h-10 w-10 items-center justify-center rounded-xl', TONE[item.category])}>
+              <span className={cn('mb-3 flex h-10 w-10 items-center justify-center rounded-xl', TONE[item.category as Category] ?? TONE.Administrasi)}>
                 {item.category === 'Administrasi' ? (
                   <FileText className="h-5 w-5" strokeWidth={2.2} />
                 ) : (

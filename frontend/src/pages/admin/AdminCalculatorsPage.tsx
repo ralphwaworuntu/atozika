@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { PageHeader } from '@/components/common/PageHeader';
+import { FitnessEditor } from '@/components/admin/FitnessEditor';
 
 function cloneCalculator(data: CalculatorDetail): CalculatorDetail {
   return JSON.parse(JSON.stringify(data)) as CalculatorDetail;
@@ -166,7 +167,7 @@ export function AdminCalculatorsPage() {
         variant="panel"
         eyebrow="Admin"
         title="Pengaturan Kalkulator"
-        description="Kelola bobot dan tabel konversi untuk seluruh kalkulator anggota."
+        description="Atur kalkulator usia, BMI, dan jasmani baku, plus bobot kalkulator hasil tes."
         action={
           <Button type="button" variant="outline" onClick={handleExport} isLoading={isExporting}>
             Download CSV
@@ -174,7 +175,9 @@ export function AdminCalculatorsPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      <FitnessEditor />
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
         <aside className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Daftar Kalkulator</p>
           <div className="flex flex-col gap-2">

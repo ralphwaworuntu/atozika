@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,13 +17,13 @@ type AdminOverview = {
 
 type OverviewMetricKey = Exclude<keyof AdminOverview, 'chartSeries'>;
 
-const overviewCards: Array<{ key: OverviewMetricKey; label: string; format?: 'currency' }> = [
-  { key: 'users', label: 'Total Pengguna' },
-  { key: 'tryouts', label: 'Tryout Aktif' },
-  { key: 'practiceSets', label: 'Latihan & Tugas' },
-  { key: 'materials', label: 'Materi Belajar' },
-  { key: 'transactions', label: 'Transaksi' },
-  { key: 'transactionAmount', label: 'Nilai Transaksi (PAID)', format: 'currency' },
+const overviewCards: Array<{ key: OverviewMetricKey; label: string; to: string; format?: 'currency' }> = [
+  { key: 'users', label: 'Total Pengguna', to: '/admin/users' },
+  { key: 'tryouts', label: 'Tryout Aktif', to: '/admin/tryouts' },
+  { key: 'practiceSets', label: 'Latihan Soal', to: '/admin/practice' },
+  { key: 'materials', label: 'Modul & Materi', to: '/admin/materials' },
+  { key: 'transactions', label: 'Transaksi', to: '/admin/commerce' },
+  { key: 'transactionAmount', label: 'Nilai Transaksi (PAID)', to: '/admin/activation', format: 'currency' },
 ];
 
 export function AdminDashboardPage() {
@@ -36,10 +37,11 @@ export function AdminDashboardPage() {
 
   return (
     <section className="page-shell">
-      <PageHeader variant="panel"
-        eyebrow="Admin"
+      <PageHeader
+        variant="panel"
+        eyebrow="Dashboard"
         title="Ringkasan Sistem"
-        description="Monitor metrik penting ATOZIKA secara real-time."
+        description="Setiap angka membuka kontrol yang sama dengan menu di dashboard member."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {overviewCards.map((card) => {
@@ -48,18 +50,18 @@ export function AdminDashboardPage() {
             ? value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
             : value.toLocaleString('id-ID');
           return (
-            <div key={card.key} className="admin-metric-card">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.label}</p>
-              <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">{formatted}</p>
-            </div>
+            <Link key={card.key} to={card.to} className="admin-metric-card block">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{card.label}</p>
+              <p className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-ink-50">{formatted}</p>
+            </Link>
           );
         })}
       </div>
 
       <Card>
         <CardContent className="p-6">
-          <p className="text-sm font-semibold text-slate-800">Statistik Sistem</p>
-          <p className="mt-1 text-xs text-slate-500">Perbandingan volume data antar modul utama.</p>
+          <p className="text-sm font-extrabold text-slate-800 dark:text-ink-50">Statistik Sistem</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">Perbandingan volume data antar modul utama.</p>
           <div className="mt-5 space-y-4">
             {data.chartSeries.map((series) => {
               const width = Math.max((series.value / chartMax) * 100, 5);
@@ -67,9 +69,9 @@ export function AdminDashboardPage() {
                 <div key={series.label}>
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>{series.label}</span>
-                    <span className="font-semibold text-slate-900">{series.value.toLocaleString('id-ID')}</span>
+                    <span className="font-semibold text-slate-900 dark:text-ink-50">{series.value.toLocaleString('id-ID')}</span>
                   </div>
-                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
                     <div className="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400" style={{ width: `${width}%` }} />
                   </div>
                 </div>

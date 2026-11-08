@@ -1,10 +1,10 @@
-type NavItem = {
+export type NavItem = {
   label: string;
   to: string;
   exact?: boolean;
 };
 
-type NavSection = {
+export type NavSection = {
   title: string;
   items: NavItem[];
 };
@@ -30,6 +30,10 @@ export const dashboardMenu: NavSection[] = [
     ],
   },
   {
+    title: 'Materi',
+    items: [{ label: 'Modul & Materi', to: '/app/materi' }],
+  },
+  {
     title: 'Latihan',
     items: [
       { label: 'Tryout', to: '/app/latihan/tryout' },
@@ -44,10 +48,6 @@ export const dashboardMenu: NavSection[] = [
       { label: 'Riwayat Latihan', to: '/app/latihan-soal/riwayat' },
       { label: 'Riwayat Kecermatan', to: '/app/tes-kecermatan/riwayat' },
     ],
-  },
-  {
-    title: 'Materi',
-    items: [{ label: 'Modul & Materi', to: '/app/materi' }],
   },
   {
     title: 'Beli Paket',
@@ -81,38 +81,63 @@ export function isDashboardPathActive(pathname: string, to: string, end?: boolea
 
 export const adminMenu: NavSection[] = [
   {
-    title: 'Umum',
+    title: 'Dashboard',
+    items: [{ label: 'Ringkasan', to: '/admin', exact: true }],
+  },
+  {
+    title: 'Informasi',
     items: [
-      { label: 'Overview', to: '/admin', exact: true },
-      { label: 'Landing Content', to: '/admin/landing' },
       { label: 'Pengumuman', to: '/admin/announcements' },
-      { label: 'Reporting', to: '/admin/reporting' },
-      { label: 'Ranking', to: '/admin/ranking' },
-      { label: 'Pesan Kontak', to: '/admin/contacts' },
-    ],
-  },
-  {
-    title: 'Kontrol Ujian',
-    items: [{ label: 'Kontrol Ujian', to: '/admin/exam-control' }],
-  },
-  {
-    title: 'Konten Akademik',
-    items: [
-      { label: 'Konversi Word → CSV', to: '/admin/word-converter' },
-      { label: 'Tryouts & Tes', to: '/admin/tryouts' },
-      { label: 'Latihan & Tugas', to: '/admin/practice' },
-      { label: 'Pengaturan Kecermatan', to: '/admin/kecermatan' },
-      { label: 'Materi Belajar', to: '/admin/materials' },
+      { label: 'Berita', to: '/admin/news' },
       { label: 'Kalkulator', to: '/admin/calculators' },
     ],
   },
   {
-    title: 'Bisnis',
+    title: 'Materi',
+    items: [{ label: 'Modul & Materi', to: '/admin/materials' }],
+  },
+  {
+    title: 'Latihan',
     items: [
-      { label: 'Paket & Transaksi', to: '/admin/commerce' },
-      { label: 'Aktivasi Membership', to: '/admin/activation' },
-       { label: 'Monitoring Member', to: '/admin/monitoring' },
+      { label: 'Tryout', to: '/admin/tryouts' },
+      { label: 'Latihan Soal', to: '/admin/practice' },
+      { label: 'Tes Kecermatan', to: '/admin/kecermatan' },
+      { label: 'Kontrol Ujian', to: '/admin/exam-control' },
+      { label: 'Konversi Word', to: '/admin/word-converter' },
+    ],
+  },
+  {
+    title: 'Riwayat',
+    items: [
+      { label: 'Riwayat Member', to: '/admin/monitoring' },
+      { label: 'Laporan Hasil', to: '/admin/reporting' },
+      { label: 'Peringkat', to: '/admin/ranking' },
+    ],
+  },
+  {
+    title: 'Beli Paket',
+    items: [
+      { label: 'Paket Membership', to: '/admin/commerce' },
+      { label: 'Konfirmasi Pembayaran', to: '/admin/activation' },
+      { label: 'Pesan Kontak', to: '/admin/contacts' },
+    ],
+  },
+  {
+    title: 'Member',
+    items: [
+      { label: 'Afiliasi', to: '/admin/referrals' },
       { label: 'Manajemen User', to: '/admin/users' },
+      { label: 'Monitoring Sistem', to: '/admin/system-monitoring' },
+    ],
+  },
+  {
+    title: 'Situs',
+    items: [
+      { label: 'Beranda', to: '/admin/beranda' },
+      { label: 'Profil Lembaga', to: '/admin/profil' },
+      { label: 'FAQ', to: '/admin/faq' },
+      { label: 'Landing', to: '/admin/landing' },
+      { label: 'Tampilan Member', to: '/admin/tampilan' },
     ],
   },
 ];

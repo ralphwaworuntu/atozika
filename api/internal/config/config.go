@@ -44,7 +44,7 @@ func Load() Config {
 			uploads = "uploads"
 		}
 	}
-	return Config{
+	cfg := Config{
 		NodeEnv:          getenv("NODE_ENV", "development"),
 		Port:             getenv("PORT", "5000"),
 		DatabaseURL:      must("DATABASE_URL"),
@@ -63,6 +63,12 @@ func Load() Config {
 		SMTPFromEmail:    getenv("SMTP_FROM_EMAIL", ""),
 		UploadsDir:       uploads,
 	}
+	if cfg.NodeEnv == "production" {
+		if len(cfg.JWTAccessSecret) < 32 || len(cfg.JWTRefreshSecret) < 32 || cfg.JWTAccessSecret == cfg.JWTRefreshSecret {
+			panic("production JWT secrets must differ and be at least 32 characters")
+		}
+	}
+	return cfg
 }
 
 func (c Config) FrontendOrigins() []string {

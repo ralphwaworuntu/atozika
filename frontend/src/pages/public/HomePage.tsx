@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { BookOpen, Clapperboard, GraduationCap, ListChecks, type LucideIcon } from 'lucide-react';
@@ -15,6 +16,51 @@ import { FaqSection } from '@/components/sections/FaqSection';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { logoSrcForTheme } from '@/lib/brand';
 
+function slideSrc(url: string) {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.pathname.startsWith('/uploads/')) return url;
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+}
+
+function HeroVisual({
+  slides,
+  logoSrc,
+}: {
+  slides: Array<{ id: string; imageUrl: string }>;
+  logoSrc: string;
+}) {
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
+  const visible = slides.filter((slide) => slide.imageUrl && !failed[slide.id]);
+  const current = visible[0];
+
+  if (!current) {
+    return (
+      <img
+        src={logoSrc}
+        alt="ATOZIKA"
+        width={720}
+        height={720}
+        decoding="sync"
+        fetchPriority="high"
+        className="brand-logo h-auto w-full max-w-md object-contain drop-shadow-[0_24px_60px_rgba(176,138,50,0.28)] md:max-w-lg lg:max-w-xl"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={slideSrc(current.imageUrl)}
+      alt=""
+      className="max-h-[28rem] w-full max-w-xl rounded-3xl object-contain"
+      onError={() => setFailed((prev) => ({ ...prev, [current.id]: true }))}
+    />
+  );
+}
+
 function iconForStat(label: string): LucideIcon {
   const key = label.toLowerCase();
   if (key.includes('video')) return Clapperboard;
@@ -28,6 +74,8 @@ export function HomePage() {
   const { data, isLoading } = useQuery({ queryKey: ['home-content'], queryFn: () => apiGet<HomeContent>('/landing/home') });
   const theme = useResolvedTheme();
   const heroLogoSrc = logoSrcForTheme(theme);
+  const copy = data?.copy;
+  const heroSlides = (data?.hero.slides ?? []).filter((slide) => slide.id !== 'fallback' && slide.imageUrl);
 
   if (isLoading || !data) {
     return (
@@ -60,15 +108,7 @@ export function HomePage() {
           </div>
         </div>
         <div className="flex items-center justify-center">
-          <img
-            src={heroLogoSrc}
-            alt="ATOZIKA"
-            width={720}
-            height={720}
-            decoding="sync"
-            fetchPriority="high"
-            className="brand-logo h-auto w-full max-w-md object-contain drop-shadow-[0_24px_60px_rgba(176,138,50,0.28)] md:max-w-lg lg:max-w-xl"
-          />
+          <HeroVisual slides={heroSlides} logoSrc={heroLogoSrc} />
         </div>
       </section>
 
@@ -87,35 +127,33 @@ export function HomePage() {
         })}
       </section>
 
-      <PromoHighlight />
+      <PromoHighlight promo={copy?.promo} />
       </div>
 
       <section className="grid gap-10 md:grid-cols-2">
         <div>
           <SectionHeader
-            eyebrow="Apa itu ATOZIKA?"
-            title="Akademi untuk karakter, intelektualitas, dan kelulusan"
+            eyebrow={copy?.about.eyebrow || 'Apa itu ATOZIKA?'}
+            title={copy?.about.title || 'Akademi untuk karakter, intelektualitas, dan kelulusan'}
             titleClassName="type-hero"
           />
-          <p className="type-body mt-4 text-ink-200">
-            ATOZIKA menempa peserta untuk posisi strategis di pemerintahan, perbankan nasional, dan panggung politik.
-            Bukan bimbel biasa — ini zona latihan berstandar tinggi: terukur, terstruktur, dan elit.
-          </p>
-          <p className="type-body mt-3 text-ink-200">
-            Tryout CAT, latihan soal, tes kecermatan, materi, dan laporan orang tua berada dalam satu PWA. Setiap sesi
-            dirancang untuk mengunci kelulusan.
-          </p>
+          {(copy?.about.paragraphs?.length ? copy.about.paragraphs : [
+            'ATOZIKA menempa peserta untuk posisi strategis di pemerintahan, perbankan nasional, dan panggung politik. Bukan bimbel biasa — ini zona latihan berstandar tinggi: terukur, terstruktur, dan elit.',
+            'Tryout CAT, latihan soal, tes kecermatan, materi, dan laporan orang tua berada dalam satu PWA. Setiap sesi dirancang untuk mengunci kelulusan.',
+          ]).map((paragraph) => (
+            <p key={paragraph} className="type-body mt-4 text-ink-200">{paragraph}</p>
+          ))}
         </div>
         <Card className="border-brand-400/25 bg-ink-800 text-ink-50">
           <CardContent className="space-y-4 p-6">
-            <h3 className="type-h1 text-ink-50">Keunggulan Komando</h3>
+            <h3 className="type-h1 text-ink-50">{copy?.about.advantagesTitle || 'Keunggulan Komando'}</h3>
             <ul className="type-body space-y-3 text-ink-200">
-              {[
+              {(copy?.about.advantages?.length ? copy.about.advantages : [
                 'Simulasi ujian berdisiplin dengan anti-cheat',
                 'Tracking skor, kuota, dan rekomendasi latihan',
                 'Akses PWA lintas perangkat — premium multi-device',
                 'Afiliasi member get member tanpa komisi rumit',
-              ].map((item) => (
+              ]).map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-1 h-2 w-2 rounded-full bg-brand-300" />
                   <span>{item}</span>
@@ -126,21 +164,21 @@ export function HomePage() {
         </Card>
       </section>
 
-      <SelectionPillars />
+      <SelectionPillars block={copy?.pillars} />
 
       <ParentMagicLink />
 
       <section className="grid gap-6 md:grid-cols-2">
         <Card className="h-full">
           <CardContent className="p-6">
-            <SectionHeader eyebrow="Tantangan Seleksi" title="Persaingan elit membutuhkan standar elit" />
+            <SectionHeader eyebrow={copy?.challenges.eyebrow || 'Tantangan Seleksi'} title={copy?.challenges.title || 'Persaingan elit membutuhkan standar elit'} />
             <ul className="type-body mt-4 space-y-3 text-slate-600 dark:text-ink-200">
-              {[
+              {(copy?.challenges.items?.length ? copy.challenges.items : [
                 'Kuota sempit di TNI, Polri, kedinasan, dan BUMN',
                 'Pola soal CAT yang berubah dan semakin ketat',
                 'Kurang disiplin latihan, evaluasi, dan ketahanan mental',
                 'Belum terbiasa dengan sistem ujian berintegritas tinggi',
-              ].map((item) => (
+              ]).map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-1 h-2 w-2 rounded-full bg-brand-500" />
                   <span>{item}</span>
@@ -151,7 +189,7 @@ export function HomePage() {
         </Card>
         <Card className="h-full">
           <CardContent className="p-6">
-            <SectionHeader eyebrow="Kenapa ATOZIKA?" title="Taktis, tegas, disiplin, berintegritas" />
+            <SectionHeader eyebrow={copy?.reasonsEyebrow || 'Kenapa ATOZIKA?'} title={copy?.reasonsTitle || 'Taktis, tegas, disiplin, berintegritas'} />
             <ul className="type-body mt-4 space-y-3 text-slate-600 dark:text-ink-200">
               {data.reasons.map((reason) => (
                 <li key={reason} className="flex items-start gap-2">
@@ -164,7 +202,7 @@ export function HomePage() {
         </Card>
       </section>
 
-      <ProgramCatalog />
+      <ProgramCatalog catalog={copy?.programs} />
 
       <section>
         <SectionHeader eyebrow="Testimoni" title="Cerita dari para alumni" />
@@ -183,7 +221,26 @@ export function HomePage() {
         </div>
       </section>
 
-      <FaqSection />
+      {data.videos.length ? (
+        <section>
+          <SectionHeader eyebrow={copy?.videos.eyebrow || 'Video'} title={copy?.videos.title || 'Cuplikan kelas dan alumni'} />
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {data.videos.map((video) => (
+              <article key={video.id} className="overflow-hidden rounded-xl border border-brand-400/20 bg-ink-800">
+                {video.embedUrl.startsWith('https://') ? (
+                  <iframe title={video.title} src={video.embedUrl} className="aspect-video w-full" allowFullScreen />
+                ) : null}
+                <div className="space-y-1 p-4">
+                  <h3 className="type-h2 text-ink-50">{video.title}</h3>
+                  {video.description ? <p className="type-caption text-ink-200">{video.description}</p> : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <FaqSection header={copy?.faq} />
     </div>
   );
 }

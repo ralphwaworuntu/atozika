@@ -46,15 +46,27 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{
-		AppName:      "ATOZIKA API",
-		ErrorHandler: httpx.ErrorHandler,
-		BodyLimit:    32 * 1024 * 1024,
-		ProxyHeader:  fiber.HeaderXForwardedFor,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		AppName:                 "ATOZIKA API",
+		ErrorHandler:            httpx.ErrorHandler,
+		BodyLimit:               32 * 1024 * 1024,
+		ProxyHeader:             fiber.HeaderXForwardedFor,
+		EnableTrustedProxyCheck: true,
+		TrustedProxies:          []string{"127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"},
+		ReadTimeout:             60 * time.Second,
+		WriteTimeout:            60 * time.Second,
 	})
 	app.Use(recover.New())
 	app.Use(logger.New())
+	app.Use(func(c *fiber.Ctx) error {
+		c.Set("X-Content-Type-Options", "nosniff")
+		c.Set("X-Frame-Options", "DENY")
+		c.Set("Referrer-Policy", "no-referrer")
+		c.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		if cfg.NodeEnv == "production" {
+			c.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		return c.Next()
+	})
 	app.Use(cors.New(cors.Config{
 		AllowOriginsFunc: func(origin string) bool {
 			if origin == "" || cfg.NodeEnv != "production" {
@@ -72,7 +84,7 @@ func main() {
 		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 	}))
 
-	app.Static("/uploads", cfg.UploadsDir)
+	app.Static("/uploads", cfg.UploadsDir, fiber.Static{Browse: false})
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"name": "ATOZIKA API", "version": "1.0.0", "status": "online"})
@@ -120,10 +132,12 @@ func main() {
 	lg.Get("/gallery", landH.Gallery)
 	lg.Get("/testimonials", landH.Testimonials)
 	lg.Get("/contact-info", landH.ContactInfo)
+	lg.Get("/faq", landH.FAQ)
 	lg.Get("/parent/:slug", landH.Parent)
 
 	dg := v1.Group("/dashboard", protect)
 	dg.Get("/overview", dashH.Overview)
+	dg.Get("/chrome", dashH.Chrome)
 	dg.Get("/announcements", dashH.Announcements)
 	dg.Get("/faq", dashH.FAQ)
 	dg.Get("/news", dashH.News)

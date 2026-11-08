@@ -8,6 +8,7 @@ import (
 	"atozika/internal/jsonutil"
 	"atozika/internal/membership"
 	"atozika/internal/models"
+	"atozika/internal/sitecontent"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -92,41 +93,34 @@ func (h *Handler) Home(c *fiber.Ctx) error {
 			{Label: "Jumlah Alumni", Value: 724}, {Label: "Modul Interaktif", Value: 35},
 		}
 	}
-	reasons := []string{
-		"Pembentukan karakter kepemimpinan dan integritas, bukan sekadar hapalan soal.",
-		"Bank soal terstandardisasi CAT untuk TNI, Polri, Kedinasan, CPNS, BUMN, dan Bank Indonesia.",
-		"Kurikulum taktis sesuai kisi resmi dan pola seleksi institusi elit.",
-		"Simulasi ujian berdisiplin: timer, anti-cheat, dan evaluasi berkala.",
-		"Laporan progres untuk orang tua serta pendampingan mentor berpengalaman.",
-	}
+	copy := sitecontent.LoadHome(h.DB)
 	return httpx.Success(c, fiber.Map{
 		"hero": fiber.Map{
-			"title":        "Menempa Intelektual, Mengunci Kelulusan.",
-			"subtitle":     "Akademi Taktis Optimasi Integritas, Intelektual, dan Kepemimpinan. Persiapan elit, berstandar tinggi, dan terstruktur.",
-			"ctaPrimary":   fiber.Map{"label": "Gabung Sekarang", "href": "/auth/register"},
-			"ctaSecondary": fiber.Map{"label": "Paket Bimbel", "href": "/paket-bimbel"},
+			"title":        copy.Hero.Title,
+			"subtitle":     copy.Hero.Subtitle,
+			"ctaPrimary":   copy.Hero.CtaPrimary,
+			"ctaSecondary": copy.Hero.CtaSecondary,
 			"imageUrl":     heroURL,
 			"slides":       slideOut,
 		},
 		"stats":        stats,
-		"reasons":      reasons,
+		"reasons":      copy.Reasons,
 		"packages":     pkgOut,
 		"testimonials": testimonials,
 		"videos":       videos,
 		"contact":      h.contact(),
+		"copy":         copy,
 	})
 }
 
 func (h *Handler) Profile(c *fiber.Ctx) error {
-	return httpx.Success(c, fiber.Map{
-		"title": "Profil Lembaga",
-		"body":  "ATOZIKA (Akademi Taktis Optimasi Zona Integritas, Kepemimpinan & Aparatur) berfokus pada pembentukan karakter kepemimpinan, daya saing intelektual, dan persiapan ujian kompetensi tinggi untuk posisi strategis di institusi pemerintahan, perbankan nasional, hingga panggung politik.\n\nKami menempa peserta dengan standar elit: disiplin, tegas, taktis, dan berintegritas tinggi — tepat untuk lulusan yang mengejar karier di Bank Indonesia, BUMN, sekolah kedinasan favorit, TNI, Polri, dan CPNS.",
-		"highlights": []string{
-			"Citra taktis, tegas, disiplin, dan berintegritas tinggi.",
-			"Kurikulum terstruktur untuk seleksi TNI, Polri, Kedinasan, CPNS, BUMN, dan Bank Indonesia.",
-			"Satu dashboard: tryout, latihan soal, tes kecermatan, materi, dan transaksi.",
-		},
-	})
+	return httpx.Success(c, sitecontent.LoadProfile(h.DB))
+}
+
+func (h *Handler) FAQ(c *fiber.Ctx) error {
+	var items []models.Faq
+	h.DB.Order(`"order" ASC, id ASC`).Find(&items)
+	return httpx.Success(c, items)
 }
 
 func (h *Handler) Packages(c *fiber.Ctx) error {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { homeAnnouncement } from '@/constants/promo';
+import type { HomeCopy } from '@/types/siteContent';
 
 type TimeLeft = {
   days: number;
@@ -28,8 +29,9 @@ function getTimeLeft(target: Date): TimeLeft {
   };
 }
 
-export function PromoHighlight() {
-  const promo = homeAnnouncement;
+export function PromoHighlight({ promo: source }: { promo?: HomeCopy['promo'] }) {
+  if (source && !source.enabled) return null;
+  const promo = source ?? homeAnnouncement;
   const target = useMemo(() => new Date(promo.endsAt), [promo.endsAt]);
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => getTimeLeft(target));
 

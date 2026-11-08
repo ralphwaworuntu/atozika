@@ -8,6 +8,7 @@ import { LandingSectionManager, type LandingItem, type LandingResourceConfig } f
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { PageHeader } from '@/components/common/PageHeader';
+import { BoardsEditor } from '@/components/admin/BoardsEditor';
 
 type LandingAnnouncement = {
   id: string;
@@ -81,7 +82,7 @@ export function AdminAnnouncementsPage() {
         variant="panel"
         eyebrow="Admin"
         title="Pengumuman"
-        description="Kelola pengumuman yang tampil di area member."
+        description="Pengumuman tampil di lonceng dan halaman Pengumuman member. Jadwal serta pembukaan pendaftaran diatur di bawah."
         action={
           <Button type="button" variant="outline" onClick={handleExport} isLoading={isExporting}>
             Download CSV
@@ -93,6 +94,9 @@ export function AdminAnnouncementsPage() {
         items={data.announcements as LandingItem[]}
         packageOptions={packages ?? []}
       />
+      <div className="mt-8">
+        <BoardsEditor />
+      </div>
     </section>
   );
 }

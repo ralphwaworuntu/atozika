@@ -19,6 +19,7 @@ type ExamTakingOverlayProps = {
   submitPending?: boolean;
   finishLabel?: string;
   cancelLabel?: string;
+  showCancel?: boolean;
   children: ReactNode;
 };
 
@@ -42,8 +43,9 @@ export function ExamTakingOverlay({
   onFinish,
   onCancel,
   submitPending = false,
-  finishLabel = 'Akhiri sesi',
+  finishLabel: _finishLabel = 'Selesai',
   cancelLabel = 'Batalkan',
+  showCancel = true,
   children,
 }: ExamTakingOverlayProps) {
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
@@ -141,12 +143,18 @@ export function ExamTakingOverlay({
               </button>
               <button
                 type="button"
-                onClick={onNext}
-                disabled={isLast}
-                className="flex items-center gap-2 rounded-xl border-2 border-[#34d399] bg-gradient-to-b from-[#10b981] to-[#059669] px-4 py-2.5 text-sm font-black text-white shadow-[0_4px_0_#065f46] active:translate-y-[2px] active:shadow-[0_1px_0_#065f46] disabled:opacity-40 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-base"
+                onClick={isLast ? onFinish : onNext}
+                disabled={isLast ? submitPending : false}
+                className="flex items-center gap-2 rounded-xl border-2 border-[#34d399] bg-gradient-to-b from-[#10b981] to-[#059669] px-4 py-2.5 text-sm font-black text-white shadow-[0_4px_0_#065f46] active:translate-y-[2px] active:shadow-[0_1px_0_#065f46] disabled:opacity-50 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-base"
               >
-                <span className="hidden sm:inline">Selanjutnya</span>
-                <span>❯</span>
+                {isLast ? (
+                  <span>Selesai</span>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Selanjutnya</span>
+                    <span>❯</span>
+                  </>
+                )}
               </button>
             </nav>
 
@@ -182,23 +190,15 @@ export function ExamTakingOverlay({
                   );
                 })}
               </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onFinish}
-                  disabled={submitPending}
-                  className="flex-1 rounded-xl border-2 border-[#34d399] bg-gradient-to-b from-[#10b981] to-[#059669] px-3 py-2 text-xs font-black text-white shadow-[0_3px_0_#065f46] disabled:opacity-50"
-                >
-                  {finishLabel}
-                </button>
+              {showCancel ? (
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="rounded-xl border-2 border-[#60a5fa] bg-gradient-to-b from-[#2563eb] to-[#1d4ed8] px-3 py-2 text-xs font-black text-white shadow-[0_3px_0_#1e3a8a]"
+                  className="w-full rounded-xl border-2 border-[#60a5fa] bg-gradient-to-b from-[#2563eb] to-[#1d4ed8] px-3 py-2 text-xs font-black text-white shadow-[0_3px_0_#1e3a8a]"
                 >
                   {cancelLabel}
                 </button>
-              </div>
+              ) : null}
             </div>
           </section>
 
@@ -237,23 +237,15 @@ export function ExamTakingOverlay({
                   })}
                 </div>
               </div>
-              <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  onClick={onFinish}
-                  disabled={submitPending}
-                  className="flex-1 rounded-2xl border-2 border-[#34d399] bg-gradient-to-b from-[#10b981] to-[#059669] px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#065f46] disabled:opacity-50"
-                >
-                  {finishLabel}
-                </button>
+              {showCancel ? (
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="rounded-2xl border-2 border-[#60a5fa] bg-gradient-to-b from-[#2563eb] to-[#1d4ed8] px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#1e3a8a]"
+                  className="w-full shrink-0 rounded-2xl border-2 border-[#60a5fa] bg-gradient-to-b from-[#2563eb] to-[#1d4ed8] px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_#1e3a8a]"
                 >
                   {cancelLabel}
                 </button>
-              </div>
+              ) : null}
             </div>
           </aside>
         </main>

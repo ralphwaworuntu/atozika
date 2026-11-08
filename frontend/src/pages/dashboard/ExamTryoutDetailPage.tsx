@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useExamControlStatus } from '@/hooks/useExamControl';
+import { enterExamFullscreen } from '@/hooks/useFullscreenExam';
 import { PageHeader } from '@/components/common/PageHeader';
 
 function formatDateTime(value?: string | null) {
@@ -68,8 +69,9 @@ export function ExamTryoutDetailPage() {
     { label: 'Waktu Akses Berakhir Tryout', value: formatDateTime(data.closeAt) },
   ];
 
-  const handleStart = () => {
+  const handleStart = async () => {
     sessionStorage.setItem('exam_tryout_start_slug', data.slug);
+    await enterExamFullscreen();
     navigate('/app/ujian/tryout/mulai', {
       state: { startTryoutSlug: data.slug, returnTo },
     });

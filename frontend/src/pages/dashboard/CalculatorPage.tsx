@@ -1,4 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiGet } from '@/lib/api';
+import { useMemberChrome } from '@/hooks/useMemberChrome';
+import type { CalculatorConfig } from '@/types/calculator';
+import type { FitnessCopy } from '@/types/siteContent';
 
 type Gender = 'L' | 'P';
 
@@ -23,10 +28,10 @@ function preciseAge(birth: Date, opening: Date) {
   return { years, months, days };
 }
 
-function bmiBand(bmi: number) {
-  if (bmi < 18.5) return 'Di bawah rentang';
-  if (bmi < 25) return 'Rentang sehat';
-  if (bmi < 30) return 'Di atas rentang';
+function bmiBand(bmi: number, min: number, max: number) {
+  if (bmi < min) return 'Di bawah rentang';
+  if (bmi <= max) return 'Rentang sehat';
+  if (bmi < max + 5) return 'Di atas rentang';
   return 'Jauh di atas rentang';
 }
 
@@ -59,6 +64,8 @@ const fieldClass =
   'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-member-600 dark:border-white/10 dark:bg-ink-900 dark:text-ink-50';
 
 export function CalculatorPage() {
+  const chrome = useMemberChrome();
+  const fitness = chrome.data?.fitness;
   const [birth, setBirth] = useState('');
   const [opening, setOpening] = useState('');
   const [height, setHeight] = useState('');
@@ -79,34 +86,36 @@ export function CalculatorPage() {
     if (!cm || !kg || cm < 100 || cm > 250 || kg < 30 || kg > 200) return null;
     const meters = cm / 100;
     const bmi = kg / (meters * meters);
-    const min = 18.5 * meters * meters;
-    const max = 24.9 * meters * meters;
+    const minBmi = fitness?.bmiMin || 18.5;
+    const maxBmi = fitness?.bmiMax || 24.9;
+    const min = minBmi * meters * meters;
+    const max = maxBmi * meters * meters;
     const adjust = kg > max ? { direction: 'turun', kg: kg - max } : kg < min ? { direction: 'naik', kg: min - kg } : null;
     return { bmi, min, max, adjust };
-  }, [height, weight]);
+  }, [fitness?.bmiMax, fitness?.bmiMin, height, weight]);
 
   const scores = useMemo(() => {
-    const rows = PHYSICAL.map((item) => {
+    const rows = (fitness?.items?.length ? fitness.items : PHYSICAL.map(toFitnessItem)).map((item) => {
       const raw = physical[item.key];
       const value = raw === undefined || raw === '' ? null : Number(raw);
       if (value === null || !Number.isFinite(value) || value < 0) return { ...item, value: null, score: null };
-      const score = itemScore(value, item.higher, item.target[gender], item.floor[gender]);
+      const score = itemScore(value, item.higher, gender === 'L' ? item.targetL : item.targetP, gender === 'L' ? item.floorL : item.floorP);
       return { ...item, value, score };
     });
     const filled = rows.filter((row) => row.score !== null);
     const total = filled.length ? filled.reduce((sum, row) => sum + (row.score ?? 0), 0) / filled.length : null;
     return { rows, total };
-  }, [gender, physical]);
+  }, [fitness?.items, gender, physical]);
 
   return (
     <div className="space-y-6">
       <section className="member-card space-y-4 p-5">
         <div>
           <h2 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">
-            Kalkulator Usia Presisi
+            {fitness?.ageTitle || 'Kalkulator Usia Presisi'}
           </h2>
           <p className="mt-0.5 text-[11px] font-semibold text-slate-400">
-            Usia dihitung sampai tanggal pembukaan pendidikan resmi.
+            {fitness?.ageDescription || 'Usia dihitung sampai tanggal pembukaan pendidikan resmi.'}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -136,10 +145,10 @@ export function CalculatorPage() {
       <section className="member-card space-y-4 p-5">
         <div>
           <h2 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">
-            Kalkulator BMI & Berat Badan Ideal
+            {fitness?.bmiTitle || 'Kalkulator BMI & Berat Badan Ideal'}
           </h2>
           <p className="mt-0.5 text-[11px] font-semibold text-slate-400">
-            Target penyesuaian berat badan memakai rentang BMI 18,5–24,9.
+            {fitness?.bmiDescription || 'Target penyesuaian berat badan memakai rentang BMI yang diatur admin.'}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -156,7 +165,7 @@ export function CalculatorPage() {
           <div className="rounded-2xl bg-slate-50 p-3 dark:bg-white/5">
             <p className="text-[10px] font-bold uppercase text-slate-400">BMI</p>
             <p className="mt-1 text-xl font-extrabold text-member-600">{body ? body.bmi.toFixed(1) : '–'}</p>
-            <p className="text-[11px] font-semibold text-slate-400">{body ? bmiBand(body.bmi) : 'Isi tinggi dan berat'}</p>
+            <p className="text-[11px] font-semibold text-slate-400">{body ? bmiBand(body.bmi, fitness?.bmiMin || 18.5, fitness?.bmiMax || 24.9) : 'Isi tinggi dan berat'}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 p-3 dark:bg-white/5">
             <p className="text-[10px] font-bold uppercase text-slate-400">Berat ideal</p>
@@ -181,10 +190,10 @@ export function CalculatorPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">
-              Kalkulator Skor Jasmani Baku POLRI/TNI
+              {fitness?.physicalTitle || 'Kalkulator Skor Jasmani Baku POLRI/TNI'}
             </h2>
             <p className="mt-0.5 text-[11px] font-semibold text-slate-400">
-              Push-up, sit-up, pull-up, lari 12 menit, shuttle run, dan renang. Skor 0–100 adalah estimasi latihan.
+              {fitness?.physicalDescription || 'Skor 0–100 adalah estimasi latihan berdasarkan target yang diatur admin.'}
             </p>
           </div>
           <div className="inline-flex rounded-full border border-slate-200/70 bg-slate-100/80 p-1 dark:border-white/10 dark:bg-white/5">
@@ -201,7 +210,7 @@ export function CalculatorPage() {
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PHYSICAL.map((item) => (
+          {scores.rows.map((item) => (
             <label key={item.key} className="space-y-1 text-[11px] font-bold uppercase text-slate-400">
               {item.label} ({item.unit})
               <input
@@ -226,6 +235,104 @@ export function CalculatorPage() {
           <p className="mt-1 text-xl font-extrabold text-member-600">{scores.total === null ? '–' : scores.total.toFixed(1)}</p>
         </div>
       </section>
+      <ManagedCalculators />
     </div>
   );
+}
+
+function toFitnessItem(item: (typeof PHYSICAL)[number]): FitnessCopy['items'][number] {
+  return {
+    key: item.key,
+    label: item.label,
+    unit: item.unit,
+    higher: item.higher,
+    targetL: item.target.L,
+    targetP: item.target.P,
+    floorL: item.floor.L,
+    floorP: item.floor.P,
+  };
+}
+
+type RemoteCalculator = { id: string; slug: string; title: string; description: string; config: CalculatorConfig };
+type RemoteGroup = { categoryLabel: string; items: RemoteCalculator[] };
+
+function ManagedCalculators() {
+  const groups = useQuery({ queryKey: ['member-calculators'], queryFn: () => apiGet<RemoteGroup[]>('/calculators') });
+  const items = (groups.data ?? []).flatMap((group) => group.items ?? []);
+  const [slug, setSlug] = useState('');
+  const active = items.find((item) => item.slug === slug) ?? items[0];
+  const [values, setValues] = useState<Record<string, string>>({});
+  const result = useMemo(() => (active ? scoreConfigured(active.config, values) : null), [active, values]);
+  if (!items.length) return null;
+  return (
+    <section className="member-card space-y-4 p-5">
+      <div>
+        <h2 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-ink-50">Kalkulator hasil tes</h2>
+        <p className="mt-0.5 text-[11px] font-semibold text-slate-400">Bobot dan tabel skor mengikuti pengaturan admin.</p>
+      </div>
+      <label className="block space-y-1 text-[11px] font-bold uppercase text-slate-400">
+        Pilih kalkulator
+        <select className={fieldClass} value={active?.slug ?? ''} onChange={(event) => { setSlug(event.target.value); setValues({}); }}>
+          {items.map((item) => (
+            <option key={item.id} value={item.slug}>{item.title}</option>
+          ))}
+        </select>
+      </label>
+      {active ? <p className="text-xs font-semibold text-slate-500">{active.description}</p> : null}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(active?.config.inputs ?? []).map((input) => (
+          <label key={input.key} className="space-y-1 text-[11px] font-bold uppercase text-slate-400">
+            {input.label} {input.unit ? `(${input.unit})` : ''}
+            {input.type === 'select' ? (
+              <select className={fieldClass} value={values[input.key] ?? ''} onChange={(event) => setValues((current) => ({ ...current, [input.key]: event.target.value }))}>
+                <option value="">Pilih</option>
+                {(input.options ?? []).map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input className={fieldClass} inputMode="decimal" value={values[input.key] ?? ''} onChange={(event) => setValues((current) => ({ ...current, [input.key]: event.target.value }))} />
+            )}
+          </label>
+        ))}
+      </div>
+      {result ? (
+        <div className="space-y-2">
+          {result.groups.map((group) => (
+            <div key={group.key} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-sm dark:bg-white/5">
+              <span className="font-semibold text-slate-600 dark:text-ink-200">{group.label}</span>
+              <span className="font-extrabold text-member-600">{group.weightedValue.toFixed(1)}</span>
+            </div>
+          ))}
+          <p className="text-sm font-extrabold text-slate-800 dark:text-ink-50">
+            {active?.config.resultLabel || 'Nilai'} : {result.total.toFixed(1)}
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function scoreConfigured(config: CalculatorConfig, values: Record<string, string>) {
+  const numeric = (key: string) => {
+    const value = Number(values[key]);
+    return Number.isFinite(value) ? value : 0;
+  };
+  const inputScore = (key: string) => {
+    const value = numeric(key);
+    const threshold = config.thresholds?.find((item) => item.inputKey === key);
+    if (!threshold?.rows.length) return value;
+    const rows = [...threshold.rows].sort((left, right) => left.value - right.value);
+    if (threshold.comparison === 'LOWER_BETTER') {
+      return (rows.find((row) => value <= row.value) ?? rows[rows.length - 1]).score;
+    }
+    const met = rows.filter((row) => value >= row.value);
+    return (met[met.length - 1] ?? rows[0]).score;
+  };
+  const groups = (config.groups ?? []).map((group) => {
+    const parts = group.inputs.map(inputScore);
+    const raw = group.aggregator === 'average' && parts.length ? parts.reduce((sum, part) => sum + part, 0) / parts.length : parts.reduce((sum, part) => sum + part, 0);
+    return { key: group.key, label: group.label, weightedValue: raw * (group.weight || 0) };
+  });
+  return { groups, total: groups.reduce((sum, group) => sum + group.weightedValue, 0) };
 }

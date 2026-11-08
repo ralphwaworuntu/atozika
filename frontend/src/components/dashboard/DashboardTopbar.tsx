@@ -9,7 +9,8 @@ import { SidebarToggleButton } from '@/components/dashboard/SidebarToggleButton'
 import { AtozikaMascot } from '@/components/dashboard/member/AtozikaMascot';
 import { ExpBar } from '@/components/dashboard/member/ExpBar';
 import { IndicatorBoard } from '@/components/dashboard/member/IndicatorBoard';
-import { lastSevenDays, memberSearchItems } from '@/lib/memberHome';
+import { lastSevenDays } from '@/lib/memberHome';
+import { applyMemberMenu, useMemberChrome } from '@/hooks/useMemberChrome';
 import { formatDate } from '@/utils/format';
 import { apiGet } from '@/lib/api';
 import type { DashboardOverview } from '@/types/dashboard';
@@ -29,6 +30,8 @@ export function DashboardTopbar() {
   const [focused, setFocused] = useState(false);
   const sidebarOpen = useSidebarStore((state) => state.isOpen);
   const toggleSidebar = useSidebarStore((state) => state.toggle);
+  const chrome = useMemberChrome();
+  const memberSearchItems = applyMemberMenu(chrome.data?.member.menu).flatMap((section) => section.items);
   const { data: overview } = useQuery({
     queryKey: ['dashboard-overview'],
     queryFn: () => apiGet<DashboardOverview>('/dashboard/overview'),
@@ -105,7 +108,7 @@ export function DashboardTopbar() {
     const q = query.trim().toLowerCase();
     if (!q) return [];
     return memberSearchItems.filter((item) => item.label.toLowerCase().includes(q)).slice(0, 8);
-  }, [query]);
+  }, [memberSearchItems, query]);
 
   const showResults = focused && query.trim().length > 0;
 

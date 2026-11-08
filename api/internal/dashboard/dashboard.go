@@ -8,6 +8,7 @@ import (
 	"atozika/internal/membership"
 	"atozika/internal/middleware"
 	"atozika/internal/models"
+	"atozika/internal/sitecontent"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -81,6 +82,14 @@ func (h *Handler) Overview(c *fiber.Ctx) error {
 		"tryoutResults": results,
 		"slides":        slides,
 		"summary":       fiber.Map{"tryouts": tryoutCount, "materials": materialCount, "pendingPayments": pending},
+	})
+}
+
+func (h *Handler) Chrome(c *fiber.Ctx) error {
+	return httpx.Success(c, fiber.Map{
+		"member":  sitecontent.LoadMember(h.DB),
+		"boards":  sitecontent.LoadBoards(h.DB),
+		"fitness": sitecontent.LoadFitness(h.DB),
 	})
 }
 

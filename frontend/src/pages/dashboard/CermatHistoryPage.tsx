@@ -1,15 +1,21 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Gauge, ScanEye, Target, Trophy } from 'lucide-react';
 import { apiGet } from '@/lib/api';
-import { formatDate } from '@/utils/format';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { MembershipRequired } from '@/components/dashboard/MembershipRequired';
-import { PageHeader } from '@/components/common/PageHeader';
-import type { CermatMode } from '@/types/cermat';
-import { CERMAT_MODE_LABELS } from '@/types/cermat';
+import { CERMAT_MODE_LABELS, type CermatMode } from '@/types/cermat';
+import { FilterPills, LearningPageHeader, type LearningLayout } from '@/components/dashboard/member/LearningPageHeader';
+import {
+  BestScoreCard,
+  HistoryResults,
+  HistoryStatGrid,
+  averageScore,
+  formatHistoryDate,
+  roundedScore,
+  type HistoryEntry,
+} from '@/components/dashboard/member/HistoryBoard';
 
 type CermatHistoryAttempt = {
   id: string;
@@ -19,33 +25,80 @@ type CermatHistoryAttempt = {
   averageScore: number;
   totalCorrect: number;
   totalQuestions: number;
+  questionCount?: number;
+  durationSeconds?: number;
   finishedAt?: string | null;
   startedAt: string;
-  sessions: Array<{
-    id: string;
-    sessionIndex: number;
-    totalQuestions: number;
-    correctCount: number;
-    score: number | null;
-    finishedAt?: string | null;
-    createdAt: string;
-  }>;
 };
 
-const HISTORY_MODES: CermatMode[] = ['IMAGE', 'NUMBER', 'LETTER'];
+const MODE_VISUAL: Record<string, { image: string; label: string }> = {
+  IMAGE: { image: '/illustrations/cermat-gambar-hilang.jpg', label: CERMAT_MODE_LABELS.IMAGE },
+  LETTER: { image: '/illustrations/cermat-huruf-hilang.jpg', label: CERMAT_MODE_LABELS.LETTER },
+  NUMBER: { image: '/illustrations/cermat-angka-hilang.jpg', label: CERMAT_MODE_LABELS.NUMBER },
+};
+
+const FILTERS = ['Semua', CERMAT_MODE_LABELS.IMAGE, CERMAT_MODE_LABELS.LETTER, CERMAT_MODE_LABELS.NUMBER] as const;
 
 export function CermatHistoryPage() {
   const membership = useMembershipStatus();
-  const [activeMode, setActiveMode] = useState<CermatMode>('IMAGE');
+  const [query, setQuery] = useState('');
+  const [layout, setLayout] = useState<LearningLayout>('grid');
+  const [filter, setFilter] = useState<string>('Semua');
   const { data, isLoading } = useQuery({
     queryKey: ['cermat-history'],
     queryFn: () => apiGet<CermatHistoryAttempt[]>('/exams/cermat/history'),
     enabled: Boolean(membership.data?.isActive),
   });
 
-  const filtered = useMemo(() => (data ?? []).filter((item) => item.mode === activeMode), [activeMode, data]);
+  const rows = useMemo(() => {
+    return (data ?? []).map((item) => {
+      const visual = MODE_VISUAL[item.mode] ?? { image: '/illustrations/icon-kecermatan.jpg', label: item.mode };
+      const score = roundedScore(item.averageScore);
+      const perSession = item.questionCount || (item.sessionCount ? Math.round(item.totalQuestions / item.sessionCount) : 0);
+      const when = formatHistoryDate(item.finishedAt ?? item.startedAt);
+      const facts = [
+        { label: 'Tanggal', value: when },
+        { label: 'Jawaban benar', value: `${item.totalCorrect}/${item.totalQuestions}` },
+        { label: 'Soal per sesi', value: String(perSession || 0) },
+        { label: 'Waktu sesi', value: item.durationSeconds ? `${item.durationSeconds} detik` : 'Tidak tercatat' },
+      ];
+      return {
+        label: visual.label,
+        score,
+        correct: item.totalCorrect,
+        entry: {
+          id: item.id,
+          title: visual.label,
+          subtitle: `${item.sessionCount || item.totalSessions} sesi selesai`,
+          meta: facts.map((fact) => fact.value).join(' '),
+          facts,
+          icon: visual.image,
+          score,
+          href: `/app/tes-kecermatan/hasil/${item.id}`,
+          action: 'Lihat Skor',
+        } satisfies HistoryEntry,
+      };
+    });
+  }, [data]);
 
-  if (membership.isLoading) {
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (filter !== 'Semua' && row.label !== filter) return false;
+      if (!term) return true;
+      return `${row.entry.title} ${row.entry.meta}`.toLowerCase().includes(term);
+    });
+  }, [filter, query, rows]);
+
+  const scores = rows.map((row) => row.score);
+  const best = rows.reduce<(typeof rows)[number] | undefined>((top, row) => {
+    if (row.score == null) return top;
+    if (!top || (top.score ?? -1) < row.score) return row;
+    return top;
+  }, undefined);
+  const totalCorrect = rows.reduce((sum, row) => sum + row.correct, 0);
+
+  if (membership.isLoading || (membership.data?.isActive && (isLoading || !data))) {
     return <Skeleton className="h-72" />;
   }
 
@@ -55,67 +108,55 @@ export function CermatHistoryPage() {
 
   if (membership.data?.allowCermat === false) {
     return (
-      <section className="rounded-3xl border border-brand-200 bg-brand-50 p-6 text-sm text-brand-800">
+      <section className="member-card p-6 text-sm font-semibold text-slate-600 dark:text-ink-200">
         Paket membership kamu tidak mencakup akses tes kecermatan. Hubungi admin untuk upgrade paket.
       </section>
     );
   }
 
-  if (isLoading || !data) {
-    return <Skeleton className="h-72" />;
-  }
-
   return (
-    <section className="page-shell">
-      <PageHeader
-        eyebrow="Riwayat Tes Kecermatan"
-        title="Rekap Tes Kecermatan"
-        description="Setiap baris adalah satu paket tes lengkap. Buka Lihat Skor untuk halaman skoring per sesi."
-        action={
-          <>
-            {HISTORY_MODES.map((mode) => (
-              <Button
-                key={mode}
-                variant={activeMode === mode ? 'primary' : 'outline'}
-                onClick={() => setActiveMode(mode)}
-              >
-                {CERMAT_MODE_LABELS[mode]}
-              </Button>
-            ))}
-          </>
-        }
+    <div className="space-y-5">
+      <LearningPageHeader
+        title="Riwayat Kecermatan"
+        description="Rekap setiap paket tes kecermatan: kecepatan, ketepatan, dan skor rata-rata per sesi."
+        searchPlaceholder="Cari varian tes..."
+        query={query}
+        onQueryChange={setQuery}
+        layout={layout}
+        onLayoutChange={setLayout}
       />
 
-      <div className="rounded-3xl border border-slate-100 bg-white shadow-sm">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">Belum ada riwayat untuk varian ini.</div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {filtered.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center justify-between gap-4 p-5">
-                <div>
-                  <p className="font-semibold text-slate-900">
-                    {CERMAT_MODE_LABELS[item.mode]} — {item.sessionCount} sesi
-                  </p>
-                  <p className="text-sm text-slate-500">{formatDate(item.finishedAt ?? item.startedAt)}</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {item.totalCorrect}/{item.totalQuestions} benar keseluruhan
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-slate-900">{item.averageScore ?? 0}%</p>
-                    <p className="text-sm text-slate-500">Rata-rata skor</p>
-                  </div>
-                  <Button asChild variant="outline">
-                    <Link to={`/app/tes-kecermatan/hasil/${item.id}`}>Lihat Skor</Link>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <HistoryStatGrid
+          items={[
+            { icon: <ScanEye className="h-5 w-5" />, tone: 'bg-emerald-50 text-emerald-600', label: 'Paket Selesai', value: String(rows.length), hint: rows.length ? 'Paket kecermatan' : 'Belum ada paket' },
+            { icon: <Target className="h-5 w-5" />, tone: 'bg-sky-50 text-sky-600', label: 'Rata-rata Akurasi', value: `${averageScore(scores) ?? 0}%`, hint: rows.length ? 'Dari seluruh paket' : 'Menunggu tes pertama' },
+            { icon: <Trophy className="h-5 w-5" />, tone: 'bg-amber-50 text-amber-600', label: 'Akurasi Tertinggi', value: `${best?.score ?? 0}%`, hint: best?.entry.title ?? 'Belum ada nilai' },
+            { icon: <Gauge className="h-5 w-5" />, tone: 'bg-violet-50 text-violet-600', label: 'Jawaban Benar', value: String(totalCorrect), hint: rows.length ? 'Seluruh sesi' : 'Belum ada jawaban' },
+          ]}
+        />
+        <BestScoreCard
+          label="Paket paling akurat"
+          name={best ? `${best.entry.title} • ${best.entry.subtitle}` : undefined}
+          score={best?.score ?? null}
+          note="Skor adalah rata-rata ketepatan seluruh sesi dalam satu paket."
+        />
       </div>
-    </section>
+
+      <FilterPills items={FILTERS} value={filter} onChange={setFilter} />
+
+      <HistoryResults
+        layout={layout}
+        entries={filtered.map((row) => row.entry)}
+        emptyTitle={rows.length ? 'Tidak ada tes yang cocok' : 'Belum ada riwayat kecermatan'}
+        emptyText={
+          rows.length
+            ? 'Pilih varian lain atau kosongkan pencarian.'
+            : 'Selesaikan satu paket tes kecermatan untuk melihat akurasi tiap sesi di halaman ini.'
+        }
+        emptyHref="/app/tes-kecermatan"
+        emptyAction="Mulai Tes Kecermatan"
+      />
+    </div>
   );
 }

@@ -6,6 +6,7 @@ import { getAssetUrl } from '@/lib/media';
 import type { Tryout } from '@/types/exam';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { enterExamFullscreen } from '@/hooks/useFullscreenExam';
 import { useMembershipStatus } from '@/hooks/useMembershipStatus';
 import { getPsikoSequenceBySubCategory, isPolriPsikoTryout } from '@/utils/tryoutPackage';
 import { cn } from '@/utils/cn';
@@ -105,12 +106,13 @@ export function TryoutDetailPage() {
     ...(isPsikoPackage ? [{ label: 'Waktu Akses Berakhir Paket', value: formatDateTime(packageHeadTryout?.closeAt) }] : []),
   ];
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!packageHeadTryout || !status.canStart) return;
     if (!hasActiveMembership && !packageIsFree) {
       toast.error('Aktifkan paket untuk mulai tryout.');
       return;
     }
+    await enterExamFullscreen();
     navigate('/app/latihan/tryout/mulai', {
       state: {
         startTryoutSlug: packageHeadTryout.slug,
