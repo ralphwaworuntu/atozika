@@ -50,8 +50,11 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    # File privat dimuat terakhir supaya SMTP kosong atau noreply di backend/.env tidak menimpa pengirim produksi.
     env_file:
       - ./backend/.env
+      - path: /opt/atozika-office/private/bimbel-smtp.env
+        required: false
     environment:
       NODE_ENV: production
       PORT: 5000

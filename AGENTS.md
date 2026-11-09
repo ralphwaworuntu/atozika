@@ -71,6 +71,19 @@ Hanya untuk mesin pengembangan. Jangan dipakai di server yang bisa diakses publi
 - Jangan menonaktifkan aturan anti-cheat di klien supaya ujian bisa dilanjutkan. Buka blokir lewat kode di tabel `ExamBlock` atau lewat admin, hanya jika pengguna meminta.
 - Upload pengguna ada di `backend/uploads` dan tidak ikut git.
 
+## Deploy produksi
+
+SMTP produksi tidak disimpan di Git. VPS menyimpannya di `/opt/atozika-office/private/bimbel-smtp.env` (izin `0600`). `docker-compose.yml` memuat file itu terakhir pada service `api`, sehingga nilai kosong atau `noreply@atozika.id` dari `backend/.env` tidak menimpa `info@atozika.id`.
+
+Perintah yang sudah diuji untuk membuat ulang hanya container API, tanpa `--build` dan tanpa file override terpisah:
+
+```bash
+cd /opt/atozika
+docker compose up -d --no-deps --force-recreate api
+```
+
+Jangan membuat ulang API hanya dari salinan Compose lama yang belum memuat file SMTP privat. Password SMTP tidak perlu diisi ulang.
+
 ## Peta kerja yang sering disentuh
 
 - Halaman member: `frontend/src/pages/dashboard/`
