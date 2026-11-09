@@ -225,7 +225,7 @@ func (h *Handler) deliverOTP(email, name, code string) bool {
 		Name:         name,
 		Code:         code,
 		VerifyURL:    base + "/auth/verify",
-		SupportEmail: "hallo@atozika.id",
+		SupportEmail: "support@atozika.id",
 		Brand:        h.Cfg.SMTPFromName,
 	})
 	if err := mail.SendHTML(h.Cfg, email, subject, text, htmlBody); err != nil {

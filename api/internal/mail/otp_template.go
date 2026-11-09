@@ -25,8 +25,9 @@ func RenderRegistrationOTP(data OTPEmail) (subject, text, htmlBody string) {
 	}
 	support := strings.TrimSpace(data.SupportEmail)
 	if support == "" {
-		support = "hallo@atozika.id"
+		support = "support@atozika.id"
 	}
+	logo := "https://atozika.id/logo-atozika.png"
 	who := strings.TrimSpace(data.Name)
 	if who == "" {
 		who = "Sahabat " + brand
@@ -37,21 +38,22 @@ func RenderRegistrationOTP(data OTPEmail) (subject, text, htmlBody string) {
 	htmlBody = strings.ReplaceAll(htmlBody, "{{otp_code}}", html.EscapeString(data.Code))
 	htmlBody = strings.ReplaceAll(htmlBody, "{{verify_url}}", html.EscapeString(data.VerifyURL))
 	htmlBody = strings.ReplaceAll(htmlBody, "{{support_email}}", html.EscapeString(support))
+	htmlBody = strings.ReplaceAll(htmlBody, "{{logo_url}}", html.EscapeString(logo))
 	htmlBody = strings.ReplaceAll(htmlBody, "{{year}}", year)
 
-	subject = "Kode OTP " + brand
+	subject = "Kode OTP pendaftaran " + brand
 	text = strings.Join([]string{
 		"Halo " + who + ",",
 		"",
-		"Kode OTP pendaftaran " + brand + " Anda:",
+		"Terima kasih telah mendaftar. Kode OTP pendaftaran " + brand + " Anda:",
 		"",
 		data.Code,
 		"",
-		"Kode berlaku 10 menit. Jangan berikan kode ini kepada siapa pun.",
+		"Kode ini berlaku 10 menit. Jangan berikan kode ini kepada siapa pun.",
 		"Verifikasi akun: " + data.VerifyURL,
 		"",
 		"Jika Anda tidak merasa mendaftar, abaikan email ini.",
-		"Bantuan: " + support,
+		"Butuh bantuan? Hubungi " + support,
 	}, "\n")
 	return subject, text, htmlBody
 }
