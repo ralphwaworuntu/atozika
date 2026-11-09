@@ -34,4 +34,8 @@ func TestRenderRegistrationOTP(t *testing.T) {
 	if strings.Contains(htmlBody, "{{") || strings.Contains(htmlBody, "Your Company") {
 		t.Fatal("template placeholders were not filled")
 	}
+	_, _, resetHTML := RenderPasswordResetOTP(OTPEmail{Code: "111222", Brand: "ATOZIKA"})
+	if !strings.Contains(resetHTML, "Ganti Password") || !strings.Contains(resetHTML, "111222") || strings.Contains(resetHTML, "{{") {
+		t.Fatal("password reset email did not use the shared template")
+	}
 }

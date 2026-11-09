@@ -14,6 +14,7 @@ import { ParentPage } from '@/pages/public/ParentPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { DashboardHomePage } from '@/pages/dashboard/DashboardHomePage';
 import { AnnouncementsPage } from '@/pages/dashboard/AnnouncementsPage';
 import { MemberProfilePage } from '@/pages/dashboard/MemberProfilePage';
@@ -103,6 +104,7 @@ export default function App() {
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/verify" element={<VerifyEmailPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       <Route path="/app" element={<ProtectedRoute roles={['MEMBER']} />}>

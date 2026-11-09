@@ -17,6 +17,8 @@ type User struct {
 	EmailVerifiedAt        *time.Time     `gorm:"column:emailVerifiedAt" json:"emailVerifiedAt"`
 	EmailVerificationToken *string        `gorm:"column:emailVerificationToken" json:"-"`
 	EmailOtpExpiresAt      *time.Time     `gorm:"column:emailOtpExpiresAt" json:"-"`
+	PasswordResetCode      *string        `gorm:"column:passwordResetCode" json:"-"`
+	PasswordResetExpiresAt *time.Time     `gorm:"column:passwordResetExpiresAt" json:"-"`
 	AvatarURL              *string        `gorm:"column:avatarUrl" json:"avatarUrl"`
 	Phone                  *string        `gorm:"column:phone" json:"phone"`
 	NationalID             *string        `gorm:"column:nationalId" json:"nationalId"`

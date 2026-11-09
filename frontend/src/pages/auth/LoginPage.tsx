@@ -14,7 +14,6 @@ import type { AuthUser } from '@/store/auth';
 import type { ApiResponse } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useContactConfig } from '@/hooks/useContactConfig';
 import { PageHeader } from '@/components/common/PageHeader';
 
 const loginSchema = z.object({
@@ -32,9 +31,6 @@ export function LoginPage() {
   const hydrated = useAuthHydration();
   const [forgotOpen, setForgotOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { data: contact } = useContactConfig();
-  const whatsappNumber = contact?.whatsappConsult ?? contact?.whatsappPrimary ?? '6281234567890';
-  const whatsappHref = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`;
 
   const mutation = useMutation({
     mutationFn: (values: LoginValues) => apiPost<{ user: AuthUser; accessToken: string; refreshToken: string }>('/auth/login', values),
@@ -60,6 +56,16 @@ export function LoginPage() {
       }
       toast.error('Gagal login, periksa kembali data Anda.');
     },
+  });
+
+  const forgotMutation = useMutation({
+    mutationFn: (email: string) => apiPost<{ message: string; otp?: string }>('/auth/forgot-password', { email }),
+    onSuccess: (payload, email) => {
+      toast.success(payload.message || 'Kode OTP dikirim ke email Anda.');
+      if (payload.otp) toast.message(`Kode lokal: ${payload.otp}`);
+      navigate('/auth/reset-password', { state: { email } });
+    },
+    onError: () => toast.error('Gagal mengirim kode OTP.'),
   });
 
   if (hydrated && isAuthenticated) {
@@ -112,13 +118,23 @@ export function LoginPage() {
         </div>
         {forgotOpen && (
           <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4 text-xs text-brand-800">
-            <p className="font-semibold">Silahkan Konfirmasi ke Admin.</p>
-            <p className="mt-2">
-              Admin akan mengirimkan password baru kamu. Setelah itu, silahkan ubah password di pengaturan akun bagian kanan atas dashboard.
-            </p>
-            <a href={whatsappHref} target="_blank" rel="noreferrer" className="mt-3 inline-flex font-semibold text-success-600 underline">
-              Hubungi Admin via WhatsApp
-            </a>
+            <p className="font-semibold">Kirim kode OTP ke email Anda.</p>
+            <p className="mt-2">Kode berlaku 10 menit. Setelah itu, buat password baru di halaman verifikasi.</p>
+            <Button
+              type="button"
+              className="mt-3 w-full"
+              disabled={forgotMutation.isPending}
+              onClick={() => {
+                const email = form.getValues('email').trim();
+                if (!email.includes('@')) {
+                  form.setError('email', { message: 'Isi email yang terdaftar' });
+                  return;
+                }
+                forgotMutation.mutate(email);
+              }}
+            >
+              {forgotMutation.isPending ? 'Mengirim...' : 'Kirim kode ke email'}
+            </Button>
           </div>
         )}
         <Button type="submit" size="lg" className="w-full" disabled={mutation.isPending}>

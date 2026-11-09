@@ -51,6 +51,8 @@ model User {
   emailVerifiedAt        DateTime?
   emailVerificationToken String?
   emailOtpExpiresAt      DateTime?
+  passwordResetCode      String?
+  passwordResetExpiresAt DateTime?
   avatarUrl              String?
   phone                  String?
   nationalId             String?
