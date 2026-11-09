@@ -16,6 +16,7 @@ type User struct {
 	IsEmailVerified        bool           `gorm:"column:isEmailVerified;default:false" json:"isEmailVerified"`
 	EmailVerifiedAt        *time.Time     `gorm:"column:emailVerifiedAt" json:"emailVerifiedAt"`
 	EmailVerificationToken *string        `gorm:"column:emailVerificationToken" json:"-"`
+	EmailOtpExpiresAt      *time.Time     `gorm:"column:emailOtpExpiresAt" json:"-"`
 	AvatarURL              *string        `gorm:"column:avatarUrl" json:"avatarUrl"`
 	Phone                  *string        `gorm:"column:phone" json:"phone"`
 	NationalID             *string        `gorm:"column:nationalId" json:"nationalId"`

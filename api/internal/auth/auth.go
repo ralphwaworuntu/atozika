@@ -2,14 +2,17 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"strings"
 	"time"
 
 	"atozika/internal/config"
 	"atozika/internal/httpx"
 	"atozika/internal/id"
+	"atozika/internal/mail"
 	"atozika/internal/membership"
 	"atozika/internal/middleware"
 	"atozika/internal/models"
@@ -67,8 +70,9 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	token := randomToken(40)
+	code := newOTP()
 	now := time.Now()
+	expires := now.Add(otpTTL)
 	user := models.User{
 		ID:                     id.New(),
 		Name:                   body.Name,
@@ -77,7 +81,8 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		Role:                   "MEMBER",
 		Phone:                  strPtr(body.Phone),
 		ReferralCode:           h.uniqueReferral(),
-		EmailVerificationToken: &token,
+		EmailVerificationToken: &code,
+		EmailOtpExpiresAt:      &expires,
 		CreatedAt:              now,
 		UpdatedAt:              now,
 	}
@@ -99,10 +104,10 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 	payload := fiber.Map{
 		"email":   user.Email,
-		"message": "Registrasi berhasil. Silakan verifikasi email Anda terlebih dahulu.",
+		"message": "Registrasi berhasil. Masukkan kode OTP 6 digit yang dikirim ke email Anda.",
 	}
-	if h.Cfg.NodeEnv != "production" {
-		payload["verificationToken"] = token
+	if !h.deliverOTP(user.Email, user.Name, code) && h.Cfg.NodeEnv != "production" {
+		payload["otp"] = code
 	}
 	return httpx.Created(c, payload)
 }
@@ -139,20 +144,41 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 func (h *Handler) VerifyEmail(c *fiber.Ctx) error {
 	var body struct {
-		Token string `json:"token"`
+		Email string `json:"email"`
+		Code  string `json:"code"`
+		OTP   string `json:"otp"`
 	}
-	if err := c.BodyParser(&body); err != nil || len(body.Token) < 10 {
-		return httpx.New(400, "Token tidak valid")
+	if err := c.BodyParser(&body); err != nil {
+		return httpx.New(400, "Kode OTP tidak valid")
+	}
+	code := normalizeOTP(body.Code)
+	if code == "" {
+		code = normalizeOTP(body.OTP)
+	}
+	email := strings.ToLower(strings.TrimSpace(body.Email))
+	if len(code) != 6 || !strings.Contains(email, "@") {
+		return httpx.New(400, "Masukkan email dan 6 digit OTP")
 	}
 	var user models.User
-	if err := h.DB.Where(`"emailVerificationToken" = ?`, body.Token).First(&user).Error; err != nil {
-		return httpx.New(400, "Token verifikasi tidak valid")
+	if err := h.DB.Where("email = ?", email).First(&user).Error; err != nil || user.IsEmailVerified {
+		return httpx.New(400, "Kode OTP tidak valid")
+	}
+	stored := ""
+	if user.EmailVerificationToken != nil {
+		stored = *user.EmailVerificationToken
+	}
+	if len(stored) != 6 || subtle.ConstantTimeCompare([]byte(stored), []byte(code)) != 1 {
+		return httpx.New(400, "Kode OTP tidak valid")
+	}
+	if !otpFresh(user.EmailOtpExpiresAt, time.Now()) {
+		return httpx.New(400, "Kode OTP kedaluwarsa. Kirim ulang kode baru.")
 	}
 	now := time.Now()
 	h.DB.Model(&user).Updates(map[string]any{
 		"isEmailVerified":        true,
 		"emailVerifiedAt":        now,
 		"emailVerificationToken": nil,
+		"emailOtpExpiresAt":      nil,
 		"updatedAt":              now,
 	})
 	session, err := h.createSession(user.ID, true)
@@ -179,13 +205,42 @@ func (h *Handler) Resend(c *fiber.Ctx) error {
 		}
 		return httpx.New(400, "Email sudah diverifikasi")
 	}
-	token := randomToken(40)
-	h.DB.Model(&user).Updates(map[string]any{"emailVerificationToken": token, "updatedAt": time.Now()})
-	payload := fiber.Map{"email": user.Email, "message": "Token verifikasi diperbarui."}
-	if h.Cfg.NodeEnv != "production" {
-		payload["verificationToken"] = token
+	code := newOTP()
+	expires := time.Now().Add(otpTTL)
+	h.DB.Model(&user).Updates(map[string]any{
+		"emailVerificationToken": code,
+		"emailOtpExpiresAt":      expires,
+		"updatedAt":              time.Now(),
+	})
+	payload := fiber.Map{"email": user.Email, "message": "Kode OTP baru dikirim ke email Anda. Berlaku 10 menit."}
+	if !h.deliverOTP(user.Email, user.Name, code) && h.Cfg.NodeEnv != "production" {
+		payload["otp"] = code
 	}
 	return httpx.Success(c, payload)
+}
+
+func (h *Handler) deliverOTP(email, name, code string) bool {
+	who := strings.TrimSpace(name)
+	if who == "" {
+		who = "Sahabat ATOZIKA"
+	}
+	body := strings.Join([]string{
+		"Halo " + who + ",",
+		"",
+		"Kode OTP pendaftaran ATOZIKA Anda:",
+		"",
+		code,
+		"",
+		"Kode berlaku 10 menit. Jangan berikan kode ini kepada siapa pun.",
+		"Jika Anda tidak merasa mendaftar, abaikan email ini.",
+	}, "\n")
+	if err := mail.Send(h.Cfg, email, "Kode OTP ATOZIKA", body); err != nil {
+		if err != mail.ErrNotConfigured {
+			log.Printf("otp email: %v", err)
+		}
+		return false
+	}
+	return true
 }
 
 func (h *Handler) Refresh(c *fiber.Ctx) error {
@@ -502,7 +557,7 @@ func (h *Handler) buildProfile(userID string) (fiber.Map, error) {
 		"primaryTarget": user.PrimaryTarget, "backupTarget": user.BackupTarget,
 		"surgeryHistory": user.SurgeryHistory, "eyeCondition": user.EyeCondition,
 		"fullBodyUrl": user.FullBodyURL, "profileDocuments": json.RawMessage(user.ProfileDocuments),
-		"updatedAt": user.UpdatedAt,
+		"updatedAt":  user.UpdatedAt,
 		"memberArea": memberArea, "membership": membershipData,
 	}, nil
 }

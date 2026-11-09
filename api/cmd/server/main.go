@@ -115,7 +115,7 @@ func main() {
 
 	ag := v1.Group("/auth")
 	ag.Post("/register", authLimit, authH.Register)
-	ag.Post("/verify-email", authH.VerifyEmail)
+	ag.Post("/verify-email", authLimit, authH.VerifyEmail)
 	ag.Post("/resend-verification", authLimit, authH.Resend)
 	ag.Post("/login", authLimit, authH.Login)
 	ag.Post("/refresh", authH.Refresh)

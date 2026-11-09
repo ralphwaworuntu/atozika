@@ -72,7 +72,7 @@ export function RegisterPage() {
 
   const mutation = useMutation({
     mutationFn: (values: RegisterValues) =>
-      apiPost<{ email: string; verificationToken: string }>('/auth/register', {
+      apiPost<{ email: string; otp?: string }>('/auth/register', {
         name: values.name,
         email: values.email,
         phone: values.phone,
@@ -81,8 +81,11 @@ export function RegisterPage() {
         referralCode,
       }),
     onSuccess: (payload) => {
-      toast.success('Registrasi berhasil! Silakan verifikasi email kamu.');
-      navigate('/auth/verify', { state: { email: payload.email, verificationToken: payload.verificationToken } });
+      toast.success('Registrasi berhasil. Masukkan OTP 6 digit dari email.');
+      if (payload.otp) {
+        toast.message(`Kode lokal: ${payload.otp}`);
+      }
+      navigate('/auth/verify', { state: { email: payload.email } });
     },
     onError: () => toast.error('Gagal mendaftar, silakan coba lagi.'),
   });

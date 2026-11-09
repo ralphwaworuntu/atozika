@@ -50,7 +50,7 @@ export function LoginPage() {
       const code = axiosError.response?.data?.details?.code;
       if (code === 'EMAIL_NOT_VERIFIED') {
         const targetEmail = axiosError.response?.data?.details?.email || form.getValues('email');
-        toast.error('Email belum diverifikasi. Silakan cek inbox Anda.');
+        toast.error('Email belum diverifikasi. Masukkan OTP 6 digit dari email Anda.');
         navigate('/auth/verify', { state: { email: targetEmail } });
         return;
       }
