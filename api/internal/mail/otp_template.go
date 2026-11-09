@@ -27,7 +27,7 @@ func RenderRegistrationOTP(data OTPEmail) (subject, text, htmlBody string) {
 	if support == "" {
 		support = "support@atozika.id"
 	}
-	logo := "https://atozika.id/logo-atozika.png"
+	logo := "https://atozika.id/logo-green.png"
 	who := strings.TrimSpace(data.Name)
 	if who == "" {
 		who = "Sahabat " + brand

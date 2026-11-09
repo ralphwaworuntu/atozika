@@ -22,7 +22,7 @@ func TestRenderRegistrationOTP(t *testing.T) {
 	if !strings.Contains(htmlBody, "482931") || !strings.Contains(htmlBody, "support@atozika.id") {
 		t.Fatalf("html missing code or support email")
 	}
-	if !strings.Contains(htmlBody, "https://atozika.id/logo-atozika.png") || !strings.Contains(htmlBody, "Verifikasi Pendaftaran") {
+	if !strings.Contains(htmlBody, "https://atozika.id/logo-green.png") || !strings.Contains(htmlBody, "Verifikasi Pendaftaran") {
 		t.Fatalf("html missing logo or Indonesian copy")
 	}
 	if strings.Contains(htmlBody, "icon-circle") || strings.Contains(htmlBody, "Verify Your Registration") {
