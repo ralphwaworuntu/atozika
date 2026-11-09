@@ -220,27 +220,33 @@ func (h *Handler) Resend(c *fiber.Ctx) error {
 }
 
 func (h *Handler) deliverOTP(email, name, code string) bool {
-	who := strings.TrimSpace(name)
-	if who == "" {
-		who = "Sahabat ATOZIKA"
-	}
-	body := strings.Join([]string{
-		"Halo " + who + ",",
-		"",
-		"Kode OTP pendaftaran ATOZIKA Anda:",
-		"",
-		code,
-		"",
-		"Kode berlaku 10 menit. Jangan berikan kode ini kepada siapa pun.",
-		"Jika Anda tidak merasa mendaftar, abaikan email ini.",
-	}, "\n")
-	if err := mail.Send(h.Cfg, email, "Kode OTP ATOZIKA", body); err != nil {
+	base := strings.TrimRight(firstPublicURL(h.Cfg.AppURL, h.Cfg.FrontendURL), "/")
+	subject, text, htmlBody := mail.RenderRegistrationOTP(mail.OTPEmail{
+		Name:         name,
+		Code:         code,
+		VerifyURL:    base + "/auth/verify",
+		SupportEmail: "hallo@atozika.id",
+		Brand:        h.Cfg.SMTPFromName,
+	})
+	if err := mail.SendHTML(h.Cfg, email, subject, text, htmlBody); err != nil {
 		if err != mail.ErrNotConfigured {
 			log.Printf("otp email: %v", err)
 		}
 		return false
 	}
 	return true
+}
+
+func firstPublicURL(candidates ...string) string {
+	for _, candidate := range candidates {
+		for _, part := range strings.Split(candidate, ",") {
+			part = strings.TrimRight(strings.TrimSpace(part), "/")
+			if part != "" {
+				return part
+			}
+		}
+	}
+	return "http://localhost:5174"
 }
 
 func (h *Handler) Refresh(c *fiber.Ctx) error {
