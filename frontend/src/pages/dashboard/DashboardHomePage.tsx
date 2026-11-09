@@ -295,18 +295,6 @@ export function DashboardHomePage() {
             </div>
           </div>
         </div>
-
-        <Link
-          to="/app/paket-membership"
-          className="relative block overflow-hidden rounded-3xl border border-blue-200/70 bg-gradient-to-r from-[#D7EEFF] to-[#E3F2FD] p-4 shadow-member dark:border-blue-500/20 dark:from-blue-950/50 dark:to-ink-800"
-        >
-          <p className="text-sm font-extrabold text-slate-800 dark:text-ink-50">
-            {isActive ? packageName : 'Upgrade ke ATOZIKA PRO'}
-          </p>
-          <p className="mt-1 text-[11px] font-medium text-slate-600 dark:text-ink-200">
-            {isActive ? 'Kelola paket dan perpanjang akses.' : 'Buka tryout unlimited, materi, dan rapor orang tua.'}
-          </p>
-        </Link>
       </aside>
     </div>
   );
