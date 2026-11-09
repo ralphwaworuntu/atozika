@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"atozika/internal/activity"
 	"atozika/internal/config"
 	"atozika/internal/httpx"
 	"atozika/internal/id"
@@ -139,7 +140,32 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	activity.Record(h.DB, user.ID, activity.KindLogin, "Login berhasil", "/auth/login", nil)
 	return httpx.Success(c, session)
+}
+
+func (h *Handler) TrackActivity(c *fiber.Ctx) error {
+	u := middleware.Current(c)
+	if u == nil {
+		return httpx.New(401, "Unauthorized")
+	}
+	var body struct {
+		Path  string `json:"path"`
+		Title string `json:"title"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return httpx.New(400, "Invalid body")
+	}
+	path := strings.TrimSpace(body.Path)
+	if path == "" || !strings.HasPrefix(path, "/app") {
+		return httpx.New(400, "Path tidak valid")
+	}
+	title := strings.TrimSpace(body.Title)
+	if title == "" {
+		title = "Membuka " + path
+	}
+	activity.Record(h.DB, u.ID, activity.KindPage, title, path, nil)
+	return httpx.Success(c, fiber.Map{"ok": true})
 }
 
 func (h *Handler) VerifyEmail(c *fiber.Ctx) error {

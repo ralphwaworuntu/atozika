@@ -236,6 +236,153 @@ func (h *Handler) Impersonate(c *fiber.Ctx) error {
 	return httpx.Success(c, data)
 }
 
+func (h *Handler) DeleteUser(c *fiber.Ctx) error {
+	var user models.User
+	if err := h.DB.First(&user, "id = ?", c.Params("id")).Error; err != nil {
+		return httpx.New(404, "User tidak ditemukan")
+	}
+	if isProtected(user) {
+		return httpx.New(400, "Akun Super Admin tidak dapat dihapus.")
+	}
+	if user.Role != "MEMBER" {
+		return httpx.New(400, "Hanya akun MEMBER yang dapat dihapus dari halaman ini.")
+	}
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		uid := user.ID
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.TryoutAnswer{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.TryoutResult{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.PracticeAnswer{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.PracticeResult{}).Error; err != nil {
+			return err
+		}
+		var sessions []models.CermatSession
+		tx.Select("id").Where(`"userId" = ?`, uid).Find(&sessions)
+		sessionIDs := make([]string, 0, len(sessions))
+		for _, s := range sessions {
+			sessionIDs = append(sessionIDs, s.ID)
+		}
+		if len(sessionIDs) > 0 {
+			if err := tx.Where(`"sessionId" IN ?`, sessionIDs).Delete(&models.CermatAnswer{}).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.CermatSession{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.CermatAttempt{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.MaterialAccess{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.Transaction{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.ExamBlock{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.ExamQuotaUsage{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.MemberMaterialCategory{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.PsychCalculatorSubmission{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"referrerId" = ? OR "referredUserId" = ?`, uid, uid).Delete(&models.Referral{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.MemberActivityLog{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.WhatsAppDispatch{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.RefreshToken{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where(`"userId" = ?`, uid).Delete(&models.MemberArea{}).Error; err != nil {
+			return err
+		}
+		tx.Model(&models.Announcement{}).Where(`"createdById" = ?`, uid).Update("createdById", nil)
+		tx.Model(&models.Material{}).Where(`"uploadedById" = ?`, uid).Update("uploadedById", nil)
+		return tx.Delete(&models.User{}, "id = ?", uid).Error
+	})
+	if err != nil {
+		return err
+	}
+	return httpx.Success(c, fiber.Map{"ok": true, "id": user.ID})
+}
+
+func (h *Handler) ActivityLogs(c *fiber.Ctx) error {
+	q := h.DB.Model(&models.MemberActivityLog{}).Preload("User")
+	if userID := strings.TrimSpace(c.Query("userId")); userID != "" {
+		q = q.Where(`"userId" = ?`, userID)
+	}
+	if kind := strings.TrimSpace(c.Query("kind")); kind != "" {
+		q = q.Where("kind = ?", kind)
+	}
+	limit := 100
+	if n, err := strconv.Atoi(c.Query("limit")); err == nil && n > 0 && n <= 500 {
+		limit = n
+	}
+	var logs []models.MemberActivityLog
+	q.Order(`"createdAt" DESC`).Limit(limit).Find(&logs)
+
+	var members []models.User
+	h.DB.Select(`id, name, email`).Where(`role = ? AND email <> ?`, "MEMBER", hiddenAdminEmail).Order("name ASC").Find(&members)
+
+	type summary struct {
+		UserID       string     `json:"userId"`
+		Name         string     `json:"name"`
+		Email        string     `json:"email"`
+		LastLoginAt  *time.Time `json:"lastLoginAt"`
+		LastSeenAt   *time.Time `json:"lastSeenAt"`
+		PageViews    int64      `json:"pageViews"`
+		TryoutStarts int64      `json:"tryoutStarts"`
+		TryoutDone   int64      `json:"tryoutDone"`
+		PracticeDone int64      `json:"practiceDone"`
+		CermatDone   int64      `json:"cermatDone"`
+		MaterialOpen int64      `json:"materialOpen"`
+	}
+	outSummaries := []summary{}
+	for _, m := range members {
+		item := summary{UserID: m.ID, Name: m.Name, Email: m.Email}
+		var lastLogin models.MemberActivityLog
+		if err := h.DB.Where(`"userId" = ? AND kind = ?`, m.ID, "LOGIN").Order(`"createdAt" DESC`).First(&lastLogin).Error; err == nil {
+			item.LastLoginAt = &lastLogin.CreatedAt
+		}
+		var lastSeen models.MemberActivityLog
+		if err := h.DB.Where(`"userId" = ?`, m.ID).Order(`"createdAt" DESC`).First(&lastSeen).Error; err == nil {
+			item.LastSeenAt = &lastSeen.CreatedAt
+		}
+		h.DB.Model(&models.MemberActivityLog{}).Where(`"userId" = ? AND kind = ?`, m.ID, "PAGE").Count(&item.PageViews)
+		h.DB.Model(&models.MemberActivityLog{}).Where(`"userId" = ? AND kind = ?`, m.ID, "TRYOUT_START").Count(&item.TryoutStarts)
+		h.DB.Model(&models.MemberActivityLog{}).Where(`"userId" = ? AND kind = ?`, m.ID, "TRYOUT_SUBMIT").Count(&item.TryoutDone)
+		h.DB.Model(&models.MemberActivityLog{}).Where(`"userId" = ? AND kind = ?`, m.ID, "PRACTICE_SUBMIT").Count(&item.PracticeDone)
+		h.DB.Model(&models.MemberActivityLog{}).Where(`"userId" = ? AND kind = ?`, m.ID, "CERMAT").Count(&item.CermatDone)
+		h.DB.Model(&models.MemberActivityLog{}).Where(`"userId" = ? AND kind = ?`, m.ID, "MATERIAL_OPEN").Count(&item.MaterialOpen)
+		outSummaries = append(outSummaries, item)
+	}
+
+	items := []fiber.Map{}
+	for _, log := range logs {
+		items = append(items, fiber.Map{
+			"id": log.ID, "userId": log.UserID, "kind": log.Kind, "title": log.Title,
+			"path": log.Path, "meta": log.Meta, "createdAt": log.CreatedAt,
+			"user": fiber.Map{"id": log.User.ID, "name": log.User.Name, "email": log.User.Email},
+		})
+	}
+	return httpx.Success(c, fiber.Map{"items": items, "summaries": outSummaries})
+}
+
 func (h *Handler) MonitoringUsers(c *fiber.Ctx) error {
 	var users []models.User
 	h.DB.Where("role = ?", "MEMBER").Order(`"createdAt" DESC`).Limit(40).Find(&users)

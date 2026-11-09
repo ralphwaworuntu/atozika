@@ -72,6 +72,19 @@ type RefreshToken struct {
 
 func (RefreshToken) TableName() string { return "RefreshToken" }
 
+type MemberActivityLog struct {
+	ID        string         `gorm:"column:id;primaryKey" json:"id"`
+	UserID    string         `gorm:"column:userId;index" json:"userId"`
+	Kind      string         `gorm:"column:kind;index" json:"kind"`
+	Title     string         `gorm:"column:title" json:"title"`
+	Path      *string        `gorm:"column:path" json:"path"`
+	Meta      datatypes.JSON `gorm:"column:meta;type:jsonb" json:"meta"`
+	CreatedAt time.Time      `gorm:"column:createdAt" json:"createdAt"`
+	User      User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+func (MemberActivityLog) TableName() string { return "MemberActivityLog" }
+
 type Announcement struct {
 	ID               string         `gorm:"column:id;primaryKey" json:"id"`
 	Title            string         `gorm:"column:title" json:"title"`

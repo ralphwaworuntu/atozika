@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"atozika/internal/activity"
 	"atozika/internal/httpx"
 	"atozika/internal/id"
 	"atozika/internal/jsonutil"
@@ -195,6 +196,9 @@ func (h *Handler) submitPractice(c *fiber.Ctx, ujian bool) error {
 	}
 	score := (earned / float64(total)) * 100
 	h.DB.Model(&res).Updates(map[string]any{"score": score, "completedAt": now})
+	activity.Record(h.DB, uid, activity.KindPracticeSubmit, "Selesai latihan: "+set.Title, "/app/latihan", map[string]any{
+		"setId": set.ID, "resultId": res.ID, "score": score, "correct": correct, "total": total,
+	})
 	if h.WA != nil {
 		h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "PRACTICE", RefID: res.ID, Title: set.Title, Score: score, Correct: correct, Total: total})
 	}
@@ -489,6 +493,9 @@ func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
 	}
 
 	if sess.AttemptID == nil || *sess.AttemptID == "" {
+		activity.Record(h.DB, uid, activity.KindCermat, "Selesai tes kecermatan", "/app/latihan/kecermatan", map[string]any{
+			"sessionId": sess.ID, "score": score, "correct": correct, "total": total,
+		})
 		if h.WA != nil {
 			h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "CERMAT", RefID: sess.ID, Title: "Tes kecermatan", Score: score, Correct: correct, Total: total})
 		}
@@ -541,6 +548,9 @@ func (h *Handler) CermatSubmit(c *fiber.Ctx) error {
 	}
 	h.DB.Model(&attempt).Updates(map[string]any{
 		"finishedAt": now, "averageScore": averageScore, "totalAnswered": totalCorrect,
+	})
+	activity.Record(h.DB, uid, activity.KindCermat, "Selesai tes kecermatan", "/app/latihan/kecermatan", map[string]any{
+		"attemptId": attempt.ID, "score": averageScore, "correct": totalCorrect, "total": totalQuestions,
 	})
 	if h.WA != nil {
 		h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "CERMAT", RefID: attempt.ID, Title: "Tes kecermatan", Score: averageScore, Correct: totalCorrect, Total: totalQuestions})

@@ -100,6 +100,21 @@ model User {
   materialCategories     MemberMaterialCategory[]
   materialAccesses       MaterialAccess[]
   whatsappDispatches     WhatsAppDispatch[]
+  activityLogs           MemberActivityLog[]
+}
+
+model MemberActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  title     String
+  path      String?
+  meta      Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([kind, createdAt])
 }
 
 model MemberArea {

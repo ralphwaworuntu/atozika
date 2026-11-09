@@ -179,6 +179,8 @@ func Register(r fiber.Router, h *Handler) {
 	r.Patch("/users/:id/status", h.PatchStatus)
 	r.Post("/users/:id/reset-password", h.ResetPassword)
 	r.Post("/users/:id/impersonate", h.Impersonate)
+	r.Delete("/users/:id", h.DeleteUser)
+	r.Get("/activity-logs", h.ActivityLogs)
 
 	r.Post("/tools/convert-word-to-csv", h.ConvertWord)
 	r.Post("/tools/questions-to-csv", h.QuestionsToCSV)

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"atozika/internal/activity"
 	"atozika/internal/httpx"
 	"atozika/internal/id"
 	"atozika/internal/jsonutil"
@@ -202,6 +203,9 @@ func (h *Handler) startTryout(c *fiber.Ctx, ujian bool) error {
 	now := time.Now()
 	res := models.TryoutResult{ID: id.New(), UserID: uid, TryoutID: target.ID, Mode: mode, StartedAt: now, CreatedAt: now}
 	h.DB.Create(&res)
+	activity.Record(h.DB, uid, activity.KindTryoutStart, "Mulai tryout: "+target.Name, "/app/latihan/tryout", map[string]any{
+		"tryoutId": target.ID, "slug": target.Slug, "mode": mode, "resultId": res.ID,
+	})
 	out := fiber.Map{"resultId": res.ID, "durationMinutes": target.DurationMinutes}
 	if !ujian {
 		out["startedSlug"] = target.Slug
@@ -318,6 +322,9 @@ func (h *Handler) submitTryout(c *fiber.Ctx, ujian bool) error {
 	dur := t.DurationMinutes * 60
 	now := time.Now()
 	h.DB.Model(&result).Updates(map[string]any{"completedAt": now, "score": score, "durationSeconds": dur})
+	activity.Record(h.DB, uid, activity.KindTryoutSubmit, "Selesai tryout: "+t.Name, "/app/latihan/tryout", map[string]any{
+		"tryoutId": t.ID, "slug": t.Slug, "mode": result.Mode, "resultId": result.ID, "score": score, "correct": correct, "total": total,
+	})
 	if h.WA != nil {
 		h.WA.Queue(whatsapp.Result{UserID: uid, Kind: "TRYOUT", RefID: result.ID, Title: t.Name, Score: score, Correct: correct, Total: total})
 	}

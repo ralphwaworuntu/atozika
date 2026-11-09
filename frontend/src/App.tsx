@@ -74,6 +74,7 @@ import { AdminPracticePage } from '@/pages/admin/AdminPracticePage';
 import { AdminMaterialsPage } from '@/pages/admin/AdminMaterialsPage';
 import { AdminCommercePage } from '@/pages/admin/AdminCommercePage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminActivityLogsPage } from '@/pages/admin/AdminActivityLogsPage';
 import { AdminMemberActivationPage } from '@/pages/admin/AdminMemberActivationPage';
 import { AdminMemberProgressPage } from '@/pages/admin/AdminMemberProgressPage';
 import { AdminMonitoringPage } from '@/pages/admin/AdminMonitoringPage';
@@ -184,6 +185,7 @@ export default function App() {
           <Route path="contacts" element={<AdminContactsPage />} />
           <Route path="calculators" element={<AdminCalculatorsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
+          <Route path="activity-logs" element={<AdminActivityLogsPage />} />
           <Route path="*" element={<AdminNotFoundPage />} />
         </Route>
       </Route>

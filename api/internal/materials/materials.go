@@ -3,6 +3,7 @@ package materials
 import (
 	"time"
 
+	"atozika/internal/activity"
 	"atozika/internal/httpx"
 	"atozika/internal/id"
 	"atozika/internal/membership"
@@ -153,6 +154,9 @@ func (h *Handler) Open(c *fiber.Ctx) error {
 	if err := membership.ConsumeModule(h.DB, trx, uid, m.ID, id.New); err != nil {
 		return err
 	}
+	activity.Record(h.DB, uid, activity.KindMaterialOpen, "Membuka materi: "+m.Title, "/app/materi", map[string]any{
+		"materialId": m.ID, "category": m.Category, "type": m.Type,
+	})
 	return httpx.Success(c, fiber.Map{"id": m.ID, "fileUrl": m.FileURL, "type": m.Type, "openedAt": time.Now()})
 }
 

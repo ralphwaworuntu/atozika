@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
 import { getAssetUrl } from '@/lib/media';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { DashboardTopbar } from '@/components/dashboard/DashboardTopbar';
@@ -36,6 +36,15 @@ export function DashboardLayout() {
     mainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [pathname, hash]);
+
+  useEffect(() => {
+    if (!pathname.startsWith('/app')) return;
+    const title = document.title || pathname;
+    const timer = window.setTimeout(() => {
+      void apiPost('/auth/activity', { path: pathname, title }).catch(() => undefined);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
 
   return (
     <div className="member-shell flex h-[100dvh] overflow-hidden font-member" style={backgroundStyle}>

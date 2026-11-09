@@ -120,6 +120,7 @@ func main() {
 	ag.Post("/login", authLimit, authH.Login)
 	ag.Post("/forgot-password", authLimit, authH.ForgotPassword)
 	ag.Post("/reset-password", authLimit, authH.ResetPassword)
+	ag.Post("/activity", protect, authH.TrackActivity)
 	ag.Post("/refresh", authH.Refresh)
 	ag.Post("/logout", protect, authH.Logout)
 	ag.Get("/me", protect, authH.Me)

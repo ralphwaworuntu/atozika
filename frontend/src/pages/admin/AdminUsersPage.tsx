@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { api, apiGet, apiPatch, apiPost } from '@/lib/api';
+import { api, apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -30,6 +30,7 @@ export function AdminUsersPage() {
   const [resetConfirm, setResetConfirm] = useState<AdminUser | null>(null);
   const [resetResult, setResetResult] = useState<{ userId: string; tempPassword: string } | null>(null);
   const [impersonateConfirm, setImpersonateConfirm] = useState<AdminUser | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<AdminUser | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const { data, isLoading } = useQuery({ queryKey: ['admin-users'], queryFn: () => apiGet<AdminUser[]>('/admin/users') });
 
@@ -74,7 +75,29 @@ export function AdminUsersPage() {
     onError: () => toast.error('Gagal membuka dashboard member'),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (payload: { id: string }) => apiDelete(`/admin/users/${payload.id}`),
+    onSuccess: () => {
+      toast.success('Member berhasil dihapus');
+      setDeleteConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message || 'Gagal menghapus member');
+    },
+  });
+
   const users = data ?? [];
+  const formatJoinedAt = (value: string) =>
+    new Date(value).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -169,7 +192,7 @@ export function AdminUsersPage() {
                         </button>
                       </td>
                       <td>{user.memberArea?.slug ?? '-'}</td>
-                      <td className="whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString('id-ID')}</td>
+                      <td className="whitespace-nowrap">{formatJoinedAt(user.createdAt)}</td>
                       <td>
                         <div className="flex flex-wrap gap-2">
                           <Button
@@ -189,6 +212,15 @@ export function AdminUsersPage() {
                             onClick={() => setImpersonateConfirm(user)}
                           >
                             Masuk Dashboard
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            disabled={user.role !== 'MEMBER' || roleDisabled || deleteMutation.isPending}
+                            onClick={() => setDeleteConfirm(user)}
+                          >
+                            Hapus
                           </Button>
                         </div>
                       </td>
@@ -267,6 +299,26 @@ export function AdminUsersPage() {
         onCancel={() => {
           if (impersonateMutation.isPending) return;
           setImpersonateConfirm(null);
+        }}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteConfirm)}
+        title="Hapus member ini?"
+        description={
+          deleteConfirm
+            ? `Akun ${deleteConfirm.name} (${deleteConfirm.email}) beserta riwayat tryout, latihan, transaksi, dan log terkait akan dihapus permanen.`
+            : ''
+        }
+        confirmText="Hapus permanen"
+        cancelText="Batal"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deleteConfirm) return;
+          deleteMutation.mutate({ id: deleteConfirm.id });
+        }}
+        onCancel={() => {
+          if (deleteMutation.isPending) return;
+          setDeleteConfirm(null);
         }}
       />
     </section>
